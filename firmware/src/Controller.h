@@ -14,17 +14,19 @@
 #define DMX_SIZE 512                        // dmx universe size (always 512)
 #define DATA_PIN 5                          // hardware data pin
 #define NUM_PXLS 3                          // rgb = 3 bytes
-#define LED_TYPE WS2815                    // ledstrip type (FASTLED)
-#define LED_ORDER RGB                       // led order type (FASTLED)
+#define LED_TYPE WS2812B                    // ledstrip type (FASTLED)
+#define LED_ORDER GRB                       // led order type (FASTLED)
 
 #define DIMENSION_1D 1                      // led group 1d
 #define DIMENSION_2D 2                      // led group 2d
 // =======================================================================================
 
+
+
 // ----- Deployment params ---------------------------------------------------------------
-#define STANDALONE                          // if on portable (5V) mode
+// #define STANDALONE                          // if on portable (5V) mode
 #define ENABLE_LOGGING                      // enables logging
-#define DIMENSION DIMENSION_1D              // use 1D or 2D indexing
+#define DIMENSION DIMENSION_2D              // use 1D or 2D indexing
 // ---------------------------------------------------------------------------------------
 
 // ----- Wifi credentials ----------------------------------------------------------------
@@ -33,12 +35,12 @@
 // ---------------------------------------------------------------------------------------
 
 // ----- Hardware LED params -------------------------------------------------------------
-#define NUM_LEDS 10                         // number of hardware leds
+#define NUM_LEDS (64*3)                         // number of hardware leds
 #define LED_SIZE (NUM_LEDS * NUM_PXLS)      // total size in bytes
 // ---------------------------------------------------------------------------------------
 
 // ----- DMX params ----------------------------------------------------------------------
-#define UNIVERSE 5                          // DMX universe
+#define UNIVERSE 8                          // DMX universe
 #define ADDR_OFFSET 0                       // address offset in said universe
 
 #define NUM_GROUPS NUM_LEDS                 // this sets number of pixels
@@ -46,7 +48,7 @@
   #define GRID_WSIZE 2
   #define GRID_HSIZE 2
   #define GRID_WIDTH 8
-  #define GRID_HEIGHT 8
+  #define GRID_HEIGHT 24
 #endif
 // ---------------------------------------------------------------------------------------
 
@@ -161,6 +163,10 @@ public:
   void printNewRecv();
   void updateFramerate();
   void seqDiff();
+
+  volatile bool enabled = true;
+  void off() { enabled = false; }
+  void on() { enabled = true; }
 
 private:
   uint8_t universe = UNIVERSE;

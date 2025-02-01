@@ -104,6 +104,8 @@ void Controller::setupSacn() {
 #if DIMENSION == DIMENSION_1D
 
 void Controller::update() {
+  if(!enabled) return;
+
   uint16_t groupSize = NUM_LEDS / numGroups;
   uint16_t ledIndex = 0;
 
@@ -122,6 +124,8 @@ void Controller::update() {
 #else
 
 void Controller::update(){
+  if(!enabled) return;
+
   for(uint16_t y = 0; y < grid.nh; y++) {
     for(uint16_t x = 0; x < grid.nw; x++) {
       const auto& indexes = grid.getGridIndexes(x,y);
@@ -145,8 +149,9 @@ void Controller::updateLoop() {
 }
 
 void Controller::playIdleAnimation() {
-  ledBuffer[((millis() / 10) % LED_SIZE)] = WIFI_BRIGHTNESS;
-  ledBuffer[(((millis() / 10) % LED_SIZE) - 1) % LED_SIZE] = 0;  
+  static unsigned long iterator = 0;
+  ledBuffer[(iterator) % LED_SIZE] = WIFI_BRIGHTNESS;
+  ledBuffer[(iterator++ - 1) % LED_SIZE] = 0;  
 }
 
 void Controller::clearDiffQueue(JsonArray& jarray) {

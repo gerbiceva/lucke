@@ -1,4 +1,5 @@
 #include "Controller.h"
+#include "Button.h"
 
 // IPAddress local_IP(192, 168, 0, 150); // Set the desired IP address
 // IPAddress gateway(192, 168, 0, 1);    // Set your gateway
@@ -64,18 +65,32 @@ void dmxLoop(void *)
   }
 }
 
+void buttonTask(void *) {
+
+  Button b1(9, [](){ Controller::get().on();});
+  Button b2(21, [](){ Controller::get().off();});
+
+  while(true) {
+    b1.update();
+    b2.update();
+    vTaskDelay(5);
+  }
+}
+
 void setup()
 {  
   // initialise the contorller
-  #if DIMENSION == DIMENSION_1D
+#if DIMENSION == DIMENSION_1D
   Controller::get().init();
-  #else
+#else
   Controller::get().init2D();
-  #endif
+#endif
+
   // create all tasks
   xTaskCreate(dmxLoop, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, NULL);
   xTaskCreate(checkNetwork, "Wifi check", 2000, NULL, 2 | portPRIVILEGE_BIT, NULL);
-  xTaskCreate(statReportLoop, "Logging", 2000, NULL, 2 | portPRIVILEGE_BIT, NULL);
+  xTaskCreate(statReportLoop, "Logging", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
+  //xTaskCreate(buttonTask, "Input", 1000, NULL, 2 | portPRIVILEGE_BIT, NULL);
 }
 
 void loop()
