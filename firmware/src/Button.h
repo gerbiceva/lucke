@@ -1,24 +1,27 @@
 #pragma once
-#include <stdint.h>
-#include <Arduino.h>
+#include "Config.h"
 
-#define DEBOUNCE_TIME 50
 
 class Button {
-    const uint8_t buttonPin;
-    uint16_t holdTime;
-    
-    // callback functions
-    void(*risingCallback)();
-    void(*fallingCallback)();
-    void(*holdCallback)();
+	const uint8_t buttonPin;
+	unsigned long holdTime;
+
+	unsigned long pressTime = 0;
+	bool execute = false;
+	bool isPressed = false;
+	bool previousState = true;
+
+	// callback functions
+	void(*risingCallback)();
+	void(*holdCallback)();
 
 public:
-    Button(const uint8_t pin, void(*risingFunction)() = [](){}, void(*fallingFunction)() = [](){}, void(*holdFunction)() = [](){}, uint16_t holdTimeMillis = 1000) 
-        : buttonPin(pin), risingCallback(risingFunction), fallingCallback(fallingFunction), holdCallback(holdFunction), holdTime(holdTimeMillis) {
-        
-        pinMode(buttonPin, INPUT_PULLUP);
-    }
+	Button(const uint8_t pin, void(*risingFunction)() = [](){}, void(*holdFunction)() = [](){}, unsigned long holdTimeMillis = DEFAULT_BUTTON_HOLD_TIME) 
+		: buttonPin(pin), risingCallback(risingFunction), holdCallback(holdFunction), holdTime(holdTimeMillis) {
+		
+		pinMode(buttonPin, INPUT_PULLUP);
+	}
 
-    void update();
+	void update();
+	const bool buttonStatus() const { return isPressed; }
 };

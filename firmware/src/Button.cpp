@@ -1,38 +1,32 @@
 #include "Button.h"
 
 void Button::update() {
-    static bool isHeld = false;
-    static bool prevState = digitalRead(buttonPin);
-    bool state = digitalRead(buttonPin);
+	bool state = digitalRead(buttonPin);
+	bool executed = false;
 
-    static unsigned long pressStartTime = 0;
-    static unsigned long prevTime = millis();
-    unsigned long currentTime = millis();
-    
-    // Debounce logic
-    if(state != prevState){
-        prevTime = currentTime;
-    }
+	if(state != previousState) {
+		// rising
+		if(!state) {
+			pressTime = millis();
+			execute = true;
+			isPressed = true;
+		}
+		// falling
+		else {
+			if(millis() - pressTime <= holdTime) {
+				risingCallback();
+				execute = false;
+			}
 
-    // If we didnt bounce
-    if((currentTime - prevTime) > DEBOUNCE_TIME) {
-        // Rising
-        if (!prevState && state) {
-            pressStartTime = currentTime;
-            isHeld = false;
-            risingCallback();
-        }
-        // Falling
-        else if(prevState && !state && !isHeld){
-            fallingCallback();
-        }
-    }
+			isPressed = false;
+		}
 
-    // Hold check
-    if(!state && (currentTime - pressStartTime) >= holdTime && !isHeld) {
-        isHeld = true;
-        holdCallback();
-    }
+		previousState = state;
+	}
 
-    prevState = state;
+	// if we are holding the button long enough
+	if(execute && millis() - pressTime > holdTime) {
+		holdCallback();
+		execute = false;
+	}
 }
