@@ -1,7 +1,6 @@
 #pragma once
 #include "Config.h"
 
-
 class Button {
 	const uint8_t buttonPin;
 	unsigned long holdTime;
@@ -23,5 +22,15 @@ public:
 	}
 
 	void update();
-	const bool buttonStatus() const { return isPressed; }
+
+	inline void setRisingFunction(void(*risingFunction)()) {
+		risingCallback = risingFunction;
+	}
+
+	inline void setHoldFunction(void(*holdFunction)()) {
+		holdCallback = holdFunction;
+	}
+
+	inline const uint8_t getPin() const { return buttonPin; }
+	inline const bool buttonStatus() const { return isPressed; }
 };

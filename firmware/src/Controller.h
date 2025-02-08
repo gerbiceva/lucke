@@ -7,7 +7,6 @@
 #include <ArduinoJson.h>
 #include <queue>
 #include <vector>
-#include <unordered_map>
 
 
 #if DIMENSION == DIMENSION_2D
@@ -53,7 +52,7 @@ class Controller {
 
 	// transfer data from dmx to ledbuffer (group if necesarry)
 	void update();
-
+	std::vector<uint16_t> presets = {1,2,5};
 public:
 	Controller(const Controller& other) = delete;
 
@@ -89,6 +88,10 @@ public:
 
 	// ledstrip interactions
 	void clear() { memset(ledBuffer, 0, LED_SIZE); FastLED.show(); }
+	void togglePreset() {
+		static uint8_t presetIndex = 0;
+		init(presets[(++presetIndex) % presets.size()], universe, dmxAddrOffset);
+	}
 
 	// threading functions
 	void newPacket();
