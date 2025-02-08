@@ -65,6 +65,12 @@ void setup() {
 	// initialise the contorller
 #if DIMENSION == DIMENSION_1D
 	Controller::get().init();
+	Controller::get().setPresets({
+		{10, "grouped by 1"},
+		{5, "grouped by 2"},
+		{2, "grouped by 5"},
+		{1, "grouped by 10"},
+	});
 #else
 	Controller::get().init2D();
 #endif
@@ -75,13 +81,18 @@ void setup() {
 	xTaskCreate(checkNetwork, "Wifi check", 2000, NULL, 2 | portPRIVILEGE_BIT, NULL);
 	xTaskCreate(statReportLoop, "Logging", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
 
-	Button b1(9, [](){ 
+
+	Button b1(9, 
+	[](){ Controller::get().togglePreset(); },
+	[](){ 
 		Controller::get().on(); 
-	});
-	Button b2(21, [](){ Controller::get().off(); }, [](){ 
-		Controller::get().clear();
-		Controller::get().togglePreset(); 
 	}, 3000);
+	Button b2(21, 
+	[](){ Controller::get().togglePreset(true); },
+	[](){ 
+		Controller::get().off(); 
+	}, 3000);
+
 	ButtonManager::add(b1);
 	ButtonManager::add(b2);
 	ButtonManager::enable();

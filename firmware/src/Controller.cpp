@@ -1,10 +1,10 @@
 #include "Controller.h"
 
 #if DIMENSION == DIMENSION_1D
-void Controller::init(uint16_t numberOfGroups, uint8_t uni, uint16_t dmxAddressOffset) {
+void Controller::init(uint8_t uni, uint16_t dmxAddressOffset) {
 	universe = uni;
 	dmxAddrOffset = dmxAddressOffset;
-	numGroups = numberOfGroups;
+	numGroups = presets[presetIndex].numOfGroups;
 	static bool inited = false;
 
 	if(!inited) {
@@ -175,6 +175,11 @@ void Controller::sendReport() {
 	}
 
 	sendUdpPacket(doc);
+}
+
+void Controller::togglePreset(bool reverse) {
+	presetIndex = (presetIndex + (reverse ? -1 : 1)) % presets.size();
+	numGroups = presets[presetIndex].numOfGroups;
 }
 
 

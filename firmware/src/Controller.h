@@ -43,6 +43,12 @@ struct Grid {
 
 #endif
 
+struct DMXPreset {
+	uint16_t numOfGroups;
+	std::string description;
+
+	DMXPreset(uint16_t numberOfGroups, std::string description = "") : numOfGroups(numberOfGroups), description(description) {}
+};
 
 class Controller {
 	Controller() {}
@@ -52,7 +58,7 @@ class Controller {
 
 	// transfer data from dmx to ledbuffer (group if necesarry)
 	void update();
-	std::vector<uint16_t> presets = {1,2,5};
+
 public:
 	Controller(const Controller& other) = delete;
 
@@ -64,7 +70,7 @@ public:
 
   // main init function; class can be reinitialised
 #if DIMENSION == DIMENSION_1D
-	void init(uint16_t numberOfGroups = NUM_LEDS, uint8_t uni = UNIVERSE, uint16_t dmxAddressOffset = ADDR_OFFSET);
+	void init(uint8_t uni = UNIVERSE, uint16_t dmxAddressOffset = ADDR_OFFSET);
 #else
 	void init2D(
 		int wsize = GRID_WSIZE, 
@@ -75,6 +81,7 @@ public:
 		uint16_t dmxAddressOffset = ADDR_OFFSET); 
 #endif
 	
+	void setPresets(std::vector<DMXPreset> newPresets) { presets = newPresets; }
 	// retrieve dmx data
 	void updateLoop();
 
@@ -88,10 +95,7 @@ public:
 
 	// ledstrip interactions
 	void clear() { memset(ledBuffer, 0, LED_SIZE); FastLED.show(); }
-	void togglePreset() {
-		static uint8_t presetIndex = 0;
-		init(presets[(++presetIndex) % presets.size()], universe, dmxAddrOffset);
-	}
+	void togglePreset(bool reverse = false);
 
 	// threading functions
 	void newPacket();
@@ -108,6 +112,12 @@ private:
 	uint16_t dmxAddrOffset = ADDR_OFFSET;
 
 	uint16_t numGroups = NUM_GROUPS;
+	std::string name = FIXTURE_NAME;
+	
+	int8_t presetIndex = 0;
+	std::vector<DMXPreset> presets = {
+		{NUM_LEDS, "grouped by numLeds"},
+	};
 
 	uint8_t ledBuffer[LED_SIZE] = {};
 	uint8_t dmxBuffer[DMX_SIZE] = {};	
