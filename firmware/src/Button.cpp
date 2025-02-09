@@ -2,7 +2,6 @@
 
 void Button::update() {
 	bool state = digitalRead(buttonPin);
-	bool executed = false;
 
 	if(state != previousState) {
 		// rising

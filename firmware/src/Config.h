@@ -23,6 +23,10 @@
 #define NUM_PXLS 3							// rgb = 3 bytes
 #define LED_TYPE WS2815						// ledstrip type (FASTLED)
 #define LED_ORDER RGB						// led order type (FASTLED)
+
+#define DIMENSION_1D 1						// led group 1d
+#define DIMENSION_2D 2						// led group 2d
+
 #define DIMENSION DIMENSION_1D				// use 1D or 2D indexing
 // ---------------------------------------------------------------------------------------
 
@@ -38,8 +42,6 @@
 
 // ===== CONSTANT ========================================================================
 
-#define DIMENSION_1D 1						// led group 1d
-#define DIMENSION_2D 2						// led group 2d
 #define BAUD_RATE 9600						// debug connection
 #define DMX_SIZE 512						// dmx universe size (always 512)
 #define HARDWARE_DATA_PIN 5					// hardware data pin
