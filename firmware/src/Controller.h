@@ -59,6 +59,61 @@ class Controller {
 	// transfer data from dmx to ledbuffer (group if necesarry)
 	void update();
 
+	// thread that updates dmx, basically main thread
+	static void dmxLoop(void *) {
+		while (true) {
+			Controller::get().updateLoop();
+			vTaskDelay(15);
+		}
+	}
+
+	// thread that sends reports via udp
+	static void statReportLoop(void *) {
+		while (true) {
+			Controller::get().sendReport();
+			vTaskDelay(1000);
+		}
+	}
+
+	// thread that plays idle animation (wifi connecting)
+	static void playIdleAnimation(void *) {
+		while (true) {
+			Controller::get().playIdleAnimation();
+			vTaskDelay(WIFI_DELAY);
+		}
+	}
+
+	// thread that checks if wifi connected
+	static void checkNetwork(void *) {
+		while (true) {
+			// if not connected
+			if (WiFi.status() != WL_CONNECTED) {
+				LOG("Lost connection\n");
+
+				TaskHandle_t animation = NULL;
+				xTaskCreate(
+					Controller::playIdleAnimation, 		// Task function
+					"Animation",			// Name of the task (for debugging)
+					2000,					// Stack size in words
+					NULL,					// Parameter passed to the task
+					2,						// Task priority
+					&animation				// Handle to the task
+				);
+
+				while (WiFi.status() != WL_CONNECTED) {
+					vTaskDelay(50);
+				}
+
+				// connection established
+				LOG("Connected\n");
+				vTaskDelete(animation);
+				Controller::get().clear();
+			}
+
+			vTaskDelay(50);
+		}
+	}
+
 public:
 	Controller(const Controller& other) = delete;
 
@@ -102,6 +157,19 @@ public:
 	void printNewRecv();
 	void updateFramerate();
 	void seqDiff();
+
+	static void createTasks() {
+		static bool tasksCreated = false;
+		
+		if(tasksCreated)
+			return;
+
+		xTaskCreate(Controller::dmxLoop, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, NULL);
+		xTaskCreate(Controller::checkNetwork, "Wifi check", 2000, NULL, 2 | portPRIVILEGE_BIT, NULL);
+		xTaskCreate(Controller::statReportLoop, "Logging", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
+
+		tasksCreated = true;
+	}
 
 	volatile bool enabled = true;
 	void off() { enabled = false; }

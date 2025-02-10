@@ -6,6 +6,7 @@
 // #define STANDALONE						// if on portable (5V) mode
 #define ENABLE_LOGGING						// enables logging
 #define DEFAULT_BUTTON_HOLD_TIME 2000		// default time for hold to register
+#define WIFI_DISCONNECT_THRESHOLD 1000		// time before reconnect attempt
 // ---------------------------------------------------------------------------------------
 
 // ----- Hardware LED params -------------------------------------------------------------
@@ -41,7 +42,6 @@
 
 
 // ===== CONSTANT ========================================================================
-
 #define BAUD_RATE 9600						// debug connection
 #define DMX_SIZE 512						// dmx universe size (always 512)
 #define HARDWARE_DATA_PIN 5					// hardware data pin
