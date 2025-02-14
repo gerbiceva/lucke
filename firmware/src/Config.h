@@ -3,21 +3,21 @@
 #include <stdint.h>
 
 // ----- Deployment params ---------------------------------------------------------------
-// #define STANDALONE						// if on portable (5V) mode
 #define ENABLE_LOGGING						// enables logging
 #define DEFAULT_BUTTON_HOLD_TIME 2000		// default time for hold to register
-#define WIFI_DISCONNECT_THRESHOLD 1000		// time before reconnect attempt
+#define WIFI_DISCONNECT_DELAY 20			// time before reconnect attempt
+// #define STANDALONE						// if on portable (5V) mode
 // ---------------------------------------------------------------------------------------
 
 // ----- Hardware LED params -------------------------------------------------------------
-#define FIXTURE_NAME "LedBar"				// fixture name
-#define NUM_LEDS (10)						// number of hardware leds
+#define FIXTURE_NAME "Astera"				// fixture name
+#define NUM_LEDS (60)						// number of hardware leds
 #define LED_SIZE (NUM_LEDS * NUM_PXLS)		// total size in bytes
 // ---------------------------------------------------------------------------------------
 
 // ----- DMX params ----------------------------------------------------------------------
-#define UNIVERSE 5							// DMX universe
-#define ADDR_OFFSET 0						// address offset in said universe
+#define UNIVERSE 8							// DMX universe
+#define ADDR_OFFSET (0)						// address offset in said universe
 // ---------------------------------------------------------------------------------------
 
 // ----- LED type params -----------------------------------------------------------------

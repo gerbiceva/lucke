@@ -134,10 +134,8 @@ void Controller::playIdleAnimation() {
 }
 
 void Controller::clearDiffQueue(JsonArray& jarray) {
-	if (xSemaphoreTake(mutex, portMAX_DELAY) == pdTRUE)
-	{
-		while (!packetDiff.empty())
-		{
+	if (xSemaphoreTake(mutex, portMAX_DELAY) == pdTRUE) {
+		while (!packetDiff.empty()) {
 			jarray.add(packetDiff.front());
 			packetDiff.pop();
 		}
@@ -169,9 +167,8 @@ void Controller::sendReport() {
 	// add first 5 leds
 	doc["first_5_leds"] = JsonDocument();
 	JsonArray jsonArray = doc["first_5_leds"].to<JsonArray>();
-	for (int i = 0; i < 15; i++)
-	{
-			jsonArray.add(ledBuffer[i]);
+	for (int i = 0; i < 15; i++) {
+		jsonArray.add(ledBuffer[i]);
 	}
 
 	sendUdpPacket(doc);
@@ -198,9 +195,8 @@ void Controller::updateFramerate() {
 
 void Controller::seqDiff() {
 	uint8_t diff = recv->seqdiff();
-	if (xSemaphoreTake(mutex, 0) == pdTRUE)
-	{
-			packetDiff.push(diff);
-			xSemaphoreGive(mutex);
+	if (xSemaphoreTake(mutex, 0) == pdTRUE)	{
+		packetDiff.push(diff);
+		xSemaphoreGive(mutex);
 	}
 }

@@ -85,21 +85,32 @@ class Controller {
 
 	// thread that checks if wifi connected
 	static void checkNetwork(void *) {
+		bool firstTime = true;
+		bool delayed = false;
+
 		while (true) {
 			// if not connected
 			if (WiFi.status() != WL_CONNECTED) {
 				LOG("Lost connection\n");
 
+				// filtering short disconnects
+				if(!firstTime && !delayed) {
+					vTaskDelay(WIFI_DISCONNECT_DELAY);
+					delayed = true;
+					continue;
+				}
+
 				TaskHandle_t animation = NULL;
 				xTaskCreate(
 					Controller::playIdleAnimation, 		// Task function
-					"Animation",			// Name of the task (for debugging)
-					2000,					// Stack size in words
-					NULL,					// Parameter passed to the task
-					2,						// Task priority
-					&animation				// Handle to the task
+					"Animation",						// Name of the task (for debugging)
+					2000,								// Stack size in words
+					NULL,								// Parameter passed to the task
+					2,									// Task priority
+					&animation							// Handle to the task
 				);
 
+				// while not connected
 				while (WiFi.status() != WL_CONNECTED) {
 					vTaskDelay(50);
 				}
@@ -108,6 +119,8 @@ class Controller {
 				LOG("Connected\n");
 				vTaskDelete(animation);
 				Controller::get().clear();
+				firstTime = false;
+				delayed = false;
 			}
 
 			vTaskDelay(50);
@@ -158,6 +171,7 @@ public:
 	void updateFramerate();
 	void seqDiff();
 
+	// create seperate tasks for each, well, task
 	static void createTasks() {
 		static bool tasksCreated = false;
 		
@@ -171,6 +185,7 @@ public:
 		tasksCreated = true;
 	}
 
+	// dmx update loop [enabled]
 	volatile bool enabled = true;
 	void off() { enabled = false; }
 	void on() { enabled = true; }
