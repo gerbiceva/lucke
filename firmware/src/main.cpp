@@ -5,17 +5,25 @@
 // IPAddress gateway(192, 168, 0, 1);		// Set your gateway
 // IPAddress subnet(255, 255, 255, 0);	 // Set your subnet mask
 
+std::vector<DMXPreset> asteraPresets = {
+	{60, "group by 1"},
+	{30, "group by 2"},
+	{15, "group by 4"},
+	{4, "group by 15"},
+};
+
+std::vector<DMXPreset> ledbarPresets = {
+	{100, "group by 1"},
+	{50, "group by 2"},
+	{25, "group by 4"},
+	{10, "group by 10"},
+};
 
 void setup() {	
 	// initialise the contorller
 #if DIMENSION == DIMENSION_1D
+	Controller::get().setPresets(asteraPresets);
 	Controller::get().init();
-	Controller::get().setPresets({
-		{10, "grouped by 1"},
-		{5, "grouped by 2"},
-		{2, "grouped by 5"},
-		{1, "grouped by 10"},
-	});
 #else
 	Controller::get().init2D();
 #endif

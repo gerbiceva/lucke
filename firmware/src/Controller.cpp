@@ -1,9 +1,10 @@
 #include "Controller.h"
 
 #if DIMENSION == DIMENSION_1D
-void Controller::init(uint8_t uni, uint16_t dmxAddressOffset) {
+void Controller::init(uint8_t uni, uint16_t dmxAddressOffset, int8_t presetIndex) {
 	universe = uni;
 	dmxAddrOffset = dmxAddressOffset;
+	this->presetIndex = presetIndex;
 	numGroups = presets[presetIndex].numOfGroups;
 	static bool inited = false;
 

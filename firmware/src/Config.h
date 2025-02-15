@@ -63,7 +63,7 @@
 
 // ----- Logging functions ---------------------------------------------------------------
 #ifdef ENABLE_LOGGING
-	#define LOG(pattern) Serial.printf(pattern)
+	#define LOG(pattern) Serial.println(pattern)
 	#define LOGF(pattern, args...) Serial.printf(pattern, args)
 #else
 	#define LOG(pattern)

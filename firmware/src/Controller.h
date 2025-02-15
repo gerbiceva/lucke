@@ -7,6 +7,8 @@
 #include <ArduinoJson.h>
 #include <queue>
 #include <vector>
+#include <sstream>
+#include <string>
 
 
 #if DIMENSION == DIMENSION_2D
@@ -127,6 +129,63 @@ class Controller {
 		}
 	}
 
+	static void wirelessConfigTask(void*) {
+		WiFiServer server(8888);
+		server.begin();
+		
+		while(true) {
+			// Serial.println(WiFi.localIP());
+			WiFiClient client = server.available();
+			if (client) {
+				while (client.connected()) {
+					if (client.available()) {
+						String universe = client.readStringUntil(',');
+						String offset = client.readStringUntil(',');
+						String preset = client.readStringUntil('\n');
+						Serial.println("Universe: " + universe);
+						Serial.println("Offset: " + offset);
+						Serial.println("Preset: " + preset);
+						Controller::get().init(universe.toInt(), offset.toInt(), preset.toInt());
+						/*
+						int16_t lastIndex = 0;
+						int16_t currentIndex;
+						int i = 0;
+						bool breakNext = false;
+
+						while(true) {
+							if(i++ > 5)
+								break;
+							currentIndex = data.indexOf(",", lastIndex);
+							String temp;
+							if(currentIndex != -1)
+								temp = data.substring(lastIndex, currentIndex);
+							else
+								temp = data.substring(lastIndex);
+							// Serial.println(currentIndex, lastIndex);
+							Serial.println(temp);
+							if(breakNext) {
+								breakNext = false;
+								break;
+							}
+							lastIndex = currentIndex;
+							if(currentIndex == data.lastIndexOf(","))
+								breakNext = true;
+						}
+
+						auto spl = split(data.c_str(), ',');
+						for(auto& s : spl) {
+							Serial.println(s.c_str());
+						}
+						// Process the received data here
+						*/
+					}
+				}
+				client.stop();
+			}
+			vTaskDelay(100);
+		}
+	}
+
 public:
 	Controller(const Controller& other) = delete;
 
@@ -138,7 +197,7 @@ public:
 
   // main init function; class can be reinitialised
 #if DIMENSION == DIMENSION_1D
-	void init(uint8_t uni = UNIVERSE, uint16_t dmxAddressOffset = ADDR_OFFSET);
+	void init(uint8_t uni = UNIVERSE, uint16_t dmxAddressOffset = ADDR_OFFSET, int8_t presetIndex = 0);
 #else
 	void init2D(
 		int wsize = GRID_WSIZE, 
@@ -178,9 +237,10 @@ public:
 		if(tasksCreated)
 			return;
 
-		xTaskCreate(Controller::dmxLoop, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, NULL);
 		xTaskCreate(Controller::checkNetwork, "Wifi check", 2000, NULL, 2 | portPRIVILEGE_BIT, NULL);
+		xTaskCreate(Controller::dmxLoop, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, NULL);
 		xTaskCreate(Controller::statReportLoop, "Logging", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
+		xTaskCreate(Controller::wirelessConfigTask, "Config", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
 
 		tasksCreated = true;
 	}
