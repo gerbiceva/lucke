@@ -8,10 +8,24 @@ void Controller::init(uint8_t uni, uint16_t dmxAddressOffset, int8_t presetIndex
 	numGroups = presets[presetIndex].numOfGroups;
 	static bool inited = false;
 
+	prefs.begin("dmxConfig");
+
 	if(!inited) {
 	#ifdef ENABLE_LOGGING
 		Serial.begin(BAUD_RATE);
 	#endif
+		if(prefs.isKey("universe")) {
+			universe = prefs.getUChar("universe");
+			dmxAddrOffset = prefs.getUShort("address");
+			presetIndex = prefs.getChar("preset");
+			numGroups = presets[presetIndex].numOfGroups;
+		}
+		else {
+			prefs.putUChar("universe", uni);
+			prefs.putUShort("address", dmxAddressOffset);
+			prefs.putChar("preset", presetIndex);
+		}
+
 		setupWifi();
 		setupSacn();
 
@@ -23,9 +37,15 @@ void Controller::init(uint8_t uni, uint16_t dmxAddressOffset, int8_t presetIndex
 
 	// Reinitialization means web config update
 	else {
+		prefs.putUChar("universe", uni);
+		prefs.putUShort("address", dmxAddressOffset);
+		prefs.putChar("preset", presetIndex);
+
 		delete recv;
 		setupSacn();
 	}
+
+	prefs.end();
 }
 #else
 void Controller::init2D(int wsize, int hsize, int width, int height, uint8_t uni, uint16_t dmxAddressOffset) {
