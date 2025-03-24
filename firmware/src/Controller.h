@@ -147,6 +147,7 @@ private:
 
 	CLEDController *cled;
 	SemaphoreHandle_t mutex;
+	volatile bool connecting = false;
 
 	Preferences prefs;
 	WiFiUDP udp;
@@ -175,8 +176,11 @@ private:
 
 	// thread that plays idle animation (wifi connecting)
 	static void playIdleAnimation(void *) {
+		unsigned long iterator = 0;
 		while (true) {
-			Controller::get().playIdleAnimation();
+			auto& ledBuffer = Controller::get().ledBuffer;
+			ledBuffer[(iterator) % LED_SIZE] = WIFI_BRIGHTNESS;
+			ledBuffer[(iterator++ - 1) % LED_SIZE] = 0;
 			vTaskDelay(WIFI_DELAY);
 		}
 	}
@@ -204,7 +208,7 @@ private:
 					"Animation",						// Name of the task (for debugging)
 					2000,								// Stack size in words
 					NULL,								// Parameter passed to the task
-					2,									// Task priority
+					1,									// Task priority
 					&animation							// Handle to the task
 				);
 
