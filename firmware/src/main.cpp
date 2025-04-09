@@ -26,10 +26,17 @@ std::vector<DMXPreset> ledbarPresets = {
 	{10, "group by 10"},
 };
 
+std::vector<DMXPreset> led2m = {
+	{120, "group by 1"},
+	{60, "group by 2"},
+	{30, "group by 4"},
+	{12, "group by 10"},
+};
+
 void setup() {	
 	// initialise the contorller
-	Controller::get().setPresets(asteraPresets);
-	Controller::get().init();
+	Controller::get().setPresets(led2m);
+	Controller::get().init(UNIVERSE, ADDR_OFFSET);
 	Controller::createTasks();
 
 	// Button b1(

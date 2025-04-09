@@ -1,5 +1,8 @@
 #include "Controller.h"
 
+// bool Controller::connected = false;
+volatile bool Controller::connected = false;
+
 #if DIMENSION == DIMENSION_1D
 void Controller::init(uint8_t uni, uint16_t dmxAddressOffset, int8_t presetIndex) {
 	universe = uni;

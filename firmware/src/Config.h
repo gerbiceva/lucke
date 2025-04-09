@@ -11,7 +11,7 @@
 
 // ----- Hardware LED params -------------------------------------------------------------
 #define FIXTURE_NAME "Astera"				// fixture name
-#define NUM_LEDS (60)						// number of hardware leds
+#define NUM_LEDS (120)						// number of hardware leds
 #define LED_SIZE (NUM_LEDS * NUM_PXLS)		// total size in bytes
 // ---------------------------------------------------------------------------------------
 

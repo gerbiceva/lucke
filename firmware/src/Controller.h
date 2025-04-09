@@ -114,6 +114,10 @@ public:
 			return;
 
 		xTaskCreate(Controller::checkNetwork, "Wifi check", 2000, NULL, 2 | portPRIVILEGE_BIT, NULL);
+		while(!connected){
+			vTaskDelay(10);
+		}
+
 		xTaskCreate(Controller::dmxLoop, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, NULL);
 		xTaskCreate(Controller::statReportLoop, "Logging", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
 		xTaskCreate(Controller::wirelessConfigTask, "Config", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
@@ -147,7 +151,7 @@ private:
 
 	CLEDController *cled;
 	SemaphoreHandle_t mutex;
-	volatile bool connecting = false;
+	volatile static bool connected;
 
 	Preferences prefs;
 	WiFiUDP udp;
@@ -177,7 +181,9 @@ private:
 	// thread that plays idle animation (wifi connecting)
 	static void playIdleAnimation(void *) {
 		unsigned long iterator = 0;
-		while (true) {
+		while (true) {		
+			if(connected)
+				break;	
 			auto& ledBuffer = Controller::get().ledBuffer;
 			ledBuffer[(iterator) % LED_SIZE] = WIFI_BRIGHTNESS;
 			ledBuffer[(iterator++ - 1) % LED_SIZE] = 0;
@@ -187,20 +193,21 @@ private:
 
 	// thread that checks if wifi connected
 	static void checkNetwork(void *) {
-		bool firstTime = true;
-		bool delayed = false;
+		// bool firstTime = true;
+		// bool delayed = false;
 
 		while (true) {
 			// if not connected
 			if (WiFi.status() != WL_CONNECTED) {
 				LOG("Lost connection\n");
+				connected = false;
 
 				// filtering short disconnects
-				if(!firstTime && !delayed) {
-					vTaskDelay(WIFI_DISCONNECT_DELAY);
-					delayed = true;
-					continue;
-				}
+				// if(!firstTime && !delayed) {
+				// 	vTaskDelay(WIFI_DISCONNECT_DELAY);
+				// 	delayed = true;
+				// 	continue;
+				// }
 
 				TaskHandle_t animation = NULL;
 				xTaskCreate(
@@ -214,15 +221,16 @@ private:
 
 				// while not connected
 				while (WiFi.status() != WL_CONNECTED) {
-					vTaskDelay(50);
+					vTaskDelay(10);
 				}
 
 				// connection established
 				LOG("Connected\n");
+				connected = true;
 				vTaskDelete(animation);
 				Controller::get().clear();
-				firstTime = false;
-				delayed = false;
+				// firstTime = false;
+				// delayed = false;
 			}
 
 			vTaskDelay(50);
