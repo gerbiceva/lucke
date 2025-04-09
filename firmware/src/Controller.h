@@ -10,6 +10,7 @@
 #include <sstream>
 #include <string>
 #include <Preferences.h>
+#include "Lamp.h"
 
 
 #if DIMENSION == DIMENSION_2D
@@ -46,13 +47,6 @@ struct Grid {
 
 #endif
 
-struct DMXPreset {
-	uint16_t numOfGroups;
-	std::string description;
-
-	DMXPreset(uint16_t numberOfGroups, std::string description = "") : numOfGroups(numberOfGroups), description(description) {}
-};
-
 class Controller {
 	Controller() {}
 
@@ -84,7 +78,7 @@ public:
 		uint16_t dmxAddressOffset = ADDR_OFFSET); 
 #endif
 	
-	void setPresets(std::vector<DMXPreset> newPresets) { presets = newPresets; }
+	void setLamp(Lamp* newLamp) { lamp = newLamp; };
 	// retrieve dmx data
 	void updateLoop();
 
@@ -97,7 +91,7 @@ public:
 	void sendReport();
 
 	// ledstrip interactions
-	void clear() { memset(ledBuffer, 0, LED_SIZE); FastLED.show(); }
+	void clear() { memset(ledBuffer, 0, lamp->getLedSize()); FastLED.show(); }
 	void togglePreset(bool reverse = false);
 
 	// threading functions
@@ -133,16 +127,12 @@ public:
 private:
 	uint8_t universe = UNIVERSE;
 	uint16_t dmxAddrOffset = ADDR_OFFSET;
+	uint16_t numGroups;
 
-	uint16_t numGroups = NUM_GROUPS;
-	std::string name = FIXTURE_NAME;
-	
 	int8_t presetIndex = 0;
-	std::vector<DMXPreset> presets = {
-		{NUM_LEDS, "grouped by numLeds"},
-	};
+	static Lamp* lamp;
 
-	uint8_t ledBuffer[LED_SIZE] = {};
+	uint8_t* ledBuffer;
 	uint8_t dmxBuffer[DMX_SIZE] = {};	
 
 	int droppedPackets = 0;
@@ -185,8 +175,8 @@ private:
 			if(connected)
 				break;	
 			auto& ledBuffer = Controller::get().ledBuffer;
-			ledBuffer[(iterator) % LED_SIZE] = WIFI_BRIGHTNESS;
-			ledBuffer[(iterator++ - 1) % LED_SIZE] = 0;
+			ledBuffer[(iterator) % lamp->getLedSize()] = WIFI_BRIGHTNESS;
+			ledBuffer[(iterator++ - 1) % lamp->getLedSize()] = 0;
 			vTaskDelay(WIFI_DELAY);
 		}
 	}

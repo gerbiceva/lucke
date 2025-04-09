@@ -9,19 +9,12 @@
 // #define STANDALONE						// if on portable (5V) mode
 // ---------------------------------------------------------------------------------------
 
-// ----- Hardware LED params -------------------------------------------------------------
-#define FIXTURE_NAME "Astera"				// fixture name
-#define NUM_LEDS (120)						// number of hardware leds
-#define LED_SIZE (NUM_LEDS * NUM_PXLS)		// total size in bytes
-// ---------------------------------------------------------------------------------------
-
 // ----- DMX params ----------------------------------------------------------------------
 #define UNIVERSE 8							// DMX universe
 #define ADDR_OFFSET (0)						// address offset in said universe
 // ---------------------------------------------------------------------------------------
 
 // ----- LED type params -----------------------------------------------------------------
-#define NUM_PXLS 3							// rgb = 3 bytes
 #define LED_TYPE WS2815						// ledstrip type (FASTLED)
 #define LED_ORDER RGB						// led order type (FASTLED)
 

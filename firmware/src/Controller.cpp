@@ -2,13 +2,14 @@
 
 // bool Controller::connected = false;
 volatile bool Controller::connected = false;
+Lamp* Controller::lamp = nullptr;
 
 #if DIMENSION == DIMENSION_1D
 void Controller::init(uint8_t uni, uint16_t dmxAddressOffset, int8_t presetIndex) {
 	universe = uni;
 	dmxAddrOffset = dmxAddressOffset;
 	this->presetIndex = presetIndex;
-	numGroups = presets[presetIndex].numOfGroups;
+	numGroups = lamp->presets[presetIndex].numOfGroups;
 	static bool inited = false;
 
 	prefs.begin("dmxConfig");
@@ -21,7 +22,7 @@ void Controller::init(uint8_t uni, uint16_t dmxAddressOffset, int8_t presetIndex
 			universe = prefs.getUChar("universe");
 			dmxAddrOffset = prefs.getUShort("address");
 			presetIndex = prefs.getChar("preset");
-			numGroups = presets[presetIndex].numOfGroups;
+			numGroups = lamp->presets[presetIndex].numOfGroups;
 		}
 		else {
 			prefs.putUChar("universe", uni);
@@ -31,9 +32,10 @@ void Controller::init(uint8_t uni, uint16_t dmxAddressOffset, int8_t presetIndex
 
 		setupWifi();
 		setupSacn();
+		ledBuffer = new uint8_t[lamp->getLedSize()];
 
 		mutex = xSemaphoreCreateMutex();
-		cled = &FastLED.addLeds<LED_TYPE, HARDWARE_DATA_PIN, LED_ORDER>((CRGB *)ledBuffer, NUM_LEDS);
+		cled = &FastLED.addLeds<LED_TYPE, HARDWARE_DATA_PIN, LED_ORDER>((CRGB *)ledBuffer, lamp->numLeds);
 
 		inited = true;
 	}
@@ -109,14 +111,14 @@ void Controller::setupSacn() {
 void Controller::update() {
 	if(!enabled) return;
 
-	uint16_t groupSize = NUM_LEDS / numGroups;
+	uint16_t groupSize = lamp->numLeds / numGroups;
 	uint16_t ledIndex = 0;
 
 	for (uint16_t i = 0; i < numGroups; i++) {
 		for (uint16_t j = 0; j < groupSize; j++) {
-			for (uint16_t k = 0; k < NUM_PXLS; k++) {
+			for (uint16_t k = 0; k < lamp->numPxls; k++) {
 				// check if in bounds
-				uint16_t dmxBufferIndex = dmxAddrOffset + i * NUM_PXLS + k;
+				uint16_t dmxBufferIndex = dmxAddrOffset + i * lamp->numPxls + k;
 				ledBuffer[ledIndex] = dmxBuffer[dmxBufferIndex];
 				ledIndex++;
 			}
@@ -132,12 +134,12 @@ void Controller::update(){
 	for(uint16_t y = 0; y < grid.nh; y++) {
 		for(uint16_t x = 0; x < grid.nw; x++) {
 			const auto& indexes = grid.getGridIndexes(x,y);
-			int dmxIndex = dmxAddrOffset + (x * NUM_PXLS) + (y * NUM_PXLS) * grid.nw;
+			int dmxIndex = dmxAddrOffset + (x * lamp->numPxls) + (y * lamp->numPxls) * grid.nw;
 			// printf("dmxIndex = %d\n", dmxIndex);
 			for(auto index : indexes) {
-				for (uint16_t k = 0; k < NUM_PXLS; k++) {
-					// LOGF("led[%d] = dmx [%d]\n", (index * NUM_PXLS + k), (dmxIndex + k));
-					ledBuffer[index * NUM_PXLS + k] = dmxBuffer[dmxIndex + k]; 
+				for (uint16_t k = 0; k < lamp->numPxls; k++) {
+					// LOGF("led[%d] = dmx [%d]\n", (index * lamp->numPxls + k), (dmxIndex + k));
+					ledBuffer[index * lamp->numPxls + k] = dmxBuffer[dmxIndex + k]; 
 				}
 			}
 		}
@@ -153,8 +155,8 @@ void Controller::updateLoop() {
 
 void Controller::playIdleAnimation() {
 	static unsigned long iterator = 0;
-	ledBuffer[(iterator) % LED_SIZE] = WIFI_BRIGHTNESS;
-	ledBuffer[(iterator++ - 1) % LED_SIZE] = 0;	
+	ledBuffer[(iterator) % lamp->getLedSize()] = WIFI_BRIGHTNESS;
+	ledBuffer[(iterator++ - 1) % lamp->getLedSize()] = 0;	
 }
 
 void Controller::clearDiffQueue(JsonArray& jarray) {
@@ -199,8 +201,8 @@ void Controller::sendReport() {
 }
 
 void Controller::togglePreset(bool reverse) {
-	presetIndex = (presetIndex + (reverse ? -1 : 1)) % presets.size();
-	numGroups = presets[presetIndex].numOfGroups;
+	presetIndex = (presetIndex + (reverse ? -1 : 1)) % lamp->presets.size();
+	numGroups = lamp->presets[presetIndex].numOfGroups;
 }
 
 
