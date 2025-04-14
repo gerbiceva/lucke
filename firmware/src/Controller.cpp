@@ -177,7 +177,11 @@ void Controller::sendUdpPacket(JsonDocument& doc) {
 
 void Controller::sendReport() {
 	JsonDocument doc;
+	doc["type"] = lamp->type;
+	doc["name"] = lamp->name;
+	doc["num_leds"] = lamp->numLeds;
 	doc["universe"] = universe;
+	doc["address"] = dmxAddrOffset;
 	doc["heap_size"] = ESP.getHeapSize();
 	doc["heap_free"] = ESP.getFreeHeap();
 	doc["local_ip"] = WiFi.localIP();

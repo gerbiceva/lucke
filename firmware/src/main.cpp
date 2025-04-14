@@ -34,6 +34,7 @@ struct LampLedbar : public Lamp {
 struct LampLedbar2m : public Lamp {
     LampLedbar2m() {
         type = "Led2m";
+        
         numLeds = 120;
         presets = {
             {120, "group by 1"},

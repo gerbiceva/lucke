@@ -14,7 +14,7 @@ struct Lamp {
 
     unsigned int numLeds;
     uint8_t numPxls = 3;
-    std::string name;
+    std::string name = "<empty>";
     std::string type;
     std::vector<DMXPreset> presets;
 
