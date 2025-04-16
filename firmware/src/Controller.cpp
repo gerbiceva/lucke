@@ -2,14 +2,14 @@
 
 // bool Controller::connected = false;
 volatile bool Controller::connected = false;
-Lamp* Controller::lamp = nullptr;
+Lamp* Controller::m_Lamp = nullptr;
 
 #if DIMENSION == DIMENSION_1D
 void Controller::init(uint8_t uni, uint16_t dmxAddressOffset, int8_t presetIndex) {
-	universe = uni;
-	dmxAddrOffset = dmxAddressOffset;
-	this->presetIndex = presetIndex;
-	numGroups = lamp->presets[presetIndex].numOfGroups;
+	m_Universe = uni;
+	m_Address = dmxAddressOffset;
+	this->m_SelectedPreset = presetIndex;
+	m_NumGroups = m_Lamp->presets[presetIndex].numOfGroups;
 	static bool inited = false;
 
 	prefs.begin("dmxConfig");
@@ -19,10 +19,10 @@ void Controller::init(uint8_t uni, uint16_t dmxAddressOffset, int8_t presetIndex
 		Serial.begin(BAUD_RATE);
 	#endif
 		if(prefs.isKey("universe")) {
-			universe = prefs.getUChar("universe");
-			dmxAddrOffset = prefs.getUShort("address");
+			m_Universe = prefs.getUChar("universe");
+			m_Address = prefs.getUShort("address");
 			presetIndex = prefs.getChar("preset");
-			numGroups = lamp->presets[presetIndex].numOfGroups;
+			m_NumGroups = m_Lamp->presets[presetIndex].numOfGroups;
 		}
 		else {
 			prefs.putUChar("universe", uni);
@@ -32,10 +32,10 @@ void Controller::init(uint8_t uni, uint16_t dmxAddressOffset, int8_t presetIndex
 
 		setupWifi();
 		setupSacn();
-		ledBuffer = new uint8_t[lamp->getLedSize()];
+		m_LedBuffer = new uint8_t[m_Lamp->getLedSize()];
 
 		mutex = xSemaphoreCreateMutex();
-		cled = &FastLED.addLeds<LED_TYPE, HARDWARE_DATA_PIN, LED_ORDER>((CRGB *)ledBuffer, lamp->numLeds);
+		cled = &FastLED.addLeds<LED_TYPE, HARDWARE_DATA_PIN, LED_ORDER>((CRGB *)m_LedBuffer, m_Lamp->numLeds);
 
 		inited = true;
 	}
@@ -82,7 +82,7 @@ void Controller::init2D(int wsize, int hsize, int width, int height, uint8_t uni
 
 void Controller::setupWifi() {
 	// setup mac address
-	uint8_t mac[] = {0x90, 0xA2, 0xDA, 0x10, 0x14, universe}; // MAC Adress of your device
+	uint8_t mac[] = {0x90, 0xA2, 0xDA, 0x10, 0x14, m_Universe}; // MAC Adress of your device
 	esp_err_t err = esp_wifi_set_mac(WIFI_IF_STA, &mac[0]);
 	if (err == ESP_OK)
 	{
@@ -103,7 +103,7 @@ void Controller::setupSacn() {
 	recv->callbackFramerate([](){ Controller::get().updateFramerate(); });
 	recv->callbackSeqDiff([](){ Controller::get().seqDiff(); });
 	recv->callbackTimeout([](){});
-	recv->begin(universe);
+	recv->begin(m_Universe);
 }
 
 #if DIMENSION == DIMENSION_1D
@@ -111,15 +111,15 @@ void Controller::setupSacn() {
 void Controller::update() {
 	if(!enabled) return;
 
-	uint16_t groupSize = lamp->numLeds / numGroups;
+	uint16_t groupSize = m_Lamp->numLeds / m_NumGroups;
 	uint16_t ledIndex = 0;
 
-	for (uint16_t i = 0; i < numGroups; i++) {
+	for (uint16_t i = 0; i < m_NumGroups; i++) {
 		for (uint16_t j = 0; j < groupSize; j++) {
-			for (uint16_t k = 0; k < lamp->numPxls; k++) {
+			for (uint16_t k = 0; k < m_Lamp->numPxls; k++) {
 				// check if in bounds
-				uint16_t dmxBufferIndex = dmxAddrOffset + i * lamp->numPxls + k;
-				ledBuffer[ledIndex] = dmxBuffer[dmxBufferIndex];
+				uint16_t dmxBufferIndex = m_Address + i * m_Lamp->numPxls + k;
+				m_LedBuffer[ledIndex] = m_DmxBuffer[dmxBufferIndex];
 				ledIndex++;
 			}
 		}
@@ -153,11 +153,13 @@ void Controller::updateLoop() {
 	FastLED.show();
 }
 
+
 void Controller::playIdleAnimation() {
 	static unsigned long iterator = 0;
-	ledBuffer[(iterator) % lamp->getLedSize()] = WIFI_BRIGHTNESS;
-	ledBuffer[(iterator++ - 1) % lamp->getLedSize()] = 0;	
+	m_LedBuffer[(iterator) % m_Lamp->getLedSize()] = WIFI_BRIGHTNESS;
+	m_LedBuffer[(iterator++ - 1) % m_Lamp->getLedSize()] = 0;	
 }
+
 
 void Controller::clearDiffQueue(JsonArray& jarray) {
 	if (xSemaphoreTake(mutex, portMAX_DELAY) == pdTRUE) {
@@ -177,11 +179,11 @@ void Controller::sendUdpPacket(JsonDocument& doc) {
 
 void Controller::sendReport() {
 	JsonDocument doc;
-	doc["type"] = lamp->type;
-	doc["name"] = lamp->name;
-	doc["num_leds"] = lamp->numLeds;
-	doc["universe"] = universe;
-	doc["address"] = dmxAddrOffset;
+	doc["type"] = m_Lamp->type;
+	doc["name"] = m_Lamp->name;
+	doc["num_leds"] = m_Lamp->numLeds;
+	doc["universe"] = m_Universe;
+	doc["address"] = m_Address;
 	doc["heap_size"] = ESP.getHeapSize();
 	doc["heap_free"] = ESP.getFreeHeap();
 	doc["local_ip"] = WiFi.localIP();
@@ -198,20 +200,38 @@ void Controller::sendReport() {
 	doc["first_5_leds"] = JsonDocument();
 	JsonArray jsonArray = doc["first_5_leds"].to<JsonArray>();
 	for (int i = 0; i < 15; i++) {
-		jsonArray.add(ledBuffer[i]);
+		jsonArray.add(m_LedBuffer[i]);
 	}
 
 	sendUdpPacket(doc);
 }
 
+void Controller::setUniverse(uint8_t uni) {
+	m_Universe = uni;
+	setupSacn();
+}
+
+void Controller::setAddress(uint16_t address) {
+	m_Address = address;
+}
+
+void Controller::setPreset(uint8_t preset) {
+	this->m_SelectedPreset = preset;
+	m_NumGroups = m_Lamp->presets[preset].numOfGroups;
+}
+
+void Controller::setName(std::string name) {
+	m_Lamp->name = name;
+}
+
 void Controller::togglePreset(bool reverse) {
-	presetIndex = (presetIndex + (reverse ? -1 : 1)) % lamp->presets.size();
-	numGroups = lamp->presets[presetIndex].numOfGroups;
+	m_SelectedPreset = (m_SelectedPreset + (reverse ? -1 : 1)) % m_Lamp->presets.size();
+	m_NumGroups = m_Lamp->presets[m_SelectedPreset].numOfGroups;
 }
 
 
 void Controller::newPacket() {
-	recv->dmx(dmxBuffer);
+	recv->dmx(m_DmxBuffer);
 	update();
 }
 
