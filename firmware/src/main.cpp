@@ -6,43 +6,30 @@
 // IPAddress subnet(255, 255, 255, 0);	 // Set your subnet mask
 
 struct LampAstera : public Lamp {
-    LampAstera() {
-        type = "Astera";
-        numLeds = 60;
-        presets = {
-            {60, "group by 1"},
-            {30, "group by 2"},
-            {15, "group by 4"},
-            {4, "group by 15"}
-        };
-    };
+    LampAstera() : Lamp("Astera", 60, {
+		{0, "group by 1"},
+		{30, "group by 2"},
+		{15, "group by 4"},
+		{4, "group by 15"}
+	}) {};
 };
 
 struct LampLedbar : public Lamp {
-    LampLedbar() {
-        type = "Ledbar";
-        numLeds = 100;
-        presets = {
-            {100, "group by 1"},
-            {50, "group by 2"},
-            {25, "group by 4"},
-            {10, "group by 10"}
-        };
-    };
+    LampLedbar() : Lamp("Ledbar", 100, {
+		{100, "group by 1"},
+		{50, "group by 2"},
+		{25, "group by 4"},
+		{10, "group by 10"}
+	}) {};
 };
 
 struct LampLedbar2m : public Lamp {
-    LampLedbar2m() {
-        type = "Led2m";
-        
-        numLeds = 120;
-        presets = {
-            {120, "group by 1"},
-            {60, "group by 2"},
-            {30, "group by 4"},
-            {12, "group by 10"}
-        };
-    };
+    LampLedbar2m() : Lamp("Led2m", 120, {
+		{120, "group by 1"},
+		{60, "group by 2"},
+		{30, "group by 4"},
+		{12, "group by 10"}
+	}) {};
 };
 
 void setup() {	

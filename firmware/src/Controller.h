@@ -106,7 +106,7 @@ public:
 		uint16_t dmxAddressOffset = ADDR_OFFSET); 
 #endif
 	
-	void setLamp(Lamp* newLamp) { m_Lamp = newLamp; };
+	void setLamp(Lamp* newLamp) { m_Lamp = newLamp; m_LedBuffer = m_Lamp->ledBuffer; };
 	// retrieve dmx data
 	void updateLoop();
 
@@ -141,9 +141,9 @@ public:
 			return;
 
 		xTaskCreate(Controller::checkNetwork, "Wifi check", 2000, NULL, 2 | portPRIVILEGE_BIT, NULL);
-		while(!connected){
-			vTaskDelay(10);
-		}
+		// while(!connected){
+		// 	vTaskDelay(10);
+		// }
 
 		xTaskCreate(Controller::dmxLoop, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, NULL);
 		xTaskCreate(Controller::statReportLoop, "Logging", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
@@ -178,8 +178,8 @@ private:
 	static void playIdleAnimation(void *) {
 		unsigned long iterator = 0;
 		while (true) {		
-			if(connected)
-				break;	
+			// if(connected)
+			// 	break;	
 			auto& ledBuffer = Controller::get().m_LedBuffer;
 			ledBuffer[(iterator) % m_Lamp->getLedSize()] = WIFI_BRIGHTNESS;
 			ledBuffer[(iterator++ - 1) % m_Lamp->getLedSize()] = 0;

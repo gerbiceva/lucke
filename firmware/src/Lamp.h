@@ -17,6 +17,13 @@ struct Lamp {
     std::string name = "<empty>";
     std::string type;
     std::vector<DMXPreset> presets;
+    uint8_t* ledBuffer;
+
+    Lamp(std::string typ, unsigned int nLeds, std::vector<DMXPreset> pres) 
+        : type(typ), numLeds(nLeds), presets(pres) {
+
+        ledBuffer = new uint8_t[getLedSize()]();
+    }
 
     std::string toString() { return type + ": " + name; };
     constexpr unsigned int getLedSize() { return numLeds * numPxls; }

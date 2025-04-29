@@ -32,7 +32,7 @@ void Controller::init(uint8_t uni, uint16_t dmxAddressOffset, int8_t presetIndex
 
 		setupWifi();
 		setupSacn();
-		m_LedBuffer = new uint8_t[m_Lamp->getLedSize()];
+		// m_LedBuffer = new uint8_t[m_Lamp->getLedSize()];
 
 		mutex = xSemaphoreCreateMutex();
 		cled = &FastLED.addLeds<LED_TYPE, HARDWARE_DATA_PIN, LED_ORDER>((CRGB *)m_LedBuffer, m_Lamp->numLeds);
