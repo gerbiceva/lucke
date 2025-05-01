@@ -1,94 +1,287 @@
 #pragma once
+#include "Config.h"
 #include <FastLED.h>
 #include "WiFi.h"
 #include <esp_wifi.h>
 #include "sACN.h"
 #include <ArduinoJson.h>
 #include <queue>
-#include <stdint.h>
+#include <vector>
+#include <sstream>
+#include <string>
+#include <Preferences.h>
+#include "Lamp.h"
 
 
-#define ENABLE_LOGGING
-#ifdef ENABLE_LOGGING
-  #define LOG(pattern) Serial.printf(pattern)
-  #define LOGF(pattern, args...) Serial.printf(pattern, args)
-#else
-  #define LOG(pattern)
-  #define LOGF(pattern, args...)
+#if DIMENSION == DIMENSION_2D
+
+struct Grid {
+	int width = GRID_WIDTH;
+	int heigth = GRID_HEIGHT;
+	int wsize = GRID_WSIZE;
+	int hsize = GRID_HSIZE;
+	int nw, nh;
+
+	std::unordered_map<int, std::vector<int>> hash;
+
+	Grid() : nw(width / wsize), nh(heigth / hsize) {};
+	Grid(int wsize, int hsize, int width, int height) : wsize(wsize), hsize(hsize), nh(heigth / hsize) {};
+
+	const std::vector<int> &getGridIndexes(int x, int y) {
+    	// TODO: Find bigger prime numbers or better hashing
+		int hnum = x * 7741 + y * 7757;
+		
+		if(hash.find(hnum) != hash.end()) {
+			return hash[hnum];
+		}
+
+		for(int yi = y * hsize; yi < (y + 1) * hsize; yi++) {
+			for(int xi = x * wsize; xi < (x + 1) * wsize; xi++) {
+				hash[hnum].push_back(xi + yi * width);
+			}
+		}
+
+		return hash[hnum];
+	}
+};
+
 #endif
 
-// #define BAUD_RATE 115200
-#define BAUD_RATE 9600
-
-// Wifi credentials
-#define WIFI_SSID "Ledique"
-#define WIFI_PASS "dasenebipovezau"
-
-// DMX packet size
-#define DMX_SIZE 512
-// data pin for leds
-#define DATA_PIN 5
-
-#define NUM_LEDS 100
-#define NUM_PXLS 3
-#define LED_SIZE (NUM_LEDS * NUM_PXLS)
-
-
-void recv_dmxReceived();
-void recv_newSource();
-void recv_framerate();
-void recv_seqdiff();
-void recv_timeOut();
-
-
 class Controller {
-  Controller() {}
-  
+	Controller() {}
+
+	void setupWifi();
+	void setupSacn();
+
+	// transfer data from dmx to ledbuffer (group if necesarry)
+	void update();
+
 public:
-  Controller(const Controller& other) = delete;
+	Controller(const Controller& other) = delete;
 
-  uint8_t universe = 1;
-  uint16_t dmxAddrOffset = 0;
-  uint16_t numGroups = 100;  
-  uint8_t ledBuffer[LED_SIZE] = {};
-  uint8_t dmxBuffer[DMX_SIZE] = {};  
+	// returns singleton instance
+	static Controller& get() {
+		static Controller instance;
+    	return instance;
+	}
 
-  int droppedPackets = 0;
-  int lastDMXFramerate = 0;
-  std::queue<uint8_t> packetDiff;
+  // main init function; class can be reinitialised
+#if DIMENSION == DIMENSION_1D
+	void init(uint8_t uni = UNIVERSE, uint16_t dmxAddressOffset = ADDR_OFFSET, int8_t presetIndex = 0);
+#else
+	void init2D(
+		int wsize = GRID_WSIZE, 
+		int hsize = GRID_HSIZE, 
+		int width = GRID_WIDTH, 
+		int height = GRID_HEIGHT,
+		uint8_t uni = UNIVERSE, 
+		uint16_t dmxAddressOffset = ADDR_OFFSET); 
+#endif
+	
+	void setLamp(Lamp* newLamp) { lamp = newLamp; };
+	// retrieve dmx data
+	void updateLoop();
 
-  CLEDController *cled;
-  SemaphoreHandle_t mutex;
+	// wifi connect annimation
+	void playIdleAnimation();
 
-  WiFiUDP udp;
-  Receiver* recv;
+	// functions for sending repot
+	void clearDiffQueue(JsonArray& jarray);
+	void sendUdpPacket(JsonDocument& doc);
+	void sendReport();
 
-  static Controller& get() {
-    static Controller instance;
-    return instance;
-  }
+	// ledstrip interactions
+	void clear() { memset(ledBuffer, 0, lamp->getLedSize()); FastLED.show(); }
+	void togglePreset(bool reverse = false);
 
-  void init(uint8_t uni, uint16_t dmxAddressOffset = 0, uint16_t numberOfGroups = NUM_LEDS);
-  void setupWifi();
-  void setupSacn();
-  
-  inline uint8_t* getLEDBuffer () { return ledBuffer; }
-  inline uint8_t* getDMXBuffer () { return dmxBuffer; }
+	// threading functions
+	void newPacket();
+	void printNewRecv();
+	void updateFramerate();
+	void seqDiff();
 
-  void update();
-  void updateLoop();
-//   void playIdleAnimation();
-//   void checkNetwork();
+	// create seperate tasks for each, well, task
+	static void createTasks() {
+		static bool tasksCreated = false;
+		
+		if(tasksCreated)
+			return;
 
-  void clearDiffQueue(JsonArray& jarray);
-  void sendUdpPacket(JsonArray& doc);
-  void sendReport();
+		xTaskCreate(Controller::checkNetwork, "Wifi check", 2000, NULL, 2 | portPRIVILEGE_BIT, NULL);
+		while(!connected){
+			vTaskDelay(10);
+		}
 
-  void newPacket();
-  void printNewRecv();
-  void updateFramerate();
-  void seqDiff();
+		xTaskCreate(Controller::dmxLoop, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, NULL);
+		xTaskCreate(Controller::statReportLoop, "Logging", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
+		xTaskCreate(Controller::wirelessConfigTask, "Config", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
+
+		tasksCreated = true;
+	}
+
+	// dmx update loop [enabled]
+	volatile bool enabled = true;
+	void off() { enabled = false; }
+	void on() { enabled = true; }
 
 private:
-    
+	uint8_t universe = UNIVERSE;
+	uint16_t dmxAddrOffset = ADDR_OFFSET;
+	uint16_t numGroups;
+
+	int8_t presetIndex = 0;
+	static Lamp* lamp;
+
+	uint8_t* ledBuffer;
+	uint8_t dmxBuffer[DMX_SIZE] = {};	
+
+	int droppedPackets = 0;
+	int lastDMXFramerate = 0;
+	std::queue<uint8_t> packetDiff;
+
+	CLEDController *cled;
+	SemaphoreHandle_t mutex;
+	volatile static bool connected;
+
+	Preferences prefs;
+	WiFiUDP udp;
+	Receiver* recv;
+	
+#if DIMENSION == DIMENSION_2D
+	Grid grid;
+#endif
+
+private:
+	// thread that updates dmx, basically main thread
+	static void dmxLoop(void *) {
+		while (true) {
+			Controller::get().updateLoop();
+			vTaskDelay(15);
+		}
+	}
+
+	// thread that sends reports via udp
+	static void statReportLoop(void *) {
+		while (true) {
+			Controller::get().sendReport();
+			vTaskDelay(1000);
+		}
+	}
+
+	// thread that plays idle animation (wifi connecting)
+	static void playIdleAnimation(void *) {
+		unsigned long iterator = 0;
+		while (true) {		
+			if(connected)
+				break;	
+			auto& ledBuffer = Controller::get().ledBuffer;
+			ledBuffer[(iterator) % lamp->getLedSize()] = WIFI_BRIGHTNESS;
+			ledBuffer[(iterator++ - 1) % lamp->getLedSize()] = 0;
+			vTaskDelay(WIFI_DELAY);
+		}
+	}
+
+	// thread that checks if wifi connected
+	static void checkNetwork(void *) {
+		// bool firstTime = true;
+		// bool delayed = false;
+
+		while (true) {
+			// if not connected
+			if (WiFi.status() != WL_CONNECTED) {
+				LOG("Lost connection\n");
+				connected = false;
+
+				// filtering short disconnects
+				// if(!firstTime && !delayed) {
+				// 	vTaskDelay(WIFI_DISCONNECT_DELAY);
+				// 	delayed = true;
+				// 	continue;
+				// }
+
+				TaskHandle_t animation = NULL;
+				xTaskCreate(
+					Controller::playIdleAnimation, 		// Task function
+					"Animation",						// Name of the task (for debugging)
+					2000,								// Stack size in words
+					NULL,								// Parameter passed to the task
+					1,									// Task priority
+					&animation							// Handle to the task
+				);
+
+				// while not connected
+				while (WiFi.status() != WL_CONNECTED) {
+					vTaskDelay(10);
+				}
+
+				// connection established
+				LOG("Connected\n");
+				connected = true;
+				vTaskDelete(animation);
+				Controller::get().clear();
+				// firstTime = false;
+				// delayed = false;
+			}
+
+			vTaskDelay(50);
+		}
+	}
+
+	static void wirelessConfigTask(void*) {
+		WiFiServer server(8888);
+		server.begin();
+		
+		while(true) {
+			// Serial.println(WiFi.localIP());
+			WiFiClient client = server.available();
+			if (client) {
+				while (client.connected()) {
+					if (client.available()) {
+						String universe = client.readStringUntil(',');
+						String offset = client.readStringUntil(',');
+						String preset = client.readStringUntil('\n');
+						Serial.println("Universe: " + universe);
+						Serial.println("Offset: " + offset);
+						Serial.println("Preset: " + preset);
+						Controller::get().init(universe.toInt(), offset.toInt(), preset.toInt());
+						/*
+						int16_t lastIndex = 0;
+						int16_t currentIndex;
+						int i = 0;
+						bool breakNext = false;
+
+						while(true) {
+							if(i++ > 5)
+								break;
+							currentIndex = data.indexOf(",", lastIndex);
+							String temp;
+							if(currentIndex != -1)
+								temp = data.substring(lastIndex, currentIndex);
+							else
+								temp = data.substring(lastIndex);
+							// Serial.println(currentIndex, lastIndex);
+							Serial.println(temp);
+							if(breakNext) {
+								breakNext = false;
+								break;
+							}
+							lastIndex = currentIndex;
+							if(currentIndex == data.lastIndexOf(","))
+								breakNext = true;
+						}
+
+						auto spl = split(data.c_str(), ',');
+						for(auto& s : spl) {
+							Serial.println(s.c_str());
+						}
+						// Process the received data here
+						*/
+					}
+				}
+				client.stop();
+			}
+			vTaskDelay(100);
+		}
+	}
+
 };
