@@ -36,7 +36,7 @@ type StatStore struct {
 	LastHeartbeat time.Time                      `json:"lastHeartbeat"`
 }
 
-var stats = make(map[int64]StatStore)
+var stats = make(map[string]StatStore)
 
 func packetIngest() {
 
@@ -64,7 +64,9 @@ func packetIngest() {
 			continue
 		}
 
-		val, ok := stats[res.Universe]
+		// key := res.Universe
+		key := res.LocalIP
+		val, ok := stats[key]
 		// If the key exists
 		nm_dropped := 0
 		for _, num := range res.Seq_Diffs {
@@ -72,7 +74,7 @@ func packetIngest() {
 		}
 		if ok {
 
-			stats[res.Universe] = StatStore{
+			stats[key] = StatStore{
 				Universe:      res.Universe,
 				HeapSize:      res.HeapSize,
 				HeapFree:      res.HeapFree,
@@ -86,7 +88,7 @@ func packetIngest() {
 			}
 
 		} else {
-			stats[res.Universe] = StatStore{
+			stats[key] = StatStore{
 				Universe:      res.Universe,
 				HeapSize:      res.HeapSize,
 				HeapFree:      res.HeapFree,

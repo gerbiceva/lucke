@@ -1,4 +1,4 @@
-import { Card, Stack, Title } from "@mantine/core";
+import { Card, Divider, Stack, Title, useMantineTheme } from "@mantine/core";
 import { LineChart } from "@mantine/charts";
 import { stats } from "./useUpdateData";
 
@@ -23,34 +23,52 @@ interface GraphCardProps {
   data: stats[];
 }
 export const GraphCard = ({ data }: GraphCardProps) => {
+  const theme = useMantineTheme();
+  const cols = Object.keys(theme.colors).slice(2);
+
   return (
     <Card withBorder>
       <Stack>
         <Title>Grafi</Title>
+
+        <Divider label="RSSI" />
+
         <LineChart
           title="RSSI"
-          h={200}
+          h={150}
           data={formatData(data, "rssi")}
           dataKey="rssi"
-          series={data.map((val) => ({ name: val.universe.toString() }))}
+          series={data.map((val, i) => ({
+            name: val.universe.toString(),
+            color: cols[i % cols.length],
+          }))}
           curveType="linear"
         />
+        <Divider label="DMXFramerate" />
 
         <LineChart
           title="Framerate"
-          h={200}
+          h={150}
           data={formatData(data, "DMXFramerate")}
           dataKey="DMXFramerate"
-          series={data.map((val) => ({ name: val.universe.toString() }))}
+          series={data.map((val, i) => ({
+            name: val.universe.toString(),
+            color: cols[i % cols.length],
+          }))}
           curveType="linear"
         />
 
+        <Divider label="Dropped packets" />
+
         <LineChart
           title="Dropped packets"
-          h={200}
+          h={150}
           data={formatData(data, "nm_dropped")}
           dataKey="nm_dropped"
-          series={data.map((val) => ({ name: val.universe.toString() }))}
+          series={data.map((val, i) => ({
+            name: val.universe.toString(),
+            color: cols[i % cols.length],
+          }))}
           curveType="linear"
         />
       </Stack>
