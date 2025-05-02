@@ -5,7 +5,12 @@ export interface DataIn {
 }
 
 export interface stats {
+  type: string;
+  name: string;
+  preset: number;
+  num_leds: number;
   universe: number;
+  address: number;
   heap_size: number;
   heap_free: number;
   local_ip: string;

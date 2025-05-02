@@ -12,7 +12,12 @@ import (
 const HISTORY_LEN = 20
 
 type StatPacket struct {
+	LightType		 string	 `json:"type"`
+	LightName		 string	 `json:"name"`
+	Preset		 	 int64	 `json:"preset"`
+	NumLeds		 	 int64	 `json:"num_leds"`
 	Universe         int64   `json:"universe"`
+	Address			 int64   `json:"address"`
 	HeapSize         int64   `json:"heap_size"`
 	HeapFree         int64   `json:"heap_free"`
 	LocalIP          string  `json:"local_ip"`
@@ -24,7 +29,12 @@ type StatPacket struct {
 }
 
 type StatStore struct {
-	Universe      int64                          `json:"universe"`
+	LightType	  string	 					 `json:"type"`
+	LightName	  string	 					 `json:"name"`
+	Preset		  int64	 						 `json:"preset"`
+	NumLeds		  int64	 	 					 `json:"num_leds"`
+	Universe      int64   	 					 `json:"universe"`
+	Address		  int64   	 					 `json:"address"`
 	HeapSize      int64                          `json:"heap_size"`
 	HeapFree      int64                          `json:"heap_free"`
 	LocalIP       string                         `json:"local_ip"`
@@ -73,9 +83,13 @@ func packetIngest() {
 			nm_dropped += int(num - 1)
 		}
 		if ok {
-
 			stats[key] = StatStore{
+				LightType:	   res.LightType,
+				LightName:	   res.LightName,
+				Preset:		   res.Preset,
+				NumLeds:	   res.NumLeds,
 				Universe:      res.Universe,
+				Address:	   res.Address,
 				HeapSize:      res.HeapSize,
 				HeapFree:      res.HeapFree,
 				LocalIP:       res.LocalIP,
@@ -89,7 +103,12 @@ func packetIngest() {
 
 		} else {
 			stats[key] = StatStore{
+				LightType:	   res.LightType,
+				LightName:	   res.LightName,
+				Preset:		   res.Preset,
+				NumLeds:	   res.NumLeds,
 				Universe:      res.Universe,
+				Address:	   res.Address,
 				HeapSize:      res.HeapSize,
 				HeapFree:      res.HeapFree,
 				LocalIP:       res.LocalIP,

@@ -181,6 +181,7 @@ void Controller::sendReport() {
 	JsonDocument doc;
 	doc["type"] = m_Lamp->type;
 	doc["name"] = m_Lamp->name;
+	doc["current_preset"] = m_SelectedPreset;
 	doc["num_leds"] = m_Lamp->numLeds;
 	doc["universe"] = m_Universe;
 	doc["address"] = m_Address;

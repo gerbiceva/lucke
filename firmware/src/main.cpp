@@ -24,7 +24,7 @@ struct LampLedbar : public Lamp {
 };
 
 struct LampLedbar2m : public Lamp {
-    LampLedbar2m() : Lamp("Led2m", 120, {
+    LampLedbar2m() : Lamp("Ledbar2m", 120, {
 		{120, "group by 1"},
 		{60, "group by 2"},
 		{30, "group by 4"},
@@ -34,7 +34,7 @@ struct LampLedbar2m : public Lamp {
 
 void setup() {	
 	// initialise the contorller
-	Controller::get().setLamp(new LampLedbar());
+	Controller::get().setLamp(new LampLedbar2m());
 	Controller::get().init(UNIVERSE, ADDR_OFFSET);
 	Controller::createTasks();
 

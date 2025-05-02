@@ -21,7 +21,7 @@ struct Lamp {
 
     Lamp(std::string typ, unsigned int nLeds, std::vector<DMXPreset> pres) 
         : type(typ), numLeds(nLeds), presets(pres) {
-
+        name = typ;
         ledBuffer = new uint8_t[getLedSize()]();
     }
 

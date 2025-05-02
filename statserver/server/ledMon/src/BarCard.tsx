@@ -5,6 +5,11 @@ import { getColor } from "./colorUtils";
 import { timeElapsed, timeElapsedPreety } from "./timeUtils";
 
 export const BarCard = ({
+  type,
+  name,
+  preset,
+  num_leds,
+  address,
   heap_free,
   heap_size,
   DMXFramerate,
@@ -37,6 +42,33 @@ export const BarCard = ({
     <Card withBorder>
       <Stack gap="sm">
         <Group justify="space-around">
+          <Stack gap="0.1rem">
+            <Text fw="bold" size="xl">
+              Universe: {universe}
+            </Text>
+            <Text fw="lighter" c="dimmed" size="sm">
+              Address: {address+1}
+            </Text>
+          </Stack>
+          <Stack gap="0.1rem">
+            <Text fw="bold" size="xl">
+              {name}
+            </Text>
+            <Text fw="lighter" c="dimmed" size="sm">
+              {type}
+            </Text>
+          </Stack>
+          <Stack gap="0">
+            <Text fw="bold" size="xl">
+              IP: {local_ip}
+            </Text>
+            <Text fw="lighter" c="dimmed" size="sm">
+              #leds: {num_leds}, preset: {preset}
+            </Text>
+          </Stack>
+        </Group>
+
+        <SimpleGrid cols={{ xs: 1, sm: 2 }} w="full">
           <Stack gap="0">
             <Text fw="bold" c="dimmed" size="xs">
               HEARTBEAT
@@ -51,17 +83,29 @@ export const BarCard = ({
             </Text>
             <LedDisplay leds={first_5_leds} />
           </Stack>
-          <Stack gap="0.1rem">
-            <Text fw="bold" size="xl">
-              Uni: {universe}
+        </SimpleGrid>
+
+        <SimpleGrid cols={{ xs: 1, sm: 2 }} w="full">
+
+        <Stack gap="0">
+            <Text fw="bold" c="dimmed" size="xs">
+              DMX FRAMERATE
             </Text>
-            <Text fw="lighter" c="dimmed" size="sm">
-              {local_ip}
+            <Text c="dimmed" size="lg">
+              {meanDMXFramerate.toFixed(2)}
             </Text>
           </Stack>
-        </Group>
+          <Stack gap="0">
+            <Text fw="bold" c="dimmed" size="xs">
+              RSSI
+            </Text>
+            <Text c={rssiColor} size="lg">
+              {meanRssi.toFixed(2)} db
+            </Text>
+          </Stack>
+        </SimpleGrid>
 
-        <SimpleGrid cols={{ xs: 1, sm: 3 }} w="full">
+        <SimpleGrid cols={{ xs: 1, sm: 2 }} w="full">
           <Stack gap="0">
             <Text fw="bold" c="dimmed" size="xs">
               HEAP FREE
@@ -79,7 +123,7 @@ export const BarCard = ({
               {heap_size} b
             </Text>
           </Stack>
-
+{/* 
           <Stack gap="0">
             <Text fw="bold" c="dimmed" size="xs">
               SSID
@@ -87,24 +131,7 @@ export const BarCard = ({
             <Text c="dimmed" size="lg">
               {ssid}
             </Text>
-          </Stack>
-
-          <Stack gap="0">
-            <Text fw="bold" c="dimmed" size="xs">
-              DMX FRAMERATE
-            </Text>
-            <Text c="dimmed" size="lg">
-              {meanDMXFramerate.toFixed(2)}
-            </Text>
-          </Stack>
-          <Stack gap="0">
-            <Text fw="bold" c="dimmed" size="xs">
-              RSSI
-            </Text>
-            <Text c={rssiColor} size="lg">
-              {meanRssi.toFixed(2)} db
-            </Text>
-          </Stack>
+          </Stack> */}
         </SimpleGrid>
       </Stack>
     </Card>

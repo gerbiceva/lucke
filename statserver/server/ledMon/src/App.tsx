@@ -31,6 +31,11 @@ function App() {
         <SimpleGrid cols={{ xs: 1, md: 2 }}>
           {data?.map((bar) => (
             <BarCard
+              type={bar.type}
+              name={bar.name}
+              preset={bar.preset}
+              num_leds={bar.num_leds}
+              address={bar.address}
               nm_dropped={bar.nm_dropped}
               lastHeartbeat={bar.lastHeartbeat}
               key={bar.universe + bar.local_ip}
