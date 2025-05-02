@@ -48,6 +48,34 @@ struct Grid {
 #endif
 
 class Controller {
+private:
+	uint8_t m_Universe = UNIVERSE;
+	uint16_t m_Address = ADDR_OFFSET;
+	uint16_t m_NumGroups;
+
+	int8_t m_SelectedPreset = 0;
+	static Lamp* m_Lamp;
+
+	uint8_t* m_LedBuffer;
+	uint8_t m_DmxBuffer[DMX_SIZE] = {};	
+
+	int droppedPackets = 0;
+	int lastDMXFramerate = 0;
+	std::queue<uint8_t> packetDiff;
+
+	CLEDController *cled;
+	SemaphoreHandle_t mutex;
+	volatile static bool connected;
+
+	Preferences prefs;
+	WiFiUDP udp;
+	Receiver* recv;
+	
+#if DIMENSION == DIMENSION_2D
+	Grid grid;
+#endif
+
+private:
 	Controller() {}
 
 	void setupWifi();
@@ -78,7 +106,7 @@ public:
 		uint16_t dmxAddressOffset = ADDR_OFFSET); 
 #endif
 	
-	void setLamp(Lamp* newLamp) { lamp = newLamp; };
+	void setLamp(Lamp* newLamp) { m_Lamp = newLamp; m_LedBuffer = m_Lamp->ledBuffer; };
 	// retrieve dmx data
 	void updateLoop();
 
@@ -90,8 +118,13 @@ public:
 	void sendUdpPacket(JsonDocument& doc);
 	void sendReport();
 
+	void setUniverse(uint8_t universe);
+	void setAddress(uint16_t address);
+	void setPreset(uint8_t preset);
+	void setName(std::string name);
+
 	// ledstrip interactions
-	void clear() { memset(ledBuffer, 0, lamp->getLedSize()); FastLED.show(); }
+	void clear() { memset(m_LedBuffer, 0, m_Lamp->getLedSize()); FastLED.show(); }
 	void togglePreset(bool reverse = false);
 
 	// threading functions
@@ -108,9 +141,9 @@ public:
 			return;
 
 		xTaskCreate(Controller::checkNetwork, "Wifi check", 2000, NULL, 2 | portPRIVILEGE_BIT, NULL);
-		while(!connected){
-			vTaskDelay(10);
-		}
+		// while(!connected){
+		// 	vTaskDelay(10);
+		// }
 
 		xTaskCreate(Controller::dmxLoop, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, NULL);
 		xTaskCreate(Controller::statReportLoop, "Logging", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
@@ -123,33 +156,6 @@ public:
 	volatile bool enabled = true;
 	void off() { enabled = false; }
 	void on() { enabled = true; }
-
-private:
-	uint8_t universe = UNIVERSE;
-	uint16_t dmxAddrOffset = ADDR_OFFSET;
-	uint16_t numGroups;
-
-	int8_t presetIndex = 0;
-	static Lamp* lamp;
-
-	uint8_t* ledBuffer;
-	uint8_t dmxBuffer[DMX_SIZE] = {};	
-
-	int droppedPackets = 0;
-	int lastDMXFramerate = 0;
-	std::queue<uint8_t> packetDiff;
-
-	CLEDController *cled;
-	SemaphoreHandle_t mutex;
-	volatile static bool connected;
-
-	Preferences prefs;
-	WiFiUDP udp;
-	Receiver* recv;
-	
-#if DIMENSION == DIMENSION_2D
-	Grid grid;
-#endif
 
 private:
 	// thread that updates dmx, basically main thread
@@ -172,11 +178,11 @@ private:
 	static void playIdleAnimation(void *) {
 		unsigned long iterator = 0;
 		while (true) {		
-			if(connected)
-				break;	
-			auto& ledBuffer = Controller::get().ledBuffer;
-			ledBuffer[(iterator) % lamp->getLedSize()] = WIFI_BRIGHTNESS;
-			ledBuffer[(iterator++ - 1) % lamp->getLedSize()] = 0;
+			// if(connected)
+			// 	break;	
+			auto& ledBuffer = Controller::get().m_LedBuffer;
+			ledBuffer[(iterator) % m_Lamp->getLedSize()] = WIFI_BRIGHTNESS;
+			ledBuffer[(iterator++ - 1) % m_Lamp->getLedSize()] = 0;
 			vTaskDelay(WIFI_DELAY);
 		}
 	}
@@ -237,6 +243,7 @@ private:
 			if (client) {
 				while (client.connected()) {
 					if (client.available()) {
+						// String name = client.readStringUntil(',');
 						String universe = client.readStringUntil(',');
 						String offset = client.readStringUntil(',');
 						String preset = client.readStringUntil('\n');
