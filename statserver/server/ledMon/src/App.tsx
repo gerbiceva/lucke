@@ -29,26 +29,28 @@ function App() {
         {data && <GraphCard data={data} />}
 
         <SimpleGrid cols={{ xs: 1, md: 2 }}>
-          {data?.map((bar) => (
-            <BarCard
-              type={bar.type}
-              name={bar.name}
-              preset={bar.preset}
-              num_leds={bar.num_leds}
-              address={bar.address}
-              nm_dropped={bar.nm_dropped}
-              lastHeartbeat={bar.lastHeartbeat}
-              key={bar.universe + bar.local_ip}
-              universe={bar.universe}
-              heap_size={bar.heap_size}
-              heap_free={bar.heap_free}
-              local_ip={bar.local_ip}
-              ssid={bar.ssid}
-              rssi={bar.rssi}
-              DMXFramerate={bar.DMXFramerate}
-              first_5_leds={bar.first_5_leds}
-            />
-          ))}
+          {data
+            ?.sort((a, b) => b.universe - a.universe || b.address - a.address) // sort by universe or by adress if uni is the same
+            .map((bar) => (
+              <BarCard
+                type={bar.type}
+                name={bar.name}
+                preset={bar.preset}
+                num_leds={bar.num_leds}
+                address={bar.address}
+                nm_dropped={bar.nm_dropped}
+                lastHeartbeat={bar.lastHeartbeat}
+                key={bar.universe + bar.local_ip}
+                universe={bar.universe}
+                heap_size={bar.heap_size}
+                heap_free={bar.heap_free}
+                local_ip={bar.local_ip}
+                ssid={bar.ssid}
+                rssi={bar.rssi}
+                DMXFramerate={bar.DMXFramerate}
+                first_5_leds={bar.first_5_leds}
+              />
+            ))}
         </SimpleGrid>
       </Stack>
     </Container>
