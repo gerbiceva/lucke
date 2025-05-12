@@ -7,10 +7,19 @@
 
 struct LampAstera : public Lamp {
     LampAstera() : Lamp("Astera", 60, {
-		{0, "group by 1"},
+		{60, "group by 1"},
 		{30, "group by 2"},
 		{15, "group by 4"},
 		{4, "group by 15"}
+	}) {};
+};
+
+struct LampAstera144 : public Lamp {
+    LampAstera144() : Lamp("Astera", 144, {
+		{144, "group by 1"},
+		{72, "group by 2"},
+		{48, "group by 4"},
+		{36, "group by 15"}
 	}) {};
 };
 
@@ -29,7 +38,7 @@ struct LampLedbar2m : public Lamp {
 		{60, "group by 2"},
 		{30, "group by 4"},
 		{12, "group by 10"}
-	}) {};
+	}, "Trak") {};
 };
 
 void setup() {	

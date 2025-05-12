@@ -9,8 +9,8 @@
 #include <vector>
 #include <sstream>
 #include <string>
-#include <Preferences.h>
 #include "Lamp.h"
+#include "Storage.h"
 
 
 #if DIMENSION == DIMENSION_2D
@@ -67,7 +67,8 @@ private:
 	SemaphoreHandle_t mutex;
 	volatile static bool connected;
 
-	Preferences prefs;
+	Storage dmxStorage = Storage("dmxConfig");
+	// Storage lampStorage = Storage("lampInfo");
 	WiFiUDP udp;
 	Receiver* recv;
 	

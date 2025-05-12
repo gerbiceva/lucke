@@ -6,33 +6,18 @@ Lamp* Controller::m_Lamp = nullptr;
 
 #if DIMENSION == DIMENSION_1D
 void Controller::init(uint8_t uni, uint16_t dmxAddressOffset, int8_t presetIndex) {
-	m_Universe = uni;
-	m_Address = dmxAddressOffset;
-	this->m_SelectedPreset = presetIndex;
-	m_NumGroups = m_Lamp->presets[presetIndex].numOfGroups;
 	static bool inited = false;
-
-	prefs.begin("dmxConfig");
 
 	if(!inited) {
 	#ifdef ENABLE_LOGGING
 		Serial.begin(BAUD_RATE);
 	#endif
-		if(prefs.isKey("universe")) {
-			m_Universe = prefs.getUChar("universe");
-			m_Address = prefs.getUShort("address");
-			presetIndex = prefs.getChar("preset");
-			m_NumGroups = m_Lamp->presets[presetIndex].numOfGroups;
-		}
-		else {
-			prefs.putUChar("universe", uni);
-			prefs.putUShort("address", dmxAddressOffset);
-			prefs.putChar("preset", presetIndex);
-		}
+		m_Universe = dmxStorage.putIfNExistUChar("universe", uni);
+		m_Address = dmxStorage.putIfNExistUShort("address", dmxAddressOffset);
+		m_SelectedPreset = dmxStorage.putIfNExistChar("preset", presetIndex);
 
 		setupWifi();
 		setupSacn();
-		// m_LedBuffer = new uint8_t[m_Lamp->getLedSize()];
 
 		mutex = xSemaphoreCreateMutex();
 		cled = &FastLED.addLeds<LED_TYPE, HARDWARE_DATA_PIN, LED_ORDER>((CRGB *)m_LedBuffer, m_Lamp->numLeds);
@@ -42,15 +27,15 @@ void Controller::init(uint8_t uni, uint16_t dmxAddressOffset, int8_t presetIndex
 
 	// Reinitialization means web config update
 	else {
-		prefs.putUChar("universe", uni);
-		prefs.putUShort("address", dmxAddressOffset);
-		prefs.putChar("preset", presetIndex);
+		m_Universe = dmxStorage.putUChar("universe", uni);
+		m_Address = dmxStorage.putUShort("address", dmxAddressOffset);
+		m_SelectedPreset = dmxStorage.putChar("preset", presetIndex);
 
 		delete recv;
 		setupSacn();
 	}
 
-	prefs.end();
+	m_NumGroups = m_Lamp->presets[presetIndex].numOfGroups;
 }
 #else
 void Controller::init2D(int wsize, int hsize, int width, int height, uint8_t uni, uint16_t dmxAddressOffset) {
@@ -179,8 +164,8 @@ void Controller::sendUdpPacket(JsonDocument& doc) {
 
 void Controller::sendReport() {
 	JsonDocument doc;
-	doc["type"] = m_Lamp->type;
-	doc["name"] = m_Lamp->name;
+	doc["type"] = m_Lamp->m_Type;
+	doc["name"] = m_Lamp->m_Name;
 	doc["current_preset"] = m_SelectedPreset;
 	doc["num_leds"] = m_Lamp->numLeds;
 	doc["universe"] = m_Universe;
@@ -222,7 +207,7 @@ void Controller::setPreset(uint8_t preset) {
 }
 
 void Controller::setName(std::string name) {
-	m_Lamp->name = name;
+	m_Lamp->m_Name = name;
 }
 
 void Controller::togglePreset(bool reverse) {

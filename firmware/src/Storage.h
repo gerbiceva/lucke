@@ -21,20 +21,24 @@ public:
         return m_Preferences.isKey(key.c_str());
     }
     
-    void putChar(std::string name, int8_t value) {
+    int8_t putChar(std::string name, int8_t value) {
         m_Preferences.putChar(name.c_str(), value);
+        return value;
     }
 
-    void putUChar(std::string name, uint8_t value) {
+    uint8_t putUChar(std::string name, uint8_t value) {
         m_Preferences.putUChar(name.c_str(), value);
+        return value;
     }
 
-    void putUShort(std::string name, uint16_t value) {
+    uint16_t putUShort(std::string name, uint16_t value) {
         m_Preferences.putUShort(name.c_str(), value);
+        return value;
     }
 
-    void putString(std::string name, std::string value) {
+    std::string putString(std::string name, std::string value) {
         m_Preferences.putString(name.c_str(), value.c_str());
+        return value;
     }
 
     int8_t putIfNExistChar(std::string name, int8_t value) {
