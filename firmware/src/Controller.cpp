@@ -4,7 +4,6 @@
 volatile bool Controller::connected = false;
 Lamp* Controller::m_Lamp = nullptr;
 
-#if DIMENSION == DIMENSION_1D
 void Controller::init(uint8_t uni, uint16_t dmxAddressOffset, int8_t presetIndex) {
 	static bool inited = false;
 
@@ -35,35 +34,9 @@ void Controller::init(uint8_t uni, uint16_t dmxAddressOffset, int8_t presetIndex
 		setupSacn();
 	}
 
-	m_NumGroups = m_Lamp->presets[presetIndex].numOfGroups;
+	// m_NumGroups = m_Lamp->presets[presetIndex].numOfGroups;
+	m_Lamp->updateSubpixelSize(m_SelectedPreset);
 }
-#else
-void Controller::init2D(int wsize, int hsize, int width, int height, uint8_t uni, uint16_t dmxAddressOffset) {
-	universe = uni;
-	dmxAddrOffset = dmxAddressOffset;
-	static bool inited = false;
-
-	if(!inited) {
-	#ifdef ENABLE_LOGGING
-		Serial.begin(BAUD_RATE);
-	#endif
-		setupWifi();
-		setupSacn();
-
-		mutex = xSemaphoreCreateMutex();
-		cled = &FastLED.addLeds<LED_TYPE, HARDWARE_DATA_PIN, LED_ORDER>((CRGB *)ledBuffer, NUM_LEDS);
-
-		inited = true;
-	}
-
-	// Reinitialization means web config update
-	else {
-		delete recv;
-		grid = Grid(wsize, hsize, width, height);
-		setupSacn();
-	}
-}
-#endif
 
 void Controller::setupWifi() {
 	// setup mac address
@@ -91,47 +64,43 @@ void Controller::setupSacn() {
 	recv->begin(m_Universe);
 }
 
-#if DIMENSION == DIMENSION_1D
+// void Controller::update() {
+// 	if(!enabled) return;
 
-void Controller::update() {
-	if(!enabled) return;
+// 	uint16_t groupSize = m_Lamp->numLeds / m_NumGroups;
+// 	uint16_t ledIndex = 0;
 
-	uint16_t groupSize = m_Lamp->numLeds / m_NumGroups;
-	uint16_t ledIndex = 0;
-
-	for (uint16_t i = 0; i < m_NumGroups; i++) {
-		for (uint16_t j = 0; j < groupSize; j++) {
-			for (uint16_t k = 0; k < m_Lamp->numPxls; k++) {
-				// check if in bounds
-				uint16_t dmxBufferIndex = m_Address + i * m_Lamp->numPxls + k;
-				m_LedBuffer[ledIndex] = m_DmxBuffer[dmxBufferIndex];
-				ledIndex++;
-			}
-		}
-	}
-}
-
-#else
+// 	for (uint16_t i = 0; i < m_NumGroups; i++) {
+// 		for (uint16_t j = 0; j < groupSize; j++) {
+// 			for (uint16_t k = 0; k < m_Lamp->numPxls; k++) {
+// 				// check if in bounds
+// 				uint16_t dmxBufferIndex = m_Address + i * m_Lamp->numPxls + k;
+// 				m_LedBuffer[ledIndex] = m_DmxBuffer[dmxBufferIndex];
+// 				ledIndex++;
+// 			}
+// 		}
+// 	}
+// }
 
 void Controller::update(){
 	if(!enabled) return;
+	uint8_t numPixels = m_Lamp->numPxls;
 
+	Grid& grid = m_Lamp->grid;
 	for(uint16_t y = 0; y < grid.nh; y++) {
 		for(uint16_t x = 0; x < grid.nw; x++) {
 			const auto& indexes = grid.getGridIndexes(x,y);
-			int dmxIndex = dmxAddrOffset + (x * lamp->numPxls) + (y * lamp->numPxls) * grid.nw;
+			int dmxIndex = m_Address + (x * numPixels) + (y * numPixels) * grid.nw;
 			// printf("dmxIndex = %d\n", dmxIndex);
 			for(auto index : indexes) {
-				for (uint16_t k = 0; k < lamp->numPxls; k++) {
+				for (uint16_t k = 0; k < numPixels; k++) {
 					// LOGF("led[%d] = dmx [%d]\n", (index * lamp->numPxls + k), (dmxIndex + k));
-					ledBuffer[index * lamp->numPxls + k] = dmxBuffer[dmxIndex + k]; 
+					m_LedBuffer[index * numPixels + k] = m_DmxBuffer[dmxIndex + k]; 
 				}
 			}
 		}
 	}
 }
-
-#endif
 
 void Controller::updateLoop() {
 	recv->update();
@@ -192,27 +161,28 @@ void Controller::sendReport() {
 	sendUdpPacket(doc);
 }
 
-void Controller::setUniverse(uint8_t uni) {
-	m_Universe = uni;
-	setupSacn();
-}
+// void Controller::setUniverse(uint8_t uni) {
+// 	m_Universe = uni;
+// 	setupSacn();
+// }
 
-void Controller::setAddress(uint16_t address) {
-	m_Address = address;
-}
+// void Controller::setAddress(uint16_t address) {
+// 	m_Address = address;
+// }
 
-void Controller::setPreset(uint8_t preset) {
-	this->m_SelectedPreset = preset;
-	m_NumGroups = m_Lamp->presets[preset].numOfGroups;
-}
+// void Controller::setPreset(uint8_t preset) {
+// 	this->m_SelectedPreset = preset;
+// 	m_NumGroups = m_Lamp->presets[preset].numOfGroups;
+// }
 
-void Controller::setName(std::string name) {
-	m_Lamp->m_Name = name;
-}
+// void Controller::setName(std::string name) {
+// 	m_Lamp->m_Name = name;
+// }
 
 void Controller::togglePreset(bool reverse) {
 	m_SelectedPreset = (m_SelectedPreset + (reverse ? -1 : 1)) % m_Lamp->presets.size();
-	m_NumGroups = m_Lamp->presets[m_SelectedPreset].numOfGroups;
+	// m_NumGroups = m_Lamp->presets[m_SelectedPreset].numOfGroups;
+	m_Lamp->updateSubpixelSize(m_SelectedPreset);
 }
 
 

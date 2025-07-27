@@ -13,45 +13,11 @@
 #include "Storage.h"
 
 
-#if DIMENSION == DIMENSION_2D
-
-struct Grid {
-	int width = GRID_WIDTH;
-	int heigth = GRID_HEIGHT;
-	int wsize = GRID_WSIZE;
-	int hsize = GRID_HSIZE;
-	int nw, nh;
-
-	std::unordered_map<int, std::vector<int>> hash;
-
-	Grid() : nw(width / wsize), nh(heigth / hsize) {};
-	Grid(int wsize, int hsize, int width, int height) : wsize(wsize), hsize(hsize), nh(heigth / hsize) {};
-
-	const std::vector<int> &getGridIndexes(int x, int y) {
-    	// TODO: Find bigger prime numbers or better hashing
-		int hnum = x * 7741 + y * 7757;
-		
-		if(hash.find(hnum) != hash.end()) {
-			return hash[hnum];
-		}
-
-		for(int yi = y * hsize; yi < (y + 1) * hsize; yi++) {
-			for(int xi = x * wsize; xi < (x + 1) * wsize; xi++) {
-				hash[hnum].push_back(xi + yi * width);
-			}
-		}
-
-		return hash[hnum];
-	}
-};
-
-#endif
-
 class Controller {
 private:
 	uint8_t m_Universe = UNIVERSE;
 	uint16_t m_Address = ADDR_OFFSET;
-	uint16_t m_NumGroups;
+	// uint16_t m_NumGroups;
 
 	int8_t m_SelectedPreset = 0;
 	static Lamp* m_Lamp;
@@ -72,9 +38,7 @@ private:
 	WiFiUDP udp;
 	Receiver* recv;
 	
-#if DIMENSION == DIMENSION_2D
-	Grid grid;
-#endif
+	// Grid grid;
 
 private:
 	Controller() {}
@@ -94,18 +58,8 @@ public:
     	return instance;
 	}
 
-  // main init function; class can be reinitialised
-#if DIMENSION == DIMENSION_1D
+  	// main init function; class can be reinitialised
 	void init(uint8_t uni = UNIVERSE, uint16_t dmxAddressOffset = ADDR_OFFSET, int8_t presetIndex = 0);
-#else
-	void init2D(
-		int wsize = GRID_WSIZE, 
-		int hsize = GRID_HSIZE, 
-		int width = GRID_WIDTH, 
-		int height = GRID_HEIGHT,
-		uint8_t uni = UNIVERSE, 
-		uint16_t dmxAddressOffset = ADDR_OFFSET); 
-#endif
 	
 	void setLamp(Lamp* newLamp) { m_Lamp = newLamp; m_LedBuffer = m_Lamp->ledBuffer; };
 	// retrieve dmx data

@@ -7,38 +7,47 @@
 
 struct LampAstera : public Lamp {
     LampAstera() : Lamp("Astera", 60, {
-		{60, "group by 1"},
-		{30, "group by 2"},
-		{15, "group by 4"},
-		{4, "group by 15"}
+		{1, "group by 1"},
+		{2, "group by 2"},
+		{4, "group by 4"},
+		{15, "group by 15"}
 	}) {};
 };
 
 struct LampAstera144 : public Lamp {
     LampAstera144() : Lamp("Astera", 144, {
-		{144, "group by 1"},
-		{72, "group by 2"},
-		{48, "group by 4"},
-		{36, "group by 15"}
+		{1, "group by 1"},
+		{2, "group by 2"},
+		{4, "group by 4"},
+		{15, "group by 15"}
 	}) {};
 };
 
 struct LampLedbar : public Lamp {
     LampLedbar() : Lamp("Ledbar", 100, {
-		{100, "group by 1"},
-		{50, "group by 2"},
-		{25, "group by 4"},
+		{1, "group by 1"},
+		{2, "group by 2"},
+		{4, "group by 4"},
 		{10, "group by 10"}
 	}) {};
 };
 
 struct LampLedbar2m : public Lamp {
     LampLedbar2m() : Lamp("Ledbar2m", 120, {
-		{120, "group by 1"},
-		{60, "group by 2"},
-		{30, "group by 4"},
-		{12, "group by 10"}
+		{1, "group by 1"},
+		{2, "group by 2"},
+		{4, "group by 4"},
+		{10, "group by 10"}
 	}, "Trak") {};
+};
+
+struct LampBlinder : public Lamp {
+    LampBlinder() : Lamp("Blinder", (8*24), {
+		{1, "group by 1"},
+		{6, 4, "group by 4x2"},
+		{6, 8, "group by 4x1"},
+		{2, 2, "group by 12z8"}
+	}, "Blinder") {};
 };
 
 void setup() {	
