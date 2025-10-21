@@ -1,10 +1,10 @@
-#include "Controller.h"
-#include "ButtonManager.h"
+// #include "Controller.h"
+// #include "ButtonManager.h"
 
 // IPAddress local_IP(192, 168, 0, 150); // Set the desired IP address
 // IPAddress gateway(192, 168, 0, 1);		// Set your gateway
 // IPAddress subnet(255, 255, 255, 0);	 // Set your subnet mask
-
+/*
 struct LampAstera : public Lamp {
     LampAstera() : Lamp("Astera", 60, {
 		{60, "group by 1"},
@@ -40,12 +40,23 @@ struct LampLedbar2m : public Lamp {
 		{12, "group by 10"}
 	}, "Trak") {};
 };
+*/
+
+#include "Utils/Wifi.h"
+#include "Fixtures.h"
+#include "Handlers/SacnHandler.h"
+
+Astera<3> astera;
+
 
 void setup() {	
+
+	Utils::Wifi::setup("ledique", "dasenebipovezau");
+	// HardwareLED<WS2815, 5, RGB> led(3);
 	// initialise the contorller
-	Controller::get().setLamp(new LampLedbar2m());
-	Controller::get().init(UNIVERSE, ADDR_OFFSET);
-	Controller::createTasks();
+	// Controller::get().setLamp(new LampLedbar2m());
+	// Controller::get().init(UNIVERSE, ADDR_OFFSET);
+	// Controller::createTasks();
 
 	// Button b1(
 	// 	9, 
@@ -67,5 +78,8 @@ void setup() {
 
 void loop()
 {
-	vTaskDelete(NULL);
+	Handler::Sacn::update();
+	astera.update();
+	Utils::HardwareLED::updateFastLED();
+	// vTaskDelete(NULL);
 }
