@@ -3,20 +3,38 @@
 // #include <unordered_map>
 #include <cstdint>
 #include <vector>
-// #include "Fixture/FixtureConfig.h"
+#include "Fixture/Fixture.h"
 
 class Fixture;
 
 namespace Handler
 {
-    class Fixture
+    class Fixtures
     {
         static std::vector<Fixture*> m_fixtureConfigs;
+        static WiFiUDP udp;
     public:
-        [[nodiscard]] static uint8_t addFixture(Fixture* ptr)
+        static void addFixture(Fixture* ptr)
         {
             m_fixtureConfigs.push_back(ptr);
-            return m_fixtureConfigs.size() - 1;
+        }
+
+        static void sendReport(void*)
+        {
+            while(true)
+            {
+                JsonDocument doc;
+                doc["fixtures"] = JsonDocument();
+                JsonArray jsonArray = doc["fixtures"].to<JsonArray>();
+                for(Fixture* fix : m_fixtureConfigs)
+                {
+                    jsonArray.add(fix->toJson());
+                }
+    
+                udp.beginPacket(WiFi.broadcastIP(), 12345);
+                serializeJson(doc, udp);
+                udp.endPacket();
+            }
         }
     };
 }

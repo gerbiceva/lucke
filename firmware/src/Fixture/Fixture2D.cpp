@@ -17,7 +17,7 @@ void Fixture2D::update()
 			int dmxIndex = address + (x * k_numPxls) + (y * k_numPxls) * m_num_columns;
 			// printf("dmxIndex = %d\n", dmxIndex);
 			for(auto index : indexes) {
-				for (uint16_t k = 0; k < lamp->numPxls; k++) {
+				for (uint16_t k = 0; k < k_numPxls; k++) {
 					// LOGF("led[%d] = dmx [%d]\n", (index * lamp->numPxls + k), (dmxIndex + k));
 					m_ledBuffer[index * k_numPxls + k] = m_dmxBuffer[dmxIndex + k]; 
 				}
@@ -29,6 +29,7 @@ void Fixture2D::update()
 void Fixture2D::setPreset(uint8_t newPreset)
 {
     selectedPreset = newPreset;
+    m_storage.putUChar("preset_index", selectedPreset);
     m_column_width = m_presets[newPreset % m_presets.size()].width;
     m_row_height = m_presets[newPreset % m_presets.size()].height;
     m_num_columns = (m_width / m_column_width);
@@ -36,7 +37,7 @@ void Fixture2D::setPreset(uint8_t newPreset)
     m_grid_hash.clear();
 }
 
-const std::vector<uint32_t>& Fixture2D::getGridIndexes(uint8_t x, uint8_t y) const
+std::vector<uint32_t>& Fixture2D::getGridIndexes(uint8_t x, uint8_t y)
 {
     uint32_t hnum = x * 7741 + y * 7757;
 		
@@ -56,4 +57,14 @@ const std::vector<uint32_t>& Fixture2D::getGridIndexes(uint8_t x, uint8_t y) con
     return m_grid_hash[hnum];
 }
 
-
+JsonDocument Fixture2D::presetsToJson() const
+{
+    JsonDocument doc;
+    doc["presets"] = JsonDocument();
+	JsonArray jsonArray = doc["presets"].to<JsonArray>();
+	for (auto& preset : m_presets) {
+		jsonArray.add(preset.toJson());
+	}
+    
+    return doc;
+}

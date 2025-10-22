@@ -3,20 +3,32 @@
 #include "Fixture/Fixture2D.h"
 
 template<uint8_t TPin>
-struct Astera : public Fixture 
+struct Astera : public Fixture1D
 {
 	Astera()
-		: Lamp("Astera", "Astera60", 60)
+		: Fixture1D("Astera", "Astera60", 60,
+		std::vector<Preset1D>{
+			{"", 1},
+			{"", 1},
+			{"", 1},
+			{"", 1}
+		})
 	{
 		bindTemplate<WS2815, TPin, RGB>(m_numLeds);
 	}
 };
 
 template<uint8_t TPin>
-struct Astera144 : public Fixture 
+struct Astera144 : public Fixture1D
 {
-	Astera()
-		: Lamp("Astera", "Astera144", 144)
+	Astera144()
+		: Fixture1D("Astera", "Astera144", 144, 
+		std::vector<Preset1D>{
+			{"", 1},
+			{"", 1},
+			{"", 1},
+			{"", 1}		
+		})
 	{
 		bindTemplate<WS2815, TPin, RGB>(m_numLeds);
 	}

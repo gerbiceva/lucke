@@ -4,9 +4,6 @@
 #include <string>
 #include <set>
 
-namespace Utils 
-{
-
 class HardwareLED
 {
 	static std::set<uint8_t> m_usedPins;
@@ -30,5 +27,3 @@ public:
     }
 	
 };
-
-}

@@ -1,4 +1,5 @@
 #include "Fixture1D.h"
+#include <sstream>
 
 Fixture1D::Fixture1D(std::string name, std::string type, uint16_t numLeds, std::vector<Preset1D> presets)
     : Fixture(name, type, numLeds), m_presets(presets)
@@ -24,6 +25,19 @@ void Fixture1D::update()
 void Fixture1D::setPreset(uint8_t newPreset)
 {
     selectedPreset = newPreset;
-    m_numGroups = m_presets[newPreset % m_presets.size()];
+    m_storage.putUChar("preset_index", selectedPreset);
+    m_numGroups = m_presets[newPreset % m_presets.size()].nGroups;
     // TODO: add presets
+}
+
+JsonDocument Fixture1D::presetsToJson() const
+{
+    JsonDocument doc;
+    doc["presets"] = JsonDocument();
+	JsonArray jsonArray = doc["presets"].to<JsonArray>();
+	for (auto& preset : m_presets) {
+		jsonArray.add(preset.toJson());
+	}
+
+    return doc;
 }

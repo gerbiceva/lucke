@@ -9,6 +9,6 @@ class Wifi
 {
     [[nodiscard]] static uint8_t randomInt();
 public:
-    [[nodiscard]] static bool setup (const char* ssid, const char* password);
-}
+    static bool setup (const char* ssid, const char* password);
+};
 }

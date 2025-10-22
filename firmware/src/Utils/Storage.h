@@ -11,7 +11,17 @@ namespace Utils
         Preferences m_Preferences;
     
     public:
+        Storage()
+        {}
+
         Storage(std::string partition) {
+            m_Partition = partition;
+            m_Preferences.begin(partition.c_str());
+        }
+
+        void setPartition(std::string partition)
+        {
+            // TODO: check if open
             m_Partition = partition;
             m_Preferences.begin(partition.c_str());
         }
