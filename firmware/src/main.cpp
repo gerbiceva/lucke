@@ -45,6 +45,7 @@ struct LampLedbar2m : public Lamp {
 #include "Utils/Wifi.h"
 #include "Fixtures.h"
 #include "Handlers/SacnHandler.h"
+#include "Handlers/FixtureHandler.h"
 
 Astera<3> astera;
 
@@ -74,12 +75,10 @@ void setup() {
 	// ButtonManager::add(b1);
 	// ButtonManager::add(b2);
 	// ButtonManager::enable();
+	xTaskCreate(Handler::Fixtures::update, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, NULL);
 }
 
 void loop()
 {
-	Handler::Sacn::update();
-	astera.update();
-	HardwareLED::updateFastLED();
-	// vTaskDelete(NULL);
+	vTaskDelete(NULL);
 }

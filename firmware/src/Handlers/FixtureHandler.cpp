@@ -2,6 +2,7 @@
 
 namespace Handler
 {
-    std::vector<Fixture*> Fixtures::m_fixtureConfigs;
+    std::vector<Fixture*> Fixtures::m_fixtures;
     WiFiUDP Fixtures::udp;
+    std::atomic<bool> Fixtures::connected(false);
 }
