@@ -20,44 +20,44 @@ namespace Handler
 		// bool firstTime = true;
 		// bool delayed = false;
 
-		while (true) {
-			// if not connected
-			if (WiFi.status() != WL_CONNECTED) {
-				connected.store(false);
+            while (true) {
+                // if not connected
+                if (WiFi.status() != WL_CONNECTED) {
+                    connected.store(false);
 
-				// filtering short disconnects
-				// if(!firstTime && !delayed) {
-				// 	vTaskDelay(WIFI_DISCONNECT_DELAY);
-				// 	delayed = true;
-				// 	continue;
-				// }
+                    // filtering short disconnects
+                    // if(!firstTime && !delayed) {
+                    // 	vTaskDelay(WIFI_DISCONNECT_DELAY);
+                    // 	delayed = true;
+                    // 	continue;
+                    // }
 
-				TaskHandle_t animation = NULL;
-				// xTaskCreate(
-				// 	Controller::playIdleAnimation, 		// Task function
-				// 	"Animation",						// Name of the task (for debugging)
-				// 	2000,								// Stack size in words
-				// 	NULL,								// Parameter passed to the task
-				// 	1,									// Task priority
-				// 	&animation							// Handle to the task
-				// );
+                    // TaskHandle_t animation = NULL;
+                    // xTaskCreate(
+                    // 	Controller::playIdleAnimation, 		// Task function
+                    // 	"Animation",						// Name of the task (for debugging)
+                    // 	2000,								// Stack size in words
+                    // 	NULL,								// Parameter passed to the task
+                    // 	1,									// Task priority
+                    // 	&animation							// Handle to the task
+                    // );
 
-				// while not connected
-				while (WiFi.status() != WL_CONNECTED) {
-					vTaskDelay(10);
-				}
+                    // while not connected
+                    while (WiFi.status() != WL_CONNECTED) {
+                        vTaskDelay(10);
+                    }
 
-				// connection established
-				connected.store(true);
-				vTaskDelete(animation);
-				// Controller::get().clear();
-				// firstTime = false;
-				// delayed = false;
-			}
+                    // connection established
+                    connected.store(true);
+                    vTaskDelete(animation);
+                    // Controller::get().clear();
+                    // firstTime = false;
+                    // delayed = false;
+                }
 
-			vTaskDelay(50);
-		}
-	}
+                vTaskDelay(50);
+            }
+        }
     public:
 
         static void addFixture(Fixture* ptr)

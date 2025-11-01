@@ -1,12 +1,12 @@
 #pragma once
-#include "HardwareLED.h"
+#include "Output/HardwareLED.h"
 #include "Handlers/SacnHandler.h"
 #include "FixtureConfig.h"
 #include "Preset.h"
 #include <ArduinoJson.h>
 
 
-class Fixture : public HardwareLED, public FixtureConfig
+class Fixture : public Output::HardwareLED, public FixtureConfig
 {
     std::string m_type;
 protected:
