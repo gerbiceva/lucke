@@ -6,10 +6,10 @@ namespace Handler
 {
     class Button
     {
-        static std::vector<Button> m_buttons;
+        static std::vector<Input::Button> m_buttons;
 
     public:
-        static void add(Button b)
+        static void add(Input::Button b)
         {
             m_buttons.push_back(b);
         }

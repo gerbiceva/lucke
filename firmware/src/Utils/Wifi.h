@@ -8,6 +8,7 @@ namespace Utils
 class Wifi
 {
     [[nodiscard]] static uint8_t randomInt();
+    static bool m_inited;
 public:
     static bool setup (const char* ssid, const char* password);
 };

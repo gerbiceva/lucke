@@ -49,7 +49,7 @@ namespace Handler
 
                     // connection established
                     connected.store(true);
-                    vTaskDelete(animation);
+                    // vTaskDelete(animation);
                     // Controller::get().clear();
                     // firstTime = false;
                     // delayed = false;
@@ -79,7 +79,7 @@ namespace Handler
                     fix->update();
                 }
     
-                HardwareLED::updateFastLED();
+                Output::HardwareLED::updateFastLED();
                 vTaskDelay(5);
             }
         }

@@ -42,43 +42,92 @@ struct LampLedbar2m : public Lamp {
 };
 */
 
-#include "Utils/Wifi.h"
-#include "Fixtures.h"
-#include "Handlers/SacnHandler.h"
-#include "Handlers/FixtureHandler.h"
+// #include "Utils/Wifi.h"
+// #include "Fixture/Fixture1D.h"
+// #include "Handlers/SacnHandler.h"
+// #include "Handlers/FixtureHandler.h"
 
-Astera<3> astera;
+// using Astera60 =
+// struct Astera60 : public Core::Fixture::Fixture1D
+// {
+// 	Astera60() : Core::Fixture::Fixture1D("astera", "astera60", 60,
+// 	std::vector<Core::Fixture::Preset1D>{
+// 			{"", 1},
+// 			{"", 2},
+// 			{"", 4},
+// 			{"", 10}
+// 		})
+// 		{}
+// };
 
+
+#include "Core/Fixture.h"
+#include "Output/HardwareLED.h"
+
+Fixture astera60("nek", "astera60",
+R"(
+{
+  "groups": [
+    {
+      "name": "group by 1",
+      "settings": [
+        [
+          { "num_groups": 60 }
+        ]
+      ]
+    },
+    {
+      "name": "group by 2",
+      "settings": [
+        [
+          { "num_groups": 30 }
+        ]
+      ]
+    },
+    {
+      "name": "group by 4",
+      "settings": [
+        [
+          { "num_groups": 15 }
+        ]
+      ]
+    },
+    {
+      "name": "group by 10",
+      "settings": [
+        [
+          { "num_groups": 6 }
+        ]
+      ]
+    }
+  ]
+}
+
+)");
 
 void setup() {	
-
-	Utils::Wifi::setup("ledique", "dasenebipovezau");
-	// HardwareLED<WS2815, 5, RGB> led(3);
-	// initialise the contorller
-	// Controller::get().setLamp(new LampLedbar2m());
-	// Controller::get().init(UNIVERSE, ADDR_OFFSET);
-	// Controller::createTasks();
-
-	// Button b1(
-	// 	9, 
-	// 	[](){ Controller::get().togglePreset(); },
-	// 	[](){ Controller::get().on(); },
-	// 	3000
-	// );
-	// Button b2(
-	// 	21, 
-	// 	[](){ Controller::get().togglePreset(true); },
-	// 	[](){ Controller::get().off(); }, 
-	// 	3000
-	// );
-
-	// ButtonManager::add(b1);
-	// ButtonManager::add(b2);
-	// ButtonManager::enable();
-	xTaskCreate(Handler::Fixtures::update, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, NULL);
+	astera60.addOutput<Output::HardwareLED1D<WS2815, 5, RGB>> (60);
+	// xTaskCreate(Handler::Fixtures::update, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, NULL);
 }
 
 void loop()
 {
-	vTaskDelete(NULL);
+	static uint16_t off = 0;
+	astera60.getSrcBuffer()[off] = 255;
+	astera60.getSrcBuffer()[off == 0 ? 179 : off - 1] = 0;
+	off = (off + 1) % 180;
+	astera60.update();
+	Output::FastLEDHelper::updateFastLED();
+	// for(int i = 0; i < 15; i += 1)
+	// {
+	// 	Serial.print(led.getBufferPtr()[i]);
+	// 	Serial.print(',');
+	// 	// led.getBufferPtr()[i] = 255;
+	// }
+	// Serial.println();
+	// Serial.println();
+
+	// sleep(2);
+	vTaskDelay(30);
+	// vTaskDelete(NULL);
 }

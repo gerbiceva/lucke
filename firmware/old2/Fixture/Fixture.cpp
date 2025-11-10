@@ -4,9 +4,11 @@
 Fixture::Fixture(std::string name, std::string type, uint16_t numLeds)
     : FixtureConfig(name), m_type(type), m_numLeds(numLeds)
 {
-    Handler::Fixtures::addFixture(this);
-    m_dmxBuffer = Handler::Sacn::buffer(universe);
-    // Handler::Fixture::addFixture(this);
+    // m_ledBuffer = new uint8_t[getSiz]
+
+    // Handler::Fixtures::addFixture(this);
+    // m_dmxBuffer = Handler::Sacn::buffer(universe);
+    
     // handle universe settings
 }
 
@@ -22,6 +24,12 @@ void Fixture::setUniverse(uint8_t newUniverse)
     m_dmxBuffer = Handler::Sacn::buffer(newUniverse);
     m_storage.putUChar("universe", newUniverse);
 }
+
+uint16_t Fixture::getLedBufferSize() const
+{
+    return m_numLeds * k_numPxls;
+}
+
 
 JsonDocument Fixture::toJson() const
 {

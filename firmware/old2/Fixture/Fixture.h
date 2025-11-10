@@ -21,6 +21,7 @@ public:
     void setUniverse(uint8_t newUniverse) override;
     virtual void update() = 0;
 
+    [[nodiscard]] uint16_t getLedBufferSize() const;
     [[nodiscard]] virtual JsonDocument presetsToJson() const = 0;
     [[nodiscard]] JsonDocument toJson() const;
     // virtual std::string getJsonString() const = 0;
