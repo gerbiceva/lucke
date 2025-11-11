@@ -1,18 +1,20 @@
 #pragma once
-#include "Inputs.h"
+#include "Traits/Inputs.h"
+#include "SACN.h"
 #include <unordered_map>
 #include <vector>
 #include <utility>
+
 
 namespace Input
 {
 
     class Handler
     {
-        static std::unordered_map<uint8_t, InputInterface*> m_inputs;
-        static std::vector<std::pair<uint8_t, InputInterface*>> m_vecInputs;
+        static std::unordered_map<uint8_t, Traits::InputInterface*> m_inputs;
+        static std::vector<std::pair<uint8_t, Traits::InputInterface*>> m_vecInputs;
     public:
-        static InputInterface* interface(uint8_t uni, InputType type)
+        static Traits::InputInterface* interface(uint8_t uni, Traits::InputInterface::InputType type)
         {
             bool found = false;
             for(auto& p : m_vecInputs)
@@ -24,16 +26,16 @@ namespace Input
             }
             // if(m_inputs.find(uni) == m_inputs.end())
             // {
-            InputInterface* ptr;
+            Traits::InputInterface* ptr;
 
-            if(type == InputType::SACN)
+            if(type == Traits::InputInterface::InputType::SACN)
             {
                 ptr = new Sacn(uni);
             }
             else
             {}
 
-            m_vecInputs.push_back(std::pair<uint8_t, InputInterface*>(uni, ptr));
+            m_vecInputs.push_back(std::pair<uint8_t, Traits::InputInterface*>(uni, ptr));
             return ptr;
                 
                 // m_inputs[uni] = ptr;

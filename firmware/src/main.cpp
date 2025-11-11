@@ -117,7 +117,7 @@ void loop()
 	astera60.getSrcBuffer()[off == 0 ? 179 : off - 1] = 0;
 	off = (off + 1) % 180;
 	astera60.update();
-	Output::FastLEDHelper::updateFastLED();
+	Output::updateFastLED();
 	// for(int i = 0; i < 15; i += 1)
 	// {
 	// 	Serial.print(led.getBufferPtr()[i]);

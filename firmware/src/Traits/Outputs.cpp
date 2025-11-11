@@ -1,10 +1,10 @@
 #include "Outputs.h"
 
-namespace Output
+namespace Traits
 {
-    std::set<uint8_t> Outputs::m_usedPins;
+    std::set<uint8_t> OutputInterface::m_usedPins;
 
-    bool Outputs::isPinUnused(uint8_t pin) const
+    bool OutputInterface::isPinUnused(uint8_t pin) const
     {
         if(m_usedPins.find(pin) == m_usedPins.end())
         {
@@ -17,7 +17,7 @@ namespace Output
         }
     }
 
-    Outputs::Outputs(uint16_t buffer_size)
+    OutputInterface::OutputInterface(uint16_t buffer_size)
     {
         m_size = buffer_size;
         // m_usedPins.emplace(pin);
@@ -26,7 +26,7 @@ namespace Output
         // m_dstBuffer.resize(buffer_size);
     }
 
-    void Outputs::setSrcBuffer(uint8_t* src_buffer)
+    void OutputInterface::setSrcBuffer(uint8_t* src_buffer)
     {
         m_srcBuffer = src_buffer;
     }
@@ -36,17 +36,17 @@ namespace Output
     //     return m_dstBuffer;
     // }
 
-    uint8_t* Outputs::getBufferPtr()
+    uint8_t* OutputInterface::getBufferPtr()
     {
         return m_dstBuffer;
     }
 
-    uint8_t* Outputs::getSrcBufferPtr()
+    uint8_t* OutputInterface::getSrcBufferPtr()
     {
         return m_srcBuffer;
     }
 
-    uint16_t Outputs::getSize() const
+    uint16_t OutputInterface::getSize() const
     {
         return m_size;
     }

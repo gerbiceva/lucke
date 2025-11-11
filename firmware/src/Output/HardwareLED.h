@@ -1,13 +1,18 @@
 #pragma once
 #include <cstdint>
 #include <FastLED.h>
-#include "Outputs.h"
+#include "Traits/Outputs.h"
 
 
 namespace Output {
 
+    void updateFastLED()
+    {
+        FastLED.show();
+    }
+
     template<template<uint8_t, EOrder> typename TLedType, uint8_t TPin, EOrder TOrder>
-    class HardwareLED : public Outputs
+    class HardwareLED : public Traits::OutputInterface
     {
     protected:
         uint16_t m_numLeds;
@@ -17,7 +22,7 @@ namespace Output {
     public:
 
         HardwareLED(uint16_t num_leds)
-            : Outputs(num_leds * m_numPxls), m_numLeds(num_leds)
+            : Traits::OutputInterface(num_leds * m_numPxls), m_numLeds(num_leds)
         {
         }
 
@@ -30,9 +35,9 @@ namespace Output {
 
             // memset(m_dstBuffer, 0, m_size);
 
-            m_cled = FastLEDHelper::make<TLedType, TPin, TOrder>(m_dstBuffer, m_numLeds);
+            m_cled = &FastLED.addLeds<TLedType, TPin, TOrder>((CRGB*) m_dstBuffer, m_numLeds);
             m_cled->clearLeds();
-            FastLEDHelper::updateFastLED();
+            updateFastLED();
 		};
 
 

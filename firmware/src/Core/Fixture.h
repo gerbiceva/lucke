@@ -1,40 +1,23 @@
 #pragma once
 #include <vector>
 #include "FixtureConfig.h"
-#include "Output/Outputs.h"
+#include "Traits/Outputs.h"
 #include "Input/InputHandler.h"
 #include <ArduinoJson.h>
 
-// using Preset = std::pair<std::string, std::vector<std::vector<uint16_t>>>;
-// struct Presets
-// {
-//     std::vector<Presets> presets;
-// };
-
 class Fixture : public Core::Fixture::FixtureConfig
 {
-    std::vector<Output::Outputs*> m_outputs;
+    std::vector<Traits::OutputInterface*> m_outputs;
     uint8_t* m_srcBuffer;
     uint16_t m_lastOffset = 0U;
 
-    Input::InputType m_inType;
+    Traits::InputInterface::InputType m_inType;
     JsonDocument jsonPreset;
 
     void updatePresets();
 public:
 
-// TODO: src buffer is null
-    Fixture(std::string name, std::string type, std::string presets, Input::InputType input_type = Input::InputType::SACN)
-        : m_inType(input_type),
-          Core::Fixture::FixtureConfig(name, type)
-    {
-        deserializeJson(jsonPreset, presets);
-
-        setUniverse(universe);
-        setAddress(address);
-        setName(name);
-        setPreset(selectedPreset);
-    }
+    Fixture(std::string name, std::string type, std::string presets, Traits::InputInterface::InputType input_type = Traits::InputInterface::InputType::SACN);
 
     template<typename TOutput, typename... Args>
     void addOutput(Args&&... args)
@@ -48,6 +31,7 @@ public:
     }
 
     uint8_t* getSrcBuffer() { return m_srcBuffer; }
+    // uint16_t getSrcBufferSize() const { return m_outputs.back()->}
 
     void setUniverse(uint8_t new_universe);
     void setAddress(uint16_t new_address);
@@ -67,7 +51,7 @@ public:
     //     JsonArray arr = doc["outputs"].as<JsonArray>();
         
         
-    //     for(Output::Outputs* o : m_outputs)
+    //     for(OutputInterface* o : m_outputs)
     //     {
     //         arr.add(o->toJson());
     //     }

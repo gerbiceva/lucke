@@ -6,25 +6,10 @@
 #include <FastLED.h>
 #include <ArduinoJson.h>
 
-namespace Output
+namespace Traits
 {
 
-    class FastLEDHelper
-    {
-    public:
-        template<template<uint8_t, EOrder> typename TLedType, uint8_t TPin, EOrder TOrder>
-		static CLEDController* make(uint8_t* buffer, uint16_t num_leds)
-		{
-			return &FastLED.addLeds<TLedType, TPin, TOrder>((CRGB *)buffer, num_leds);
-		};
-
-        static void updateFastLED()
-        {
-            FastLED.show();
-        }
-    };
-
-    class Outputs
+    class OutputInterface
     {
     protected:
         static std::set<uint8_t> m_usedPins;
@@ -35,7 +20,7 @@ namespace Output
 
         bool isPinUnused(uint8_t pin) const;
     public:
-        Outputs(uint16_t buffer_size);
+        OutputInterface(uint16_t buffer_size);
 
         void setSrcBuffer(uint8_t* src_buffer);
     

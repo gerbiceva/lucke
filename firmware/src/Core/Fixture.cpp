@@ -1,4 +1,20 @@
 #include "Fixture.h"
+#include "FixtureHandler.h"
+
+
+Fixture::Fixture(std::string name, std::string type, std::string presets, Traits::InputInterface::InputType input_type)
+    : m_inType(input_type),
+    Core::Fixture::FixtureConfig(name, type)
+{
+    deserializeJson(jsonPreset, presets);
+
+    setUniverse(universe);
+    setAddress(address);
+    setName(name);
+    setPreset(selectedPreset);
+
+    FixtureHandler::addFixture(this);
+}
 
 void Fixture::setUniverse(uint8_t new_universe)
 {
@@ -25,7 +41,7 @@ void Fixture::setPreset(uint8_t new_preset)
     m_storage.putUChar("preset_index", selectedPreset);
 
     uint8_t counter = 0;
-    for(Output::Outputs* o : m_outputs)
+    for(Traits::OutputInterface* o : m_outputs)
     {
         o->setPreset(jsonPreset["groups"][selectedPreset][counter++]);
     }
@@ -44,7 +60,7 @@ void Fixture::updatePresets()
 {
     uint16_t offset = 0;
     // uint8_t counter = 0;
-    for(Output::Outputs* o : m_outputs)
+    for(Traits::OutputInterface* o : m_outputs)
     {
         o->setSrcBuffer(m_srcBuffer + address + offset);
         offset += o->getSize();
@@ -56,7 +72,7 @@ void Fixture::update()
 {
     // Input::Handler::update();
 
-    for(Output::Outputs* o : m_outputs)
+    for(Traits::OutputInterface* o : m_outputs)
     {
         o->update();
     }
