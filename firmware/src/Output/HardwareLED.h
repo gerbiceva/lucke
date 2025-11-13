@@ -6,10 +6,7 @@
 
 namespace Output {
 
-    void updateFastLED()
-    {
-        FastLED.show();
-    }
+    void updateFastLED();
 
     template<template<uint8_t, EOrder> typename TLedType, uint8_t TPin, EOrder TOrder>
     class HardwareLED : public Traits::OutputInterface

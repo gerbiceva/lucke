@@ -61,63 +61,33 @@ struct LampLedbar2m : public Lamp {
 // };
 
 
-#include "Core/Fixture.h"
-#include "Output/HardwareLED.h"
-
-Fixture astera60("nek", "astera60",
-R"(
-{
-  "groups": [
-    {
-      "name": "group by 1",
-      "settings": [
-        [
-          { "num_groups": 60 }
-        ]
-      ]
-    },
-    {
-      "name": "group by 2",
-      "settings": [
-        [
-          { "num_groups": 30 }
-        ]
-      ]
-    },
-    {
-      "name": "group by 4",
-      "settings": [
-        [
-          { "num_groups": 15 }
-        ]
-      ]
-    },
-    {
-      "name": "group by 10",
-      "settings": [
-        [
-          { "num_groups": 6 }
-        ]
-      ]
-    }
-  ]
-}
-
-)");
-
+#include "Fixtures.h"
+#include "Utils/Wifi.h"
+#include "Utils/Logger.h"
+#include "Handlers/FixtureHandler.h"
+Fixture* fix;
 void setup() {	
-	astera60.addOutput<Output::HardwareLED1D<WS2815, 5, RGB>> (60);
+	Utils::Logger::enable();
+	sleep(5);
+	if(!Utils::Wifi::setup("ledique", "dasenebipovezau"))
+	{
+		Utils::Logger::println("Error connecting");
+	}
+	// Utils::Wifi::checkNetwork(nullptr);
+
+	fix = FixtureHandler::addFixture<Astera60>();
 	// xTaskCreate(Handler::Fixtures::update, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, NULL);
 }
 
 void loop()
 {
 	static uint16_t off = 0;
-	astera60.getSrcBuffer()[off] = 255;
-	astera60.getSrcBuffer()[off == 0 ? 179 : off - 1] = 0;
+	fix->getSrcBuffer()[off] = 255;
+	fix->getSrcBuffer()[off == 0 ? 179 : off - 1] = 0;
 	off = (off + 1) % 180;
-	astera60.update();
-	Output::updateFastLED();
+	// fix->update();
+	// Output::updateFastLED();
+	FixtureHandler::updateTask(nullptr);
 	// for(int i = 0; i < 15; i += 1)
 	// {
 	// 	Serial.print(led.getBufferPtr()[i]);

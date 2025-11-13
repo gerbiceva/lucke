@@ -1,5 +1,4 @@
 #include "Fixture.h"
-#include "FixtureHandler.h"
 
 
 Fixture::Fixture(std::string name, std::string type, std::string presets, Traits::InputInterface::InputType input_type)
@@ -12,8 +11,6 @@ Fixture::Fixture(std::string name, std::string type, std::string presets, Traits
     setAddress(address);
     setName(name);
     setPreset(selectedPreset);
-
-    FixtureHandler::addFixture(this);
 }
 
 void Fixture::setUniverse(uint8_t new_universe)

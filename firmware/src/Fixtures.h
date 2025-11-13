@@ -33,3 +33,55 @@
 // 		bindTemplate<WS2815, TPin, RGB>(m_numLeds);
 // 	}
 // };
+
+
+#include "Core/Fixture.h"
+#include "Output/HardwareLED.h"
+
+struct Astera60 : public Fixture
+{
+	Astera60()
+		: Fixture("astera60", "astera60",
+		R"(
+		{
+		  "groups": [
+		    {
+		      "name": "group by 1",
+		      "settings": [
+		        [
+		          { "num_groups": 60 }
+		        ]
+		      ]
+		    },
+		    {
+		      "name": "group by 2",
+		      "settings": [
+		        [
+		          { "num_groups": 30 }
+		        ]
+		      ]
+		    },
+		    {
+		      "name": "group by 4",
+		      "settings": [
+		        [
+		          { "num_groups": 15 }
+		        ]
+		      ]
+		    },
+		    {
+		      "name": "group by 10",
+		      "settings": [
+		        [
+		          { "num_groups": 6 }
+		        ]
+		      ]
+		    }
+		  ]
+		}
+		
+		)")
+		{
+			addOutput<Output::HardwareLED1D<WS2815, 5, RGB>> (60);
+		}
+};
