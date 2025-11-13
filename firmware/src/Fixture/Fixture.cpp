@@ -1,4 +1,5 @@
 #include "Fixture.h"
+#include "Handlers/InputHandler.h"
 
 
 Fixture::Fixture(std::string name, std::string type, std::string presets, Traits::InputInterface::InputType input_type)
@@ -16,7 +17,7 @@ Fixture::Fixture(std::string name, std::string type, std::string presets, Traits
 void Fixture::setUniverse(uint8_t new_universe)
 {
     // setsrc buffer
-    m_srcBuffer = Input::Handler::interface(universe, m_inType)->getBuffer();
+    m_srcBuffer = InputHandler::interface(universe, m_inType)->getBuffer();
     // m_srcBuffer = new uint8_t[512]();
     universe = new_universe;
     m_storage.putUShort("universe", universe);

@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <FastLED.h>
 #include "Traits/Outputs.h"
+#include "Handlers/PinHandler.h"
 
 
 namespace Output {
@@ -25,7 +26,7 @@ namespace Output {
 
 		void bind() override
 		{
-            if(!isPinUnused(TPin))
+            if(!PinHandler::available(TPin))
             {
                 return;
             }

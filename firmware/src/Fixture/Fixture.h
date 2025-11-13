@@ -2,7 +2,8 @@
 #include <vector>
 #include "FixtureConfig.h"
 #include "Traits/Outputs.h"
-#include "Input/InputHandler.h"
+#include "Traits/Inputs.h"
+
 #include <ArduinoJson.h>
 
 class Fixture : public Core::Fixture::FixtureConfig

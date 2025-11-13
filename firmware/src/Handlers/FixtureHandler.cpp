@@ -1,6 +1,6 @@
 #include "FixtureHandler.h"
 #include "Utils/Wifi.h"
-#include "Core/Fixture.h"
+#include "Fixture/Fixture.h"
 #include "Output/HardwareLED.h"
 
 std::vector<Fixture*> FixtureHandler::fixtures;

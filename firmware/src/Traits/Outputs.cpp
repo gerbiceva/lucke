@@ -2,21 +2,6 @@
 
 namespace Traits
 {
-    std::set<uint8_t> OutputInterface::m_usedPins;
-
-    bool OutputInterface::isPinUnused(uint8_t pin) const
-    {
-        if(m_usedPins.find(pin) == m_usedPins.end())
-        {
-            m_usedPins.emplace(pin);
-            return true;
-        }
-        else 
-        {
-            return false;
-        }
-    }
-
     OutputInterface::OutputInterface(uint16_t buffer_size)
     {
         m_size = buffer_size;

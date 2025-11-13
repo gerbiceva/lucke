@@ -35,7 +35,7 @@
 // };
 
 
-#include "Core/Fixture.h"
+#include "Fixture/Fixture.h"
 #include "Output/HardwareLED.h"
 
 struct Astera60 : public Fixture
