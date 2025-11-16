@@ -13,6 +13,7 @@ namespace Utils
             {
                 Serial.begin(9600);
                 m_enabled = true;
+            	sleep(1);
             }
         }
         

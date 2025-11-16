@@ -40,6 +40,13 @@ public:
     void setName(const std::string& other);
 
     virtual void update();
+    virtual void wifiAnimation()
+    {
+        // static uint16_t off = 0;
+        // getSrcBuffer()[off] = 255;
+        // getSrcBuffer()[off == 0 ? 179 : off - 1] = 0;
+        // off = (off + 1) % 180;
+    }
 
     // JsonDocument toJson()
     // {

@@ -36,7 +36,7 @@
 
 
 #include "Fixture/Fixture.h"
-#include "Output/HardwareLED.h"
+#include "Output/HardwareLED1D.h"
 
 struct Astera60 : public Fixture
 {
@@ -81,7 +81,74 @@ struct Astera60 : public Fixture
 		}
 		
 		)")
+    {
+        addOutput<Output::HardwareLED1D<WS2815, 5, RGB>> (60);
+    }
+
+    void wifiAnimation() override
+    {
+        static uint16_t off = 0;
+        getSrcBuffer()[off] = 255;
+        getSrcBuffer()[off == 0 ? 179 : off - 1] = 0;
+        off = (off + 1) % 180;
+        vTaskDelay(20);
+    }
+};
+
+template<uint8_t Pin = 5>
+struct Strip1m60 : public Fixture
+{
+	Strip1m60()
+		: Fixture("strip1m", "led_strip_60",
+		R"(
 		{
-			addOutput<Output::HardwareLED1D<WS2815, 5, RGB>> (60);
+		  "groups": [
+		    {
+		      "name": "group by 1",
+		      "settings": [
+		        [
+		          { "num_groups": 60 }
+		        ]
+		      ]
+		    },
+		    {
+		      "name": "group by 2",
+		      "settings": [
+		        [
+		          { "num_groups": 30 }
+		        ]
+		      ]
+		    },
+		    {
+		      "name": "group by 4",
+		      "settings": [
+		        [
+		          { "num_groups": 15 }
+		        ]
+		      ]
+		    },
+		    {
+		      "name": "group by 10",
+		      "settings": [
+		        [
+		          { "num_groups": 6 }
+		        ]
+		      ]
+		    }
+		  ]
 		}
+		
+		)")
+    {
+        addOutput<Output::HardwareLED1D<WS2815, Pin, RGB>> (60);
+    }
+
+    void wifiAnimation() override
+    {
+        static uint16_t off = 0;
+        getSrcBuffer()[off] = 255;
+        getSrcBuffer()[off == 0 ? 179 : off - 1] = 0;
+        off = (off + 1) % 180;
+        vTaskDelay(20);
+    }
 };

@@ -13,10 +13,10 @@ void FixtureHandler::updateTask(void*)
         // {
         //     Input::Handler::update();
         
-            for(Fixture* fix : fixtures)
-            {
-                fix->update();
-            }
+        for(Fixture* fix : fixtures)
+        {
+            fix->update();
+        }
         // }
         
         Output::updateFastLED();
