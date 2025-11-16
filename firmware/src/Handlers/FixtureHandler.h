@@ -27,6 +27,11 @@ public:
         return fixtures[id];
     }
 
+    static std::vector<Fixture*>& vec()
+    {
+        return fixtures;
+    }
+
     static void updateTask(void*);
 
     static void wirelessConfig(void*);

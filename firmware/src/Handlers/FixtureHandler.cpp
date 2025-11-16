@@ -7,21 +7,11 @@ std::vector<Fixture*> FixtureHandler::fixtures;
 
 void FixtureHandler::updateTask(void*)
 {
-    // while(true)
-    // {
-        // if(connected)
-        // {
-        //     Input::Handler::update();
+    for(Fixture* fix : fixtures)
+    {
+        fix->update();
+    }
         
-        for(Fixture* fix : fixtures)
-        {
-            fix->update();
-        }
-        // }
-        
-        Output::updateFastLED();
-        vTaskDelay(20);
-    // }
 }
 
 void FixtureHandler::wirelessConfig(void*)

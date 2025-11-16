@@ -1,5 +1,6 @@
 #include "Wifi.h"
 #include "Logger.h"
+#include "Engine.h"
 
 #include <Arduino.h>
 #include "WiFi.h"
@@ -24,12 +25,12 @@ namespace Utils
         {
             return true;
         }
-        uint8_t mac[] = {0x90, 0xA2, 0xDA, 0x10, 0x00, 0x01}; // MAC Adress of your device
-        esp_err_t err = esp_wifi_set_mac(WIFI_IF_STA, &mac[0]);
-        if (err != ESP_OK)
-        {
-            return false;
-        }
+        // uint8_t mac[] = {0x90, 0xA2, 0xDA, 0x10, 0x10, 0xAF}; // MAC Adress of your device
+        // esp_err_t err = esp_wifi_set_mac(WIFI_IF_STA, &mac[0]);
+        // if (err != ESP_OK)
+        // {
+        //     return false;
+        // }
 
         WiFi.setScanMethod(WIFI_FAST_SCAN);
         WiFi.mode(WIFI_STA);
@@ -39,6 +40,18 @@ namespace Utils
         return true;
     }
 
+    void Wifi::playIdleAnimation(void*)
+    {
+        while(true)
+        {
+            if(Engine::wifiAnimFix != nullptr)
+            {
+                Engine::wifiAnimFix->wifiAnimation();
+            }
+            vTaskDelay(30);
+        }
+    }
+
     void Wifi::checkNetwork(void *) {
     while (true) {
         // if not connected
@@ -46,15 +59,15 @@ namespace Utils
             Logger::println("Disconnected");
             connected = false;
 
-            // TaskHandle_t animation = NULL;
-            // xTaskCreate(
-            //     Controller::playIdleAnimation, 		// Task function
-            //     "Animation",						// Name of the task (for debugging)
-            //     2000,								// Stack size in words
-            //     NULL,								// Parameter passed to the task
-            //     1,									// Task priority
-            //     &animation							// Handle to the task
-            // );
+            TaskHandle_t animation = NULL;
+            xTaskCreate(
+                Wifi::playIdleAnimation, 		// Task function
+                "Animation",						// Name of the task (for debugging)
+                2000,								// Stack size in words
+                NULL,								// Parameter passed to the task
+                1,									// Task priority
+                &animation							// Handle to the task
+            );
 
             // while not connected
             while (WiFi.status() != WL_CONNECTED) {
@@ -65,7 +78,7 @@ namespace Utils
             Logger::println("connected");
 
             connected = true;
-            // vTaskDelete(animation);
+            vTaskDelete(animation);
             // Controller::get().clear();
         }
 

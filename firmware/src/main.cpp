@@ -61,43 +61,16 @@ struct LampLedbar2m : public Lamp {
 // };
 
 
-#include "Fixtures.h"
-#include "Utils/Wifi.h"
-#include "Utils/Logger.h"
-#include "Handlers/FixtureHandler.h"
-Fixture* fix;
-void setup() {	
-	Utils::Logger::enable();
-	sleep(5);
-	if(!Utils::Wifi::setup("ledique", "dasenebipovezau"))
-	{
-		Utils::Logger::println("Error connecting");
-	}
-	// Utils::Wifi::checkNetwork(nullptr);
+#include "Engine.h"
 
-	fix = FixtureHandler::addFixture<Astera60>();
-	// xTaskCreate(Handler::Fixtures::update, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, NULL);
+Fixture* fix;
+void setup() 
+{	
+	fix = Engine::instance().addFixture<Astera60>(true);
 }
 
 void loop()
 {
-	static uint16_t off = 0;
-	fix->getSrcBuffer()[off] = 255;
-	fix->getSrcBuffer()[off == 0 ? 179 : off - 1] = 0;
-	off = (off + 1) % 180;
-	// fix->update();
-	// Output::updateFastLED();
-	FixtureHandler::updateTask(nullptr);
-	// for(int i = 0; i < 15; i += 1)
-	// {
-	// 	Serial.print(led.getBufferPtr()[i]);
-	// 	Serial.print(',');
-	// 	// led.getBufferPtr()[i] = 255;
-	// }
-	// Serial.println();
-	// Serial.println();
-
-	// sleep(2);
 	vTaskDelay(30);
 	// vTaskDelete(NULL);
 }
