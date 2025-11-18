@@ -4,8 +4,6 @@
 #include "Traits/Outputs.h"
 #include "Traits/Inputs.h"
 
-#include <ArduinoJson.h>
-
 class Fixture : public Core::Fixture::FixtureConfig
 {
     std::vector<Traits::OutputInterface*> m_outputs;
@@ -48,7 +46,8 @@ public:
         // off = (off + 1) % 180;
     }
 
-    // JsonDocument toJson()
+    JsonDocument selfReportJson() const;
+    // JsonDocument toJson();
     // {
     //     JsonDocument doc;
     //     doc["name"] = name;

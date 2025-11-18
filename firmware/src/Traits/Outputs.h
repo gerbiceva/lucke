@@ -4,6 +4,7 @@
 
 #include <FastLED.h>
 #include <ArduinoJson.h>
+#include "Traits/Serializable.h"
 
 namespace Traits
 {
@@ -29,9 +30,8 @@ namespace Traits
         virtual uint16_t getSize() const;
         virtual void bind() = 0;
         virtual void update() {}
-        virtual JsonDocument toJson() = 0;
         virtual void setPreset(JsonDocument doc) = 0;
-
+        // virtual JsonDocument toJson() {return JsonDocument();};
     };
 
 }

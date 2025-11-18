@@ -8,23 +8,11 @@ namespace Input
         WiFiUDP udp;
         Receiver* recv;
     public:
-        Sacn(uint8_t universe)
-            : InputInterface(universe)
-        {
-            m_type = InputType::SACN;
-            recv = new Receiver(udp);
-            recv->begin(universe);
-        }
+        Sacn(uint8_t universe);
+        ~Sacn();
 
-        ~Sacn()
-        {
-            delete recv;
-        }
+        void update() override;
 
-        void update() override
-        {
-            recv->dmx(m_dmxBuffer);
-            recv->update();
-        }
+        // JsonDocument toJson();
     };
 }

@@ -2,6 +2,8 @@
 #include "Utils/Logger.h"
 #include "Utils/Wifi.h"
 #include "Handlers/InputHandler.h"
+#include "Handlers/ButtonManager.h"
+
 
 Engine::Settings Engine::settings;
 Fixture* Engine::wifiAnimFix = nullptr;
@@ -17,8 +19,13 @@ Engine::Engine ()
     sleep(2);
     if(!Utils::Wifi::setup("ledique", "dasenebipovezau"))
     {
-        Utils::Logger::println("Error connecting");
+        // Utils::Logger::println("Error connecting");
+        
     }
+
+    xTaskCreate(Utils::Wifi::checkNetwork, "check wifi", 1000, NULL, 1 | portPRIVILEGE_BIT, NULL);
+    xTaskCreate(Engine::update, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, NULL);
+    xTaskCreate(Engine::sendReport, "send report", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
 }
 
 Engine& Engine::instance()
@@ -44,8 +51,6 @@ Fixture* Engine::operator[](uint16_t index)
 
 void Engine::createTasks()
 {
-    xTaskCreate(Utils::Wifi::checkNetwork, "check wifi", 1000, NULL, 1 | portPRIVILEGE_BIT, NULL);
-    xTaskCreate(Engine::update, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, NULL);
 }
 
 void Engine::update(void*)
@@ -61,5 +66,24 @@ void Engine::update(void*)
 
         Output::updateFastLED();
         vTaskDelay(20);
+    }
+}
+
+void Engine::sendReport(void*)
+{
+    WiFiUDP udp;
+    while(true)
+    {
+        if(Utils::Wifi::isConnected())
+        {
+            if(FixtureHandler::get(0) != nullptr)
+            {
+                udp.beginPacket(WiFi.broadcastIP(), 12345);
+                serializeJson(FixtureHandler::fixtureReport(), udp);
+                udp.endPacket();
+            }
+        }
+
+        vTaskDelay(1000);
     }
 }

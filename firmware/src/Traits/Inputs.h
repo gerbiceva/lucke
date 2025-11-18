@@ -5,6 +5,8 @@
 #include "sACN.h"
 
 #include "Utils/Wifi.h"
+#include <ArduinoJson.h>
+#include "Traits/Serializable.h"
 
 namespace Traits
 {
@@ -22,6 +24,19 @@ namespace Traits
         uint8_t m_universe;
         uint8_t m_usage = 0;
         InputType m_type;
+
+        std::string typeToString()
+        {
+            switch(m_type)
+            {
+                case (InputType::SACN):
+                    return "SACN";
+                case (InputType::DMX):
+                    return "DMX";
+            }
+
+            return "Unknown";
+        }
     public:
         InputInterface(uint8_t universe)
         : m_universe(universe) {}
@@ -34,5 +49,6 @@ namespace Traits
         }
 
         virtual void update() = 0;
+        // virtual JsonDocument toJson() = 0;
     };
 }

@@ -1,4 +1,7 @@
 #include "InputHandler.h"
+#include "Input/SACN.h"
+#include "Utils/Logger.h"
+#include <utility>
 
 std::unordered_map<uint8_t, Traits::InputInterface*> InputHandler::m_inputs;
 std::vector<std::pair<uint8_t, Traits::InputInterface*>> InputHandler::m_vecInputs;
@@ -44,3 +47,17 @@ void InputHandler::update()
         pair.second->update();
     }
 }
+
+// JsonDocument InputHandler::toJson()
+// {
+//     JsonDocument doc;
+//     doc["inputs"] = JsonDocument();
+//     JsonArray arr = doc["inputs"].to<JsonArray>();
+
+//     for(auto& pair : m_vecInputs)
+//     {
+//         arr.add(pair.second->toJson());
+//     }
+
+//     return doc;
+// }

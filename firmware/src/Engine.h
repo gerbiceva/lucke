@@ -29,6 +29,10 @@ class Engine
     };
     
     Engine ();
+    static void update(void*);
+
+    static void sendReport(void*);
+
 public:
     static Settings settings;
     static Fixture* wifiAnimFix;
@@ -52,5 +56,4 @@ public:
     Fixture* operator[](uint16_t index);
 
     void createTasks();
-    static void update(void*);
 };

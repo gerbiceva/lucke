@@ -34,3 +34,32 @@ void FixtureHandler::updateTask()
     }
         
 }
+
+JsonDocument FixtureHandler::fixtureReport()
+{
+    JsonDocument doc;
+    doc["fixtures"] = JsonDocument();
+    JsonArray arr = doc["fixtures"].to<JsonArray>();
+
+    for(Fixture* f : fixtures)
+    {
+        arr.add(f->selfReportJson());
+    }
+
+    return doc;
+}
+
+
+// JsonDocument FixtureHandler::toJson()
+// {
+//     JsonDocument doc;
+//     doc["fixtures"] = JsonDocument();
+// 	JsonArray diffArray = doc["fixtures"].to<JsonArray>();
+
+//     for(Fixture* f : fixtures)
+//     {
+//         diffArray.add(f->toJson());
+//     }
+
+//     return doc;
+// }

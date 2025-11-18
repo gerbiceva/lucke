@@ -1,5 +1,6 @@
 #include "Fixture.h"
 #include "Handlers/InputHandler.h"
+#include <ArduinoJson.h>
 
 
 Fixture::Fixture(std::string name, std::string type, std::string presets, Traits::InputInterface::InputType input_type)
@@ -74,3 +75,34 @@ void Fixture::update()
         o->update();
     }
 }
+
+JsonDocument Fixture::selfReportJson() const
+{
+    JsonDocument doc;
+    doc["name"] = name;
+    doc["type"] = type;
+    doc["universe"] = universe;
+    doc["address"] = address;
+    doc["preset"] = selectedPreset;
+    return doc;
+}
+
+// JsonDocument Fixture::toJson()
+// {
+//     JsonDocument doc;
+//     doc["name"] = name;
+//     doc["type"] = type;
+//     doc["universe"] = universe;
+//     doc["address"] = address;
+//     doc["preset"] = selectedPreset;
+
+//     doc["outputs"] = JsonDocument();
+// 	JsonArray outputs = doc["outputs"].to<JsonArray>();
+
+//     for(Traits::OutputInterface* o : outputs)
+//     {
+//         outputs.add(o->toJson());
+//     }
+
+//     return doc;
+// }
