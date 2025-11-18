@@ -9,10 +9,7 @@ class FixtureHandler
 {
     static std::vector<Fixture*> fixtures;
 public:
-    static void addFixture(Fixture* fixture)
-    {
-        fixtures.push_back(fixture);
-    }
+    static void addFixture(Fixture* fixture);
 
     template<typename TFixture>
     static Fixture* addFixture()
@@ -22,17 +19,8 @@ public:
         return fix;
     }
 
-    static Fixture* get(uint8_t id)
-    {
-        return fixtures[id];
-    }
+    static Fixture* get(uint8_t index);
+    static std::vector<Fixture*>& allFixtures();
 
-    static std::vector<Fixture*>& vec()
-    {
-        return fixtures;
-    }
-
-    static void updateTask(void*);
-
-    static void wirelessConfig(void*);
+    static void updateTask();
 };

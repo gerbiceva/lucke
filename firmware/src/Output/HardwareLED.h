@@ -3,7 +3,7 @@
 #include <FastLED.h>
 #include "Traits/Outputs.h"
 #include "Handlers/PinHandler.h"
-
+#include "Utils/Logger.h"
 
 namespace Output {
 
@@ -28,10 +28,9 @@ namespace Output {
 		{
             if(!PinHandler::available(TPin))
             {
+                Utils::Logger::printf("Error adding fastled: pin %d already used\n", TPin);
                 return;
             }
-
-            // memset(m_dstBuffer, 0, m_size);
 
             m_cled = &FastLED.addLeds<TLedType, TPin, TOrder>((CRGB*) m_dstBuffer, m_numLeds);
             m_cled->clearLeds();

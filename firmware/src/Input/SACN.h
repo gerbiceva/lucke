@@ -12,13 +12,8 @@ namespace Input
             : InputInterface(universe)
         {
             m_type = InputType::SACN;
-
-            if(Utils::Wifi::setup("ledique", "dasenebipovezau"))
-            {
-                recv = new Receiver(udp);
-                recv->begin(universe);
-            }
-            // recv->seqdiff()
+            recv = new Receiver(udp);
+            recv->begin(universe);
         }
 
         ~Sacn()

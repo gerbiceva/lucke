@@ -1,52 +1,13 @@
-// #pragma once
-// #include "Button.h"
-// #include <vector>
+#pragma once
+#include "Input/Button.h"
+#include <vector>
 
-// namespace Input
-// {
-
-// class ButtonManager {
-//     static std::vector<Button> buttons;
-//     // std::unordered_map<uint8_t, bool> isPinRegistered;
-
-//     ButtonManager() {}
+class ButtonManager {
+    static std::vector<Input::Button> buttons;
+    // std::unordered_map<uint8_t, bool> isPinRegistered;
     
-//     static void update(void*) 
-//     {
-//         while(true) {
-//             for(auto& b : buttons) {
-//                 b.update();
-//             }
-
-//             vTaskDelay(20);
-//         }
-//     }
-// public:
-//     ButtonManager(const ButtonManager& other) = delete;
-
-//     // // returns singleton instance
-//     // static ButtonManager& get() {
-//     // 	static ButtonManager instance;
-//     // 	return instance;
-//     // }
-
-//     static void add(Button b) 
-//     {
-//         // if(isPinRegistered.find(b.getPin()))
-//         buttons.push_back(b);
-//     }
-
-
-//     static void enable() 
-//     {
-//         static bool enabled = false;
-
-//         if(!enabled) {
-//             xTaskCreate(ButtonManager::update, "Input", 2000, NULL, 2 | portPRIVILEGE_BIT, NULL);
-//             enabled = true;
-//         }
-//     }
-
+    static void update(void*);
+public:
+    static void add(Input::Button&& b);
     
-// };
-// }
+};

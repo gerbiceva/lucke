@@ -16,11 +16,10 @@ Fixture::Fixture(std::string name, std::string type, std::string presets, Traits
 
 void Fixture::setUniverse(uint8_t new_universe)
 {
-    // setsrc buffer
-    m_srcBuffer = InputHandler::interface(universe, m_inType)->getBuffer();
-    // m_srcBuffer = new uint8_t[512]();
     universe = new_universe;
     m_storage.putUShort("universe", universe);
+
+    m_srcBuffer = InputHandler::interface(universe, m_inType)->getBuffer();
     
     updatePresets();
 }

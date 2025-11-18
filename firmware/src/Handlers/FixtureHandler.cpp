@@ -5,28 +5,32 @@
 
 std::vector<Fixture*> FixtureHandler::fixtures;
 
-void FixtureHandler::updateTask(void*)
+void FixtureHandler::addFixture(Fixture* fixture)
+{
+    fixtures.push_back(fixture);
+}
+
+Fixture* FixtureHandler::get(uint8_t index)
+{
+    if(index > fixtures.size())
+    {
+        Utils::Logger::printf("Error: Fixture at index %d does not exist/n", index);
+        return nullptr;
+    }
+
+    return fixtures[index];
+}
+
+std::vector<Fixture*>& FixtureHandler::allFixtures()
+{
+    return fixtures;
+}
+
+void FixtureHandler::updateTask()
 {
     for(Fixture* fix : fixtures)
     {
         fix->update();
     }
         
-}
-
-void FixtureHandler::wirelessConfig(void*)
-{
-    // WiFiServer server(8888);
-    // server.begin();
-    
-    // while(true) {
-    //     // Serial.println(WiFi.localIP());
-    //     WiFiClient client = server.available();
-    //     if (client) {
-    //         while (client.connected()) {
-    //             if (client.available()) {
-    //             }
-    //         }
-    //     }
-    // }
 }

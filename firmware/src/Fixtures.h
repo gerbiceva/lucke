@@ -1,47 +1,13 @@
 #pragma once
-// #include "Fixture/Fixture1D.h"
-// #include "Fixture/Fixture2D.h"
-
-// template<uint8_t TPin>
-// struct Astera : public Fixture1D
-// {
-// 	Astera()
-// 		: Fixture1D("Astera", "Astera60", 60,
-// 		std::vector<Preset1D>{
-// 			{"", 1},
-// 			{"", 1},
-// 			{"", 1},
-// 			{"", 1}
-// 		})
-// 	{
-// 		bindTemplate<WS2815, TPin, RGB>(m_numLeds);
-// 	}
-// };
-
-// template<uint8_t TPin>
-// struct Astera144 : public Fixture1D
-// {
-// 	Astera144()
-// 		: Fixture1D("Astera", "Astera144", 144, 
-// 		std::vector<Preset1D>{
-// 			{"", 1},
-// 			{"", 1},
-// 			{"", 1},
-// 			{"", 1}		
-// 		})
-// 	{
-// 		bindTemplate<WS2815, TPin, RGB>(m_numLeds);
-// 	}
-// };
-
-
 #include "Fixture/Fixture.h"
 #include "Output/HardwareLED1D.h"
 
-struct Astera60 : public Fixture
+
+template<uint8_t Pin = 5>
+struct Strip1m60 : public Fixture
 {
-	Astera60()
-		: Fixture("astera60", "astera60",
+	Strip1m60()
+		: Fixture("strip1m", "led_strip_60",
 		R"(
 		{
 		  "groups": [
@@ -82,24 +48,11 @@ struct Astera60 : public Fixture
 		
 		)")
     {
-        addOutput<Output::HardwareLED1D<WS2815, 5, RGB>> (60);
+        addOutput<Output::HardwareLED1D<WS2815, Pin, RGB>> (60);
     }
 
-    void wifiAnimation() override
-    {
-        static uint16_t off = 0;
-        getSrcBuffer()[off] = 255;
-        getSrcBuffer()[off == 0 ? 179 : off - 1] = 0;
-        off = (off + 1) % 180;
-        vTaskDelay(20);
-    }
-};
-
-template<uint8_t Pin = 5>
-struct Strip1m60 : public Fixture
-{
-	Strip1m60()
-		: Fixture("strip1m", "led_strip_60",
+	Strip1m60(std::string name, std::string type)
+		: Fixture(name, type,
 		R"(
 		{
 		  "groups": [
@@ -152,3 +105,118 @@ struct Strip1m60 : public Fixture
         vTaskDelay(20);
     }
 };
+
+template<uint8_t Pin = 5>
+struct Strip1m144 : public Fixture
+{
+	Strip1m144()
+		: Fixture("strip1m144", "led_strip_144",
+		R"(
+		{
+		  "groups": [
+		    {
+		      "name": "group by 1",
+		      "settings": [
+		        [
+		          { "num_groups": 144 }
+		        ]
+		      ]
+		    },
+		    {
+		      "name": "group by 2",
+		      "settings": [
+		        [
+		          { "num_groups": 72 }
+		        ]
+		      ]
+		    },
+		    {
+		      "name": "group by 4",
+		      "settings": [
+		        [
+		          { "num_groups": 36 }
+		        ]
+		      ]
+		    },
+		    {
+		      "name": "group by 8",
+		      "settings": [
+		        [
+		          { "num_groups": 16 }
+		        ]
+		      ]
+		    }
+		  ]
+		}
+		
+		)")
+    {
+        addOutput<Output::HardwareLED1D<WS2815, Pin, RGB>> (144);
+    }
+
+	Strip1m144(std::string name, std::string type)
+		: Fixture(name, type,
+		R"(
+		{
+		  "groups": [
+		    {
+		      "name": "group by 1",
+		      "settings": [
+		        [
+		          { "num_groups": 144 }
+		        ]
+		      ]
+		    },
+		    {
+		      "name": "group by 2",
+		      "settings": [
+		        [
+		          { "num_groups": 72 }
+		        ]
+		      ]
+		    },
+		    {
+		      "name": "group by 4",
+		      "settings": [
+		        [
+		          { "num_groups": 36 }
+		        ]
+		      ]
+		    },
+		    {
+		      "name": "group by 8",
+		      "settings": [
+		        [
+		          { "num_groups": 16 }
+		        ]
+		      ]
+		    }
+		  ]
+		}
+		
+		)")
+    {
+        addOutput<Output::HardwareLED1D<WS2815, Pin, RGB>> (144);
+    }
+
+    void wifiAnimation() override
+    {
+        static uint16_t off = 0;
+        getSrcBuffer()[off] = 255;
+        getSrcBuffer()[off == 0 ? (144*3 - 1) : off - 1] = 0;
+        off = (off + 1) % 180;
+        vTaskDelay(20);
+    }
+};
+
+
+struct Astera60 : public Strip1m60<5>
+{
+	Astera60() : Strip1m60<5>("neko ime", "astera60"){}
+};
+
+struct Astera144 : public Strip1m144<5>
+{
+	Astera144() : Strip1m144<5>("neko ime", "astera144"){}
+};
+
