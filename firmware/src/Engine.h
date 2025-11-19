@@ -50,17 +50,17 @@ public:
         return fix;
     }
 
-    template<typename TFixture>
-    Fixture* addFixture(std::string name, std::string type, bool animateWifiConnecting = false)
-    {
-        Fixture* fix = Handler::FixtureHandler::addFixture<TFixture>(name, type);
-        if(animateWifiConnecting)
-        {
-            wifiAnimFix = fix;
-        }
+    // template<typename TFixture>
+    // Fixture* addFixture(std::string name, std::string type, bool animateWifiConnecting = false)
+    // {
+    //     Fixture* fix = Handler::FixtureHandler::addFixture<TFixture>(name, type);
+    //     if(animateWifiConnecting)
+    //     {
+    //         wifiAnimFix = fix;
+    //     }
 
-        return fix;
-    }
+    //     return fix;
+    // }
 
     void addButton(Input::Button&& button);
 

@@ -41,7 +41,7 @@ void Fixture::setPreset(uint8_t new_preset)
     uint8_t counter = 0;
     for(Traits::OutputInterface* o : m_outputs)
     {
-        o->setPreset(jsonPreset["groups"][selectedPreset][counter++]);
+        o->setPreset(jsonPreset["groups"][selectedPreset]["settings"][counter++]);
     }
 
     updatePresets();
@@ -68,24 +68,11 @@ void Fixture::updatePresets()
 
 void Fixture::update()
 {
-    // InputHandler::::Handler::update();
-
     for(Traits::OutputInterface* o : m_outputs)
     {
         o->update();
     }
 }
-
-// JsonDocument Fixture::selfReportJson() const
-// {
-//     JsonDocument doc;
-//     doc["name"] = name;
-//     doc["type"] = type;
-//     doc["universe"] = universe;
-//     doc["address"] = address;
-//     doc["preset"] = selectedPreset;
-//     return doc;
-// }
 
 JsonDocument Fixture::describe()
 {

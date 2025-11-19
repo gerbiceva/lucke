@@ -31,7 +31,7 @@ namespace Output
             }
         }
 
-        void setPreset(JsonDocument doc) override
+        void setPreset(const JsonDocument& doc) override
         {
             m_numGroups = doc["num_groups"];
         }

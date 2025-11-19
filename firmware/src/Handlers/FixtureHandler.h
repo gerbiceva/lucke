@@ -29,19 +29,10 @@ namespace Handler
             return fix;
         }
     
-        // template<typename TFixture, typename>
-        // static Fixture* addFixture()
-        // {
-        //     Fixture* fix = new TFixture();
-        //     fixtures.push_back(fix);
-        //     return fix;
-        // }
-    
         static Fixture* get(uint8_t index);
         static std::vector<Fixture*>& allFixtures();
     
         static void updateTask();
         static JsonDocument describe();
-        // static JsonDocument toJson();
     };
 }

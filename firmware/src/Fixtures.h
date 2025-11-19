@@ -1,6 +1,7 @@
 #pragma once
 #include "Fixture/Fixture.h"
 #include "Output/HardwareLED1D.h"
+#include "Output/HardwareLED2D.h"
 
 
 template<uint8_t Pin = 5>
@@ -145,3 +146,42 @@ struct Astera144 : public Strip1m144<5>
 	Astera144() : Strip1m144<5>("neko ime", "astera144"){}
 };
 
+struct Blinder24x8 : public Fixture
+{
+	Blinder24x8() : Fixture("SgmQ1", "Blinder24x8", 
+		R"({
+			"groups": [
+				{
+					"name": "12x4 grid",
+					"settings": 
+					[
+						[
+							{ "column_width": 2, "row_height" : 2 }
+						]
+					]
+				},
+				{
+					"name": "4x2 grid",
+					"settings": 
+					[
+						[
+							{ "column_width": 6, "row_height" : 4 }				  
+						]
+					]
+				},
+				{
+					"name": "4x1 grid",
+					"settings": 
+					[
+						[
+							{ "column_width": 6, "row_height" : 8 }
+						]
+					]
+				},
+			]
+		}
+		)")
+	{
+		addOutput<Output::HardwareLED2D<WS2815, 5, RGB>>(24, 8);
+	}
+};

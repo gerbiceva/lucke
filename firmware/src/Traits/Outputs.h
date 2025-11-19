@@ -30,7 +30,7 @@ namespace Traits
         virtual uint16_t getSize() const;
         virtual void bind() = 0;
         virtual void update() {}
-        virtual void setPreset(JsonDocument doc) = 0;
+        virtual void setPreset(const JsonDocument& doc) = 0;
 
         virtual JsonDocument describe() = 0;
     };

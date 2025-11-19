@@ -30,7 +30,6 @@ public:
     }
 
     uint8_t* getSrcBuffer() { return m_srcBuffer; }
-    // uint16_t getSrcBufferSize() const { return m_outputs.back()->}
 
     void setUniverse(uint8_t new_universe);
     void setAddress(uint16_t new_address);
@@ -41,23 +40,4 @@ public:
     virtual void wifiAnimation() {};
 
     JsonDocument describe();
-    // JsonDocument toJson();
-    // {
-    //     JsonDocument doc;
-    //     doc["name"] = name;
-    //     doc["type"] = type;
-    //     doc["universe"] = universe;
-    //     doc["address"] = address;
-    //     doc["preset"] = preset;
-    //     JsonArray arr = doc["outputs"].as<JsonArray>();
-        
-        
-    //     for(OutputInterface* o : m_outputs)
-    //     {
-    //         arr.add(o->toJson());
-    //     }
-
-
-    //     return doc;
-    // }
 };

@@ -25,28 +25,12 @@ namespace Traits
         uint8_t m_usage = 0;
         InputType m_type;
 
-        std::string typeToString()
-        {
-            switch(m_type)
-            {
-                case (InputType::SACN):
-                    return "SACN";
-                case (InputType::DMX):
-                    return "DMX";
-            }
-
-            return "Unknown";
-        }
+        std::string typeToString() const;
     public:
-        InputInterface(uint8_t universe)
-        : m_universe(universe) {}
+        InputInterface(uint8_t universe);
         
-        virtual ~InputInterface() {}
-
-        uint8_t* getBuffer()
-        {
-            return m_dmxBuffer;
-        }
+        virtual ~InputInterface();
+        uint8_t* getBuffer();
 
         virtual void update() = 0;
         virtual JsonDocument describe() = 0;

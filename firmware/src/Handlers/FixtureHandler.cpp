@@ -50,20 +50,5 @@ namespace Handler
     
         return doc;
     }
-    
-    
-    // JsonDocument FixtureHandler::toJson()
-    // {
-    //     JsonDocument doc;
-    //     doc["fixtures"] = JsonDocument();
-    // 	JsonArray diffArray = doc["fixtures"].to<JsonArray>();
-    
-    //     for(Fixture* f : fixtures)
-    //     {
-    //         diffArray.add(f->toJson());
-    //     }
-    
-    //     return doc;
-    // }
 }
 
