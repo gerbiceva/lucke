@@ -50,6 +50,18 @@ public:
         return fix;
     }
 
+    template<typename TFixture>
+    Fixture* addFixture(std::string name, std::string type, bool animateWifiConnecting = false)
+    {
+        Fixture* fix = FixtureHandler::addFixture<TFixture>(name, type);
+        if(animateWifiConnecting)
+        {
+            wifiAnimFix = fix;
+        }
+
+        return fix;
+    }
+
     void addButton(Input::Button&& button);
 
     Fixture* getFixture(uint16_t index);

@@ -19,6 +19,22 @@ public:
         return fix;
     }
 
+    template<typename TFixture>
+    static Fixture* addFixture(std::string name, std::string type)
+    {
+        Fixture* fix = new TFixture(name, type);
+        fixtures.push_back(fix);
+        return fix;
+    }
+
+    // template<typename TFixture, typename>
+    // static Fixture* addFixture()
+    // {
+    //     Fixture* fix = new TFixture();
+    //     fixtures.push_back(fix);
+    //     return fix;
+    // }
+
     static Fixture* get(uint8_t index);
     static std::vector<Fixture*>& allFixtures();
 

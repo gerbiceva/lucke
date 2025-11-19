@@ -4,10 +4,9 @@
 
 
 template<uint8_t Pin = 5>
-struct Strip1m60 : public Fixture
+class Strip1m60 : public Fixture
 {
-	Strip1m60()
-		: Fixture("strip1m", "led_strip_60",
+	std::string presets =
 		R"(
 		{
 		  "groups": [
@@ -46,52 +45,16 @@ struct Strip1m60 : public Fixture
 		  ]
 		}
 		
-		)")
+		)";
+public:
+	Strip1m60()
+		: Fixture("strip1m", "led_strip_60", presets)
     {
         addOutput<Output::HardwareLED1D<WS2815, Pin, RGB>> (60);
     }
 
 	Strip1m60(std::string name, std::string type)
-		: Fixture(name, type,
-		R"(
-		{
-		  "groups": [
-		    {
-		      "name": "group by 1",
-		      "settings": [
-		        [
-		          { "num_groups": 60 }
-		        ]
-		      ]
-		    },
-		    {
-		      "name": "group by 2",
-		      "settings": [
-		        [
-		          { "num_groups": 30 }
-		        ]
-		      ]
-		    },
-		    {
-		      "name": "group by 4",
-		      "settings": [
-		        [
-		          { "num_groups": 15 }
-		        ]
-		      ]
-		    },
-		    {
-		      "name": "group by 10",
-		      "settings": [
-		        [
-		          { "num_groups": 6 }
-		        ]
-		      ]
-		    }
-		  ]
-		}
-		
-		)")
+		: Fixture(name, type, presets)
     {
         addOutput<Output::HardwareLED1D<WS2815, Pin, RGB>> (60);
     }
@@ -107,94 +70,56 @@ struct Strip1m60 : public Fixture
 };
 
 template<uint8_t Pin = 5>
-struct Strip1m144 : public Fixture
+class Strip1m144 : public Fixture
 {
+	std::string presets = 
+		R"({
+			  "groups": [
+				{
+				  "name": "group by 1",
+				  "settings": [
+					[
+					  { "num_groups": 144 }
+					]
+				  ]
+				},
+				{
+				  "name": "group by 2",
+				  "settings": [
+					[
+					  { "num_groups": 72 }
+					]
+				  ]
+				},
+				{
+				  "name": "group by 4",
+				  "settings": [
+					[
+					  { "num_groups": 36 }
+					]
+				  ]
+				},
+				{
+				  "name": "group by 8",
+				  "settings": [
+					[
+					  { "num_groups": 16 }
+					]
+				  ]
+				}
+			  ]
+			}
+			
+			)";
+public:
 	Strip1m144()
-		: Fixture("strip1m144", "led_strip_144",
-		R"(
-		{
-		  "groups": [
-		    {
-		      "name": "group by 1",
-		      "settings": [
-		        [
-		          { "num_groups": 144 }
-		        ]
-		      ]
-		    },
-		    {
-		      "name": "group by 2",
-		      "settings": [
-		        [
-		          { "num_groups": 72 }
-		        ]
-		      ]
-		    },
-		    {
-		      "name": "group by 4",
-		      "settings": [
-		        [
-		          { "num_groups": 36 }
-		        ]
-		      ]
-		    },
-		    {
-		      "name": "group by 8",
-		      "settings": [
-		        [
-		          { "num_groups": 16 }
-		        ]
-		      ]
-		    }
-		  ]
-		}
-		
-		)")
+		: Fixture("strip1m144", "led_strip_144", presets)
     {
         addOutput<Output::HardwareLED1D<WS2815, Pin, RGB>> (144);
     }
 
 	Strip1m144(std::string name, std::string type)
-		: Fixture(name, type,
-		R"(
-		{
-		  "groups": [
-		    {
-		      "name": "group by 1",
-		      "settings": [
-		        [
-		          { "num_groups": 144 }
-		        ]
-		      ]
-		    },
-		    {
-		      "name": "group by 2",
-		      "settings": [
-		        [
-		          { "num_groups": 72 }
-		        ]
-		      ]
-		    },
-		    {
-		      "name": "group by 4",
-		      "settings": [
-		        [
-		          { "num_groups": 36 }
-		        ]
-		      ]
-		    },
-		    {
-		      "name": "group by 8",
-		      "settings": [
-		        [
-		          { "num_groups": 16 }
-		        ]
-		      ]
-		    }
-		  ]
-		}
-		
-		)")
+		: Fixture(name, type, presets)
     {
         addOutput<Output::HardwareLED1D<WS2815, Pin, RGB>> (144);
     }

@@ -31,8 +31,8 @@ namespace Traits
         virtual void bind() = 0;
         virtual void update() {}
         virtual void setPreset(JsonDocument doc) = 0;
-        virtual JsonDocument describe() {return JsonDocument();};
-        // virtual JsonDocument describe() = 0;
+
+        virtual JsonDocument describe() = 0;
     };
 
 }

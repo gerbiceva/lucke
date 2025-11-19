@@ -14,3 +14,17 @@ bool PinHandler::available(uint8_t pin)
         return false;
     }
 }
+
+JsonDocument PinHandler::describe()
+{
+    JsonDocument doc;
+    doc["used_pins"] = JsonDocument();
+    JsonArray arr = doc["used_pins"].to<JsonArray>();
+
+    for(uint8_t pin : m_usedPins)
+    {
+        arr.add(pin);
+    }
+
+    return doc;
+}

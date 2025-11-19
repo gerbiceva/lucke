@@ -36,15 +36,6 @@ namespace Output {
             m_cled->clearLeds();
             updateFastLED();
 		};
-
-
-        JsonDocument describe() override
-        {
-            JsonDocument doc;
-
-
-            return doc;
-        }
     };
 }
 
