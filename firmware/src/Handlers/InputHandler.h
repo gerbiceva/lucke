@@ -12,5 +12,5 @@ class InputHandler
 public:
     static Traits::InputInterface* interface(uint8_t uni, Traits::InputInterface::InputType type);
     static void update();
-    // static JsonDocument toJson();
+    static JsonDocument describe();
 };

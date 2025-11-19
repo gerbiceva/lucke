@@ -41,14 +41,14 @@ namespace Output
             return m_numGroups * this->m_numPxls;
         }
 
-        // JsonDocument toJson() override
-        // {
-        //     JsonDocument doc;
-        //     doc["type"] = "FastLED-1D";
-        //     doc["num_leds"] = this->m_numLeds;
-        //     doc["num_groups"] = m_numGroups;
+        JsonDocument describe() override
+        {
+            JsonDocument doc;
+            doc["type"] = "FastLED-1D";
+            doc["num_leds"] = this->m_numLeds;
+            doc["num_groups"] = m_numGroups;
 
-        //     return doc;
-        // }
+            return doc;
+        }
     };
 }

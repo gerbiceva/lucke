@@ -23,6 +23,6 @@ public:
     static std::vector<Fixture*>& allFixtures();
 
     static void updateTask();
-    static JsonDocument fixtureReport();
+    static JsonDocument describe();
     // static JsonDocument toJson();
 };

@@ -49,6 +49,6 @@ namespace Traits
         }
 
         virtual void update() = 0;
-        // virtual JsonDocument toJson() = 0;
+        virtual JsonDocument describe() = 0;
     };
 }

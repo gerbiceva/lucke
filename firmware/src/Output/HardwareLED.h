@@ -38,13 +38,13 @@ namespace Output {
 		};
 
 
-        // JsonDocument toJson() override
-        // {
-        //     JsonDocument doc;
+        JsonDocument describe() override
+        {
+            JsonDocument doc;
 
 
-        //     return doc;
-        // }
+            return doc;
+        }
     };
 }
 

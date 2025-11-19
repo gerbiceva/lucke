@@ -49,10 +49,6 @@ Fixture* Engine::operator[](uint16_t index)
     return getFixture(index);
 }
 
-void Engine::createTasks()
-{
-}
-
 void Engine::update(void*)
 {
     while(true)
@@ -76,10 +72,13 @@ void Engine::sendReport(void*)
     {
         if(Utils::Wifi::isConnected())
         {
+            JsonDocument doc;
+            doc["fix_handler"] = FixtureHandler::describe();
+            doc["input_handler"] = InputHandler::describe();
             if(FixtureHandler::get(0) != nullptr)
             {
                 udp.beginPacket(WiFi.broadcastIP(), 12345);
-                serializeJson(FixtureHandler::fixtureReport(), udp);
+                serializeJson(doc, udp);
                 udp.endPacket();
             }
         }

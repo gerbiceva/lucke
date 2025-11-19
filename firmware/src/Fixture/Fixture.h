@@ -46,7 +46,7 @@ public:
         // off = (off + 1) % 180;
     }
 
-    JsonDocument selfReportJson() const;
+    JsonDocument describe();
     // JsonDocument toJson();
     // {
     //     JsonDocument doc;

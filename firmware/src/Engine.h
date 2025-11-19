@@ -54,6 +54,4 @@ public:
 
     Fixture* getFixture(uint16_t index);
     Fixture* operator[](uint16_t index);
-
-    void createTasks();
 };

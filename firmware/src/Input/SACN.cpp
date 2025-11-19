@@ -21,14 +21,14 @@ namespace Input
         recv->update();
     }
 
-    // JsonDocument Sacn::toJson()
-    // {
-    //     JsonDocument doc;
-    //     doc["universe"] = m_universe;
-    //     doc["type"] = "SACN";
-    //     doc["seq_diff"] = recv->seqdiff();
-    //     doc["fps"] = recv->framerate();
+    JsonDocument Sacn::describe()
+    {
+        JsonDocument doc;
+        doc["universe"] = m_universe;
+        doc["type"] = "SACN";
+        doc["seq_diff"] = recv->seqdiff();
+        doc["fps"] = recv->framerate();
 
-    //     return doc;
-    // }
+        return doc;
+    }
 }

@@ -48,16 +48,16 @@ void InputHandler::update()
     }
 }
 
-// JsonDocument InputHandler::toJson()
-// {
-//     JsonDocument doc;
-//     doc["inputs"] = JsonDocument();
-//     JsonArray arr = doc["inputs"].to<JsonArray>();
+JsonDocument InputHandler::describe()
+{
+    JsonDocument doc;
+    doc["inputs"] = JsonDocument();
+    JsonArray arr = doc["inputs"].to<JsonArray>();
 
-//     for(auto& pair : m_vecInputs)
-//     {
-//         arr.add(pair.second->toJson());
-//     }
+    for(auto& pair : m_vecInputs)
+    {
+        arr.add(pair.second->describe());
+    }
 
-//     return doc;
-// }
+    return doc;
+}

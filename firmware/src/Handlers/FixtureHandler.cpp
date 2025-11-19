@@ -35,7 +35,7 @@ void FixtureHandler::updateTask()
         
 }
 
-JsonDocument FixtureHandler::fixtureReport()
+JsonDocument FixtureHandler::describe()
 {
     JsonDocument doc;
     doc["fixtures"] = JsonDocument();
@@ -43,7 +43,7 @@ JsonDocument FixtureHandler::fixtureReport()
 
     for(Fixture* f : fixtures)
     {
-        arr.add(f->selfReportJson());
+        arr.add(f->describe());
     }
 
     return doc;
