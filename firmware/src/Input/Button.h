@@ -3,6 +3,7 @@
 
 namespace Input 
 {
+
 class Button {
 	const uint8_t buttonPin;
 	unsigned long holdTime;

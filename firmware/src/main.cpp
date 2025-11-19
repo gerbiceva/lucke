@@ -2,7 +2,8 @@
 
 void setup() 
 {	
-	Engine::instance().addFixture<Strip1m60<5>>("", "", true);
+	Engine::instance().addFixture<Astera60>(true);
+	// Engine::instance().createTasks();
 }
 
 

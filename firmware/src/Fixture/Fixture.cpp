@@ -20,7 +20,7 @@ void Fixture::setUniverse(uint8_t new_universe)
     universe = new_universe;
     m_storage.putUShort("universe", universe);
 
-    m_srcBuffer = InputHandler::interface(universe, m_inType)->getBuffer();
+    m_srcBuffer = Handler::InputHandler::interface(universe, m_inType)->getBuffer();
     
     updatePresets();
 }
@@ -68,7 +68,7 @@ void Fixture::updatePresets()
 
 void Fixture::update()
 {
-    // Input::Handler::update();
+    // InputHandler::::Handler::update();
 
     for(Traits::OutputInterface* o : m_outputs)
     {

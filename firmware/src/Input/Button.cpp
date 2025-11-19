@@ -9,7 +9,7 @@ namespace Input
 Button::Button(const uint8_t pin, void(*risingFunction)(), void(*holdFunction)(), unsigned long holdTimeMillis) 
 	: buttonPin(pin), risingCallback(risingFunction), holdCallback(holdFunction), holdTime(holdTimeMillis) 
 {
-    if(PinHandler::available(buttonPin))
+    if(Handler::PinHandler::available(buttonPin))
 	{
         pinMode(buttonPin, INPUT_PULLUP);
     }

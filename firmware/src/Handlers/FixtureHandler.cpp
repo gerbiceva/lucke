@@ -3,63 +3,67 @@
 #include "Fixture/Fixture.h"
 #include "Output/HardwareLED.h"
 
-std::vector<Fixture*> FixtureHandler::fixtures;
-
-void FixtureHandler::addFixture(Fixture* fixture)
+namespace Handler
 {
-    fixtures.push_back(fixture);
-}
-
-Fixture* FixtureHandler::get(uint8_t index)
-{
-    if(index > fixtures.size())
+    std::vector<Fixture*> FixtureHandler::fixtures;
+    
+    void FixtureHandler::addFixture(Fixture* fixture)
     {
-        Utils::Logger::printf("Error: Fixture at index %d does not exist/n", index);
-        return nullptr;
+        fixtures.push_back(fixture);
     }
-
-    return fixtures[index];
-}
-
-std::vector<Fixture*>& FixtureHandler::allFixtures()
-{
-    return fixtures;
-}
-
-void FixtureHandler::updateTask()
-{
-    for(Fixture* fix : fixtures)
+    
+    Fixture* FixtureHandler::get(uint8_t index)
     {
-        fix->update();
+        if(index > fixtures.size())
+        {
+            Utils::Logger::printf("Error: Fixture at index %d does not exist/n", index);
+            return nullptr;
+        }
+    
+        return fixtures[index];
     }
-        
-}
-
-JsonDocument FixtureHandler::describe()
-{
-    JsonDocument doc;
-    doc["fixtures"] = JsonDocument();
-    JsonArray arr = doc["fixtures"].to<JsonArray>();
-
-    for(Fixture* f : fixtures)
+    
+    std::vector<Fixture*>& FixtureHandler::allFixtures()
     {
-        arr.add(f->describe());
+        return fixtures;
     }
-
-    return doc;
+    
+    void FixtureHandler::updateTask()
+    {
+        for(Fixture* fix : fixtures)
+        {
+            fix->update();
+        }
+            
+    }
+    
+    JsonDocument FixtureHandler::describe()
+    {
+        JsonDocument doc;
+        doc["fixtures"] = JsonDocument();
+        JsonArray arr = doc["fixtures"].to<JsonArray>();
+    
+        for(Fixture* f : fixtures)
+        {
+            arr.add(f->describe());
+        }
+    
+        return doc;
+    }
+    
+    
+    // JsonDocument FixtureHandler::toJson()
+    // {
+    //     JsonDocument doc;
+    //     doc["fixtures"] = JsonDocument();
+    // 	JsonArray diffArray = doc["fixtures"].to<JsonArray>();
+    
+    //     for(Fixture* f : fixtures)
+    //     {
+    //         diffArray.add(f->toJson());
+    //     }
+    
+    //     return doc;
+    // }
 }
 
-
-// JsonDocument FixtureHandler::toJson()
-// {
-//     JsonDocument doc;
-//     doc["fixtures"] = JsonDocument();
-// 	JsonArray diffArray = doc["fixtures"].to<JsonArray>();
-
-//     for(Fixture* f : fixtures)
-//     {
-//         diffArray.add(f->toJson());
-//     }
-
-//     return doc;
-// }

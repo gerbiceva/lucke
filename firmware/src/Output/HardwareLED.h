@@ -26,7 +26,7 @@ namespace Output {
 
 		void bind() override
 		{
-            if(!PinHandler::available(TPin))
+            if(!Handler::PinHandler::available(TPin))
             {
                 Utils::Logger::printf("Error adding fastled: pin %d already used\n", TPin);
                 return;

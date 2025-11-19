@@ -41,7 +41,7 @@ public:
     template<typename TFixture>
     Fixture* addFixture(bool animateWifiConnecting = false)
     {
-        Fixture* fix = FixtureHandler::addFixture<TFixture>();
+        Fixture* fix = Handler::FixtureHandler::addFixture<TFixture>();
         if(animateWifiConnecting)
         {
             wifiAnimFix = fix;
@@ -53,7 +53,7 @@ public:
     template<typename TFixture>
     Fixture* addFixture(std::string name, std::string type, bool animateWifiConnecting = false)
     {
-        Fixture* fix = FixtureHandler::addFixture<TFixture>(name, type);
+        Fixture* fix = Handler::FixtureHandler::addFixture<TFixture>(name, type);
         if(animateWifiConnecting)
         {
             wifiAnimFix = fix;

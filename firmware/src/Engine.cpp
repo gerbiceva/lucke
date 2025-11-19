@@ -36,12 +36,12 @@ Engine& Engine::instance()
 
 void Engine::addButton(Input::Button&& button)
 {
-    ButtonManager::add(std::move(button));
+    Handler::ButtonManager::add(std::move(button));
 }
 
 Fixture* Engine::getFixture(uint16_t index)
 {
-    return FixtureHandler::get(index);
+    return Handler::FixtureHandler::get(index);
 }
 
 Fixture* Engine::operator[](uint16_t index)
@@ -55,10 +55,10 @@ void Engine::update(void*)
     {
         if(Utils::Wifi::isConnected())
         {
-            InputHandler::update();
+            Handler::InputHandler::update();
 
         }
-        FixtureHandler::updateTask();
+        Handler::FixtureHandler::updateTask();
 
         Output::updateFastLED();
         vTaskDelay(20);
@@ -73,9 +73,9 @@ void Engine::sendReport(void*)
         if(Utils::Wifi::isConnected())
         {
             JsonDocument doc;
-            doc["fix_handler"] = FixtureHandler::describe();
-            doc["input_handler"] = InputHandler::describe();
-            if(FixtureHandler::get(0) != nullptr)
+            doc["fix_handler"] = Handler::FixtureHandler::describe();
+            doc["input_handler"] = Handler::InputHandler::describe();
+            if(Handler::FixtureHandler::get(0) != nullptr)
             {
                 udp.beginPacket(WiFi.broadcastIP(), 12345);
                 serializeJson(doc, udp);
