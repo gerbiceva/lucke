@@ -18,6 +18,7 @@ namespace Core
                 address = m_storage.getUShort("address");
                 selectedPreset = m_storage.getUChar("preset_index");
                 name = m_storage.getString("name");
+                inputIndex = m_storage.getUChar("inputIndex");
             }
             else 
             {
@@ -25,6 +26,8 @@ namespace Core
                 m_storage.putUShort("address", address);
                 m_storage.putUChar("preset_index", selectedPreset);
                 m_storage.putString("name", name);
+                m_storage.putUChar("inputIndex", inputIndex);
+
             }
 
             // setupDefulat();

@@ -17,6 +17,7 @@ namespace Core
             uint8_t universe = 1U;
             uint16_t address = 0U;
             uint8_t selectedPreset = 0U;
+            uint8_t inputIndex = 0U;
         
             std::string name = "name";
             std::string type = "type";
