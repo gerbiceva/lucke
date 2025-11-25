@@ -21,7 +21,7 @@ namespace Traits
             DMX
         };
     protected:
-        uint8_t m_dmxBuffer[512] = {0};
+        uint8_t* m_dmxBuffer;
         uint8_t m_universe;
         uint8_t m_usage = 0;
         InputType m_type;

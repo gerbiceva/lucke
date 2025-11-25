@@ -5,37 +5,52 @@
 
 namespace Handler
 {
+    using Traits::InputInterface;
 
-    std::unordered_map<uint8_t, Traits::InputInterface*> InputHandler::m_inputs;
-    std::vector<std::pair<uint8_t, Traits::InputInterface*>> InputHandler::m_vecInputs;
+    std::vector<InputInterface*> InputHandler::m_inputs;
+
+    // std::unordered_map<uint8_t, Traits::InputInterface*> InputHandler::m_inputs;
+    // std::vector<std::pair<uint8_t, Traits::InputInterface*>> InputHandler::m_vecInputs;
     
-    Traits::InputInterface* InputHandler::interface(uint8_t uni, Traits::InputInterface::InputType type)
+    InputInterface* InputHandler::find(uint8_t universe)
     {
-        bool found = false;
-        for(auto& p : m_vecInputs)
+        for(InputInterface* p : m_inputs)
         {
-            if(p.first == uni)
+            if(p && p->getUniverse() == universe)
             {
-                return p.second;
+                return p;
             }
         }
+
+        return nullptr;
+    }
+
+    InputInterface* InputHandler::interface(uint8_t universe, InputInterface::InputType type)
+    {
         // if(m_inputs.find(uni) == m_inputs.end())
         // {
-        Traits::InputInterface* ptr;
-    
-        if(type == Traits::InputInterface::InputType::SACN)
+        InputInterface* ptr = find(universe);
+        if(!ptr)
         {
-            ptr = new Input::Sacn(uni);
+            ptr = new Input::Sacn(universe);
+            m_inputs.push_back(ptr);
         }
-        else
-        {
-            Utils::Logger::printf("Error adding interface that is not SACN for uni: %d\n", uni);
-            Utils::Logger::println("Adding SACN interface");
-            ptr = new Input::Sacn(uni);
-        }
+        
+        return ptr; 
     
-        m_vecInputs.push_back(std::pair<uint8_t, Traits::InputInterface*>(uni, ptr));
-        return ptr;
+        // if(type == Traits::InputInterface::InputType::SACN)
+        // {
+        //     ptr = new Input::Sacn(uni);
+        // }
+        // else
+        // {
+        //     Utils::Logger::printf("Error adding interface that is not SACN for uni: %d\n", uni);
+        //     Utils::Logger::println("Adding SACN interface");
+        //     ptr = new Input::Sacn(uni);
+        // }
+    
+        // m_vecInputs.push_back(std::pair<uint8_t, Traits::InputInterface*>(uni, ptr));
+        // return ptr;
             
             // m_inputs[uni] = ptr;
         // }
@@ -45,9 +60,9 @@ namespace Handler
     
     void InputHandler::update()
     {
-        for(auto& pair : m_vecInputs)
+        for(InputInterface* p : m_inputs)
         {
-            pair.second->update();
+            p->update();
         }
     }
     
@@ -57,9 +72,9 @@ namespace Handler
         doc["inputs"] = JsonDocument();
         JsonArray arr = doc["inputs"].to<JsonArray>();
     
-        for(auto& pair : m_vecInputs)
+        for(InputInterface* p : m_inputs)
         {
-            arr.add(pair.second->describe());
+            arr.add(p->describe());
         }
     
         return doc;
