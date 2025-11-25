@@ -1,6 +1,7 @@
 #include "Fixture.h"
 #include "Handlers/InputHandler.h"
 #include <ArduinoJson.h>
+#include "Utils/Logger.h"
 
 
 Fixture::Fixture()

@@ -22,8 +22,7 @@ Engine::Engine ()
         // Utils::Logger::println("Error connecting");
         
     }
-
-   
+    sleep(2);   
 }
 
 Engine& Engine::instance()

@@ -23,6 +23,11 @@ namespace Traits
         
     InputInterface::~InputInterface() {}
 
+    uint8_t InputInterface::getUniverse() const
+    {
+        return m_universe;
+    }
+
     uint8_t* InputInterface::getBuffer()
     {
         return m_dmxBuffer;
