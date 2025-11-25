@@ -3,6 +3,13 @@
 #include <ArduinoJson.h>
 
 
+Fixture::Fixture()
+    : m_inType(Traits::InputInterface::InputType::DMX)
+    
+{
+
+}
+
 Fixture::Fixture(std::string name, std::string type, std::string presets, Traits::InputInterface::InputType input_type)
     : m_inType(input_type),
     Core::Fixture::FixtureConfig(name, type)

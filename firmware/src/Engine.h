@@ -62,6 +62,19 @@ public:
     //     return fix;
     // }
 
+    void init()
+    {
+        static bool inited = false;
+
+        if(!inited)
+        {
+            xTaskCreate(Utils::Wifi::checkNetwork, "check wifi", 1000, NULL, 1 | portPRIVILEGE_BIT, NULL);
+            xTaskCreate(Engine::update, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, NULL);
+            xTaskCreate(Engine::sendReport, "send report", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
+            inited = true;
+        }
+    }
+
     void addButton(Input::Button&& button);
 
     Fixture* getFixture(uint16_t index);

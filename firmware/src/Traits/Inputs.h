@@ -16,6 +16,7 @@ namespace Traits
     public:
         enum class InputType
         {
+            None,
             SACN,
             DMX
         };

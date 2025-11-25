@@ -16,6 +16,7 @@ class Fixture : public Core::Fixture::FixtureConfig
     void updatePresets();
 public:
 
+    Fixture();
     Fixture(std::string name, std::string type, std::string presets, Traits::InputInterface::InputType input_type = Traits::InputInterface::InputType::SACN);
 
     template<typename TOutput, typename... Args>

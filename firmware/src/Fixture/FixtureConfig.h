@@ -22,6 +22,7 @@ namespace Core
             std::string name = "name";
             std::string type = "type";
         
+            FixtureConfig(){}
             FixtureConfig(std::string fixtureName, std::string fixtureType);
         };
     }

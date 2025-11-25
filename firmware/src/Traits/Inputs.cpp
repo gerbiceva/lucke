@@ -16,7 +16,10 @@ namespace Traits
     }
 
     InputInterface::InputInterface(uint8_t universe)
-        : m_universe(universe) {}
+        : m_universe(universe) 
+    {
+        // m_dmxBuffer = new uint8_t[512]();
+    }
         
     InputInterface::~InputInterface() {}
 

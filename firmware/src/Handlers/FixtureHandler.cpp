@@ -7,10 +7,10 @@ namespace Handler
 {
     std::vector<Fixture*> FixtureHandler::fixtures;
     
-    void FixtureHandler::addFixture(Fixture* fixture)
-    {
-        fixtures.push_back(fixture);
-    }
+    // void FixtureHandler::addFixture(Fixture* fixture)
+    // {
+    //     fixtures.push_back(fixture);
+    // }
     
     Fixture* FixtureHandler::get(uint8_t index)
     {
