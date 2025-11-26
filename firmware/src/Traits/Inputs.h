@@ -13,6 +13,7 @@ namespace Traits
 
     class InputInterface
     {
+        static uint8_t s_ID;
     public:
         enum class InputType
         {
@@ -23,8 +24,8 @@ namespace Traits
     protected:
         uint8_t* m_dmxBuffer;
         uint8_t m_universe;
-        uint8_t m_usage = 0;
         InputType m_type;
+        // uint8_t m_ID;
 
         std::string typeToString() const;
     public:

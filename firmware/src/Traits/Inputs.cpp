@@ -2,6 +2,7 @@
 
 namespace Traits
 {
+    uint8_t InputInterface::s_ID = 0;
     std::string InputInterface::typeToString() const
     {
         switch(m_type)
