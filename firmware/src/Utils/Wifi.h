@@ -1,5 +1,6 @@
 #pragma once
 #include <atomic>
+#include <ArduinoJson.h>
 
 namespace Utils 
 {
@@ -17,5 +18,7 @@ public:
 
     static bool isConnected() { return connected; }
     static void checkNetwork(void*);
+
+    static JsonDocument describe();
 };
 }

@@ -10,15 +10,14 @@ class Fixture : public Core::Fixture::FixtureConfig, public Traits::Serializable
     std::vector<Traits::OutputInterface*> m_outputs;
     uint8_t* m_srcBuffer;
     uint16_t m_lastOffset = 0U;
-
-    Traits::InputInterface::InputType m_inType;
     JsonDocument jsonPreset;
 
     void updatePresets();
 public:
 
     Fixture();
-    Fixture(std::string name, std::string type, std::string presets, Traits::InputInterface::InputType input_type = Traits::InputInterface::InputType::SACN);
+    Fixture(std::string name, std::string type, std::string presets);
+
 
     template<typename TOutput, typename... Args>
     void addOutput(Args&&... args)
@@ -38,6 +37,7 @@ public:
     void setPreset(uint8_t new_preset);
     void setName(const std::string& other);
 
+    void clear();
     virtual void update();
     virtual void wifiAnimation() {};
 

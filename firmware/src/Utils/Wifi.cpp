@@ -87,10 +87,22 @@ namespace Utils
 
             connected = true;
             vTaskDelete(animation);
+            Engine::instance().clearSrcBuffers();
             // Controller::get().clear();
         }
 
         vTaskDelay(50);
     }
+}
+
+JsonDocument Wifi::describe()
+{
+    JsonDocument doc;
+    
+	doc["ssid"] = WiFi.SSID();
+	doc["rssi"] = WiFi.RSSI();
+	doc["local_ip"] = WiFi.localIP();
+    doc["connected"] = isConnected();
+    return doc;
 }
 }

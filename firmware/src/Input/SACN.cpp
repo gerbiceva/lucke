@@ -15,10 +15,15 @@ namespace Input
         delete recv;
     }
 
+    // void Sacn::init()
+    // {
+        
+    // }
+
     void Sacn::update()
     {
             // Utils::Logger::println("Here");
-        recv->dmx(this->m_dmxBuffer);
+        // recv->dmx(m_dmxBuffer);
         recv->update();
     }
 

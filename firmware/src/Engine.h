@@ -33,6 +33,7 @@ class Engine
     Engine ();
     static void update(void*);
     static void sendReport(void*);
+    static void printReport(void*);
 
 public:
     static Settings settings;
@@ -65,6 +66,7 @@ public:
     // }
 
     void init();
+    void clearSrcBuffers();
     void addButton(Input::Button&& button);
     static JsonDocument describe();
     static std::string toString();

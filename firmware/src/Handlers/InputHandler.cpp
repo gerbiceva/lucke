@@ -67,6 +67,24 @@ namespace Handler
             p->update();
         }
     }
+
+    // void InputHandler::initInputs()
+    // {
+    //     for(InputInterface* p : m_inputs)
+    //     {
+    //         p->init();
+    //     }
+    // }
+
+
+    void InputHandler::clearSrcBuffers()
+    {
+        for(InputInterface* p : m_inputs)
+        {
+            p->clearSrcBuffer();
+        }
+    }
+
     
     JsonDocument InputHandler::describe()
     {

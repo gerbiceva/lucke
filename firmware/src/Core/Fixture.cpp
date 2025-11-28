@@ -4,16 +4,13 @@
 #include "Utils/Logger.h"
 
 
-Fixture::Fixture()
-    : m_inType(Traits::InputInterface::InputType::DMX)
-    
+Fixture::Fixture()    
 {
 
 }
 
-Fixture::Fixture(std::string name, std::string type, std::string presets, Traits::InputInterface::InputType input_type)
-    : m_inType(input_type),
-    Core::Fixture::FixtureConfig(name, type)
+Fixture::Fixture(std::string name, std::string type, std::string presets)
+    : Core::Fixture::FixtureConfig(name, type)
 {
     deserializeJson(jsonPreset, presets);
 
@@ -28,7 +25,7 @@ void Fixture::setUniverse(uint8_t new_universe)
     this->universe = new_universe;
     m_storage.putUShort("universe", universe);
 
-    m_srcBuffer = Handler::InputHandler::interface(new_universe, m_inType)->getBuffer();
+    m_srcBuffer = Handler::InputHandler::interface(new_universe)->getBuffer();
     
     updatePresets();
 }

@@ -14,8 +14,10 @@ namespace Handler
 
         static Traits::InputInterface* find(uint8_t universe);
     public:
-        static Traits::InputInterface* interface(uint8_t universe, Traits::InputInterface::InputType type);
+        static Traits::InputInterface* interface(uint8_t universe, Traits::InputInterface::InputType type = Traits::InputInterface::InputType::SACN);
         static void update();
+        // static void initInputs();
+        static void clearSrcBuffers();
         static JsonDocument describe();
     };
 }

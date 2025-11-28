@@ -41,16 +41,26 @@ void Engine::init()
         xTaskCreate(Utils::Wifi::checkNetwork, "check wifi", 1000, NULL, 1 | portPRIVILEGE_BIT, NULL);
         xTaskCreate(Engine::update, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, NULL);
         // xTaskCreate(Engine::sendReport, "send report", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
+        xTaskCreate(Engine::printReport, "print report", 4000, NULL, 1 | portPRIVILEGE_BIT, NULL);
         inited = true;
     }
 }
 
+void Engine::clearSrcBuffers()
+{
+    Handler::InputHandler::clearSrcBuffers();
+}
+
+
 JsonDocument Engine::describe()
 {
     JsonDocument doc;
-    doc["wifi_connected"] = Utils::Wifi::isConnected();
-    doc["fix_handler"] = Handler::FixtureHandler::describe();
+    // doc["heap_size"] = ESP.getHeapSize();
+	// doc["heap_free"] = ESP.getFreeHeap();
+    doc["wifi"] = Utils::Wifi::describe();
+    doc["pin_handler"] = Handler::PinHandler::describe();
     doc["input_handler"] = Handler::InputHandler::describe();
+    doc["fixture_handler"] = Handler::FixtureHandler::describe();
     return doc;
 }
 
@@ -105,5 +115,14 @@ void Engine::sendReport(void*)
         }
 
         vTaskDelay(100);
+    }
+}
+
+void Engine::printReport(void*)
+{
+    while(true)
+    {
+        Utils::Logger::println(toString().c_str());
+        vTaskDelay(5000);
     }
 }

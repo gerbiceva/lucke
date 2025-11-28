@@ -31,6 +31,12 @@ namespace Traits
         
     InputInterface::~InputInterface() {}
 
+
+    void InputInterface::clearSrcBuffer()
+    {
+        memset(m_dmxBuffer, 0, sizeof(uint8_t));
+    }
+
     uint8_t InputInterface::getUniverse() const
     {
         return m_universe;
