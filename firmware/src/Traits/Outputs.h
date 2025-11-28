@@ -9,7 +9,7 @@
 namespace Traits
 {
 
-    class OutputInterface
+    class OutputInterface : public Serializable
     {
     protected:
         // std::vector<uint8_t> m_dstBuffer;
@@ -30,9 +30,8 @@ namespace Traits
         virtual uint16_t getSize() const;
         virtual void bind() = 0;
         virtual void update() {}
+        virtual void clear() {}
         virtual void setPreset(const JsonDocument& doc) = 0;
-
-        virtual JsonDocument describe() = 0;
     };
 
 }

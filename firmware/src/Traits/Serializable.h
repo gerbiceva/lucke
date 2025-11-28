@@ -1,11 +1,11 @@
-// #pragma once
-// #include <ArduinoJson.h>
+#pragma once
+#include <ArduinoJson.h>
 
-// namespace Traits
-// {
-//     struct Serializable
-//     {
-//         virtual JsonDocument toJson() = 0;
-//     };
+namespace Traits
+{
+    struct Serializable
+    {
+        virtual JsonDocument describe() = 0;
+    };
 
-// }
+}

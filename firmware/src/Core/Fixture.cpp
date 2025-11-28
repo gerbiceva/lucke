@@ -17,39 +17,39 @@ Fixture::Fixture(std::string name, std::string type, std::string presets, Traits
 {
     deserializeJson(jsonPreset, presets);
 
-    setUniverse(universe);
-    setAddress(address);
-    setName(name);
-    setPreset(selectedPreset);
+    setUniverse(1);
+    setAddress(this->address);
+    setName(this->name);
+    // setPreset(selectedPreset);
 }
 
 void Fixture::setUniverse(uint8_t new_universe)
 {
-    universe = new_universe;
+    this->universe = new_universe;
     m_storage.putUShort("universe", universe);
 
-    m_srcBuffer = Handler::InputHandler::interface(universe, m_inType)->getBuffer();
+    m_srcBuffer = Handler::InputHandler::interface(new_universe, m_inType)->getBuffer();
     
     updatePresets();
 }
 
 void Fixture::setAddress(uint16_t new_address)
 {
-    address = new_address;
-    m_storage.putUShort("address", address);
+    this->address = new_address;
+    m_storage.putUShort("address", this->address);
     
     updatePresets();
 }
 
 void Fixture::setPreset(uint8_t new_preset)
 {
-    selectedPreset = new_preset;
-    m_storage.putUChar("preset_index", selectedPreset);
+    this->selectedPreset = new_preset;
+    m_storage.putUChar("preset_index", this->selectedPreset);
 
     uint8_t counter = 0;
     for(Traits::OutputInterface* o : m_outputs)
     {
-        o->setPreset(jsonPreset["groups"][selectedPreset]["settings"][counter++]);
+        o->setPreset(jsonPreset["groups"][this->selectedPreset]["settings"][counter++]);
     }
 
     updatePresets();
@@ -58,8 +58,8 @@ void Fixture::setPreset(uint8_t new_preset)
 
 void Fixture::setName(const std::string& other) 
 {
-    name = other;
-    m_storage.putString("name", name);
+    this->name = other;
+    m_storage.putString("name", this->name);
 }
 
 void Fixture::updatePresets()
@@ -94,10 +94,10 @@ JsonDocument Fixture::describe()
     doc["outputs"] = JsonDocument();
 	JsonArray outputs = doc["outputs"].to<JsonArray>();
 
-    // for(Traits::OutputInterface* o : outputs)
-    // {
-    //     outputs.add(o->describe());
-    // }
+    for(Traits::OutputInterface* o : m_outputs)
+    {
+        outputs.add(o->describe());
+    }
 
     return doc;
 }

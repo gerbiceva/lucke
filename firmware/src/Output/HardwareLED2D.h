@@ -76,7 +76,7 @@ namespace Output
         JsonDocument describe() override
         {
             JsonDocument doc;
-            doc["type"] = "FastLED-1D";
+            doc["type"] = "FastLED-2D";
             doc["num_leds"] = this->m_numLeds;
             doc["width"] = m_width;
             doc["height"] = m_height;

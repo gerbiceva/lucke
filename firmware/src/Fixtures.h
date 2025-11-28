@@ -1,13 +1,53 @@
 #pragma once
-#include "Fixture/Fixture.h"
+#include "Core/Fixture.h"
 #include "Output/HardwareLED1D.h"
 #include "Output/HardwareLED2D.h"
 
 struct Astera60 : public Fixture
 {
+    // std::string presets =
+    // R"(
+    // {
+    //     "groups": [
+    //     {
+    //         "name": "group by 1",
+    //         "settings": [
+    //         [
+    //             { "num_groups": 60 }
+    //         ]
+    //         ]
+    //     },
+    //     {
+    //         "name": "group by 2",
+    //         "settings": [
+    //         [
+    //             { "num_groups": 30 }
+    //         ]
+    //         ]
+    //     },
+    //     {
+    //         "name": "group by 4",
+    //         "settings": [
+    //         [
+    //             { "num_groups": 15 }
+    //         ]
+    //         ]
+    //     },
+    //     {
+    //         "name": "group by 10",
+    //         "settings": [
+    //         [
+    //             { "num_groups": 6 }
+    //         ]
+    //         ]
+    //     }
+    //     ]
+    // }
+    
+    // )";
 public:
     Astera60()
-		: Fixture("strip1m", "led_strip_60", "presets")
+		: Fixture("neki", "Astera60", "presets")
     {
         addOutput<Output::HardwareLED1D<WS2815, 5, RGB>> (60);
     }
@@ -16,7 +56,7 @@ public:
     {
         static uint16_t off = 0;
         getSrcBuffer()[off] = 255;
-        getSrcBuffer()[off == 0 ? (144*3 - 1) : off - 1] = 0;
+        getSrcBuffer()[off == 0 ? (60*3 - 1) : off - 1] = 0;
         off = (off + 1) % 180;
         vTaskDelay(20);
     }

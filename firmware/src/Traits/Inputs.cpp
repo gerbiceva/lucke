@@ -24,6 +24,8 @@ namespace Traits
         {
             m_dmxBuffer[i] = 0;
         }
+
+        m_ID = ++s_ID;
         // memcpy(m_dmxBuffer, 0, 512);
     }
         

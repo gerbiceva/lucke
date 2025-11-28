@@ -5,6 +5,8 @@
 #include <string>
 #include <unordered_map>
 
+#define ENGINE_VERSION "1.1"
+
 class Engine
 {
     class Settings
@@ -30,7 +32,6 @@ class Engine
     
     Engine ();
     static void update(void*);
-
     static void sendReport(void*);
 
 public:
@@ -63,20 +64,10 @@ public:
     //     return fix;
     // }
 
-    void init()
-    {
-        static bool inited = false;
-
-        if(!inited)
-        {
-            xTaskCreate(Utils::Wifi::checkNetwork, "check wifi", 1000, NULL, 1 | portPRIVILEGE_BIT, NULL);
-            xTaskCreate(Engine::update, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, NULL);
-            xTaskCreate(Engine::sendReport, "send report", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
-            inited = true;
-        }
-    }
-
+    void init();
     void addButton(Input::Button&& button);
+    static JsonDocument describe();
+    static std::string toString();
 
     Fixture* getFixture(uint16_t index);
     Fixture* operator[](uint16_t index);

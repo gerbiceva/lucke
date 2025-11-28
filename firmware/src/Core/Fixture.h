@@ -3,8 +3,9 @@
 #include "FixtureConfig.h"
 #include "Traits/Outputs.h"
 #include "Traits/Inputs.h"
+#include "Traits/Serializable.h"
 
-class Fixture : public Core::Fixture::FixtureConfig
+class Fixture : public Core::Fixture::FixtureConfig, public Traits::Serializable
 {
     std::vector<Traits::OutputInterface*> m_outputs;
     uint8_t* m_srcBuffer;
@@ -40,5 +41,5 @@ public:
     virtual void update();
     virtual void wifiAnimation() {};
 
-    JsonDocument describe();
+    JsonDocument describe() override;
 };

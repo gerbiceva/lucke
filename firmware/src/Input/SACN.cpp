@@ -17,13 +17,15 @@ namespace Input
 
     void Sacn::update()
     {
-        recv->dmx(m_dmxBuffer);
+            // Utils::Logger::println("Here");
+        recv->dmx(this->m_dmxBuffer);
         recv->update();
     }
 
     JsonDocument Sacn::describe()
     {
         JsonDocument doc;
+        doc["id"] = m_ID;
         doc["universe"] = m_universe;
         doc["type"] = "SACN";
         doc["seq_diff"] = recv->seqdiff();

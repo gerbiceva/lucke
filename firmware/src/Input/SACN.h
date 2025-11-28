@@ -13,6 +13,6 @@ namespace Input
 
         void update() override;
 
-        JsonDocument describe();
+        JsonDocument describe() override;
     };
 }

@@ -38,8 +38,8 @@ namespace Handler
     
         static Fixture* get(uint8_t index);
         static std::vector<Fixture*>& allFixtures();
-    
-        static void updateTask();
+
+        static void update();
         static JsonDocument describe();
     };
 }

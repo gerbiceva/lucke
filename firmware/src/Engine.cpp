@@ -17,6 +17,7 @@ Engine::Engine ()
 
     Utils::Logger::enable();
     sleep(2);
+
     if(!Utils::Wifi::setup("ledique", "dasenebipovezau"))
     {
         // Utils::Logger::println("Error connecting");
@@ -29,6 +30,35 @@ Engine& Engine::instance()
 {
     static Engine engine;
     return engine;
+}
+
+void Engine::init()
+{
+    static bool inited = false;
+
+    if(!inited)
+    {
+        xTaskCreate(Utils::Wifi::checkNetwork, "check wifi", 1000, NULL, 1 | portPRIVILEGE_BIT, NULL);
+        xTaskCreate(Engine::update, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, NULL);
+        // xTaskCreate(Engine::sendReport, "send report", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
+        inited = true;
+    }
+}
+
+JsonDocument Engine::describe()
+{
+    JsonDocument doc;
+    doc["wifi_connected"] = Utils::Wifi::isConnected();
+    doc["fix_handler"] = Handler::FixtureHandler::describe();
+    doc["input_handler"] = Handler::InputHandler::describe();
+    return doc;
+}
+
+std::string Engine::toString()
+{
+    std::string ret;
+    serializeJson(describe(), ret);
+    return ret;
 }
 
 void Engine::addButton(Input::Button&& button)
@@ -53,9 +83,9 @@ void Engine::update(void*)
         if(Utils::Wifi::isConnected())
         {
             Handler::InputHandler::update();
-
         }
-        Handler::FixtureHandler::updateTask();
+
+        Handler::FixtureHandler::update();
 
         Output::updateFastLED();
         vTaskDelay(20);
@@ -69,17 +99,11 @@ void Engine::sendReport(void*)
     {
         if(Utils::Wifi::isConnected())
         {
-            JsonDocument doc;
-            doc["fix_handler"] = Handler::FixtureHandler::describe();
-            doc["input_handler"] = Handler::InputHandler::describe();
-            if(Handler::FixtureHandler::get(0) != nullptr)
-            {
-                udp.beginPacket(WiFi.broadcastIP(), 12345);
-                serializeJson(doc, udp);
-                udp.endPacket();
-            }
+            udp.beginPacket(WiFi.broadcastIP(), 12345);
+            serializeJson(Engine::describe(), udp);
+            udp.endPacket();
         }
 
-        vTaskDelay(1000);
+        vTaskDelay(100);
     }
 }

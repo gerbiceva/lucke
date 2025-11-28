@@ -60,6 +60,8 @@ namespace Handler
     
     void InputHandler::update()
     {
+            // Utils::Logger::println("Here");
+
         for(InputInterface* p : m_inputs)
         {
             p->update();

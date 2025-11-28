@@ -8,6 +8,21 @@ void setup()
 
 void loop()
 {
-	// vTaskDelay(1000);
-	vTaskDelete(NULL);
+	Utils::Logger::println(Engine::instance().toString().c_str());
+	vTaskDelay(5000);
+	// vTaskDelete(NULL);
+	// Engine::instance().update(nullptr);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+

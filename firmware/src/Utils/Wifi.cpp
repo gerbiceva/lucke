@@ -10,7 +10,6 @@ namespace Utils
 {
     const char* Wifi::m_ssid = "ledique";
     const char* Wifi::m_password = "dasenebipovezau";
-
     std::atomic<bool> Wifi::connected;
 
     uint8_t Wifi::randomInt()
@@ -25,8 +24,6 @@ namespace Utils
     
     bool Wifi::setup (const char* ssid, const char* password) 
     {
-        connected = false;
-
         Logger::println("Setup Wifi");
         // uint8_t mac[] = {0x90, 0xA2, 0xDA, 0x10, 0x10, 0xAF}; // MAC Adress of your device
         // esp_err_t err = esp_wifi_set_mac(WIFI_IF_STA, &mac[0]);
@@ -39,6 +36,15 @@ namespace Utils
         WiFi.mode(WIFI_STA);
         WiFi.setSleep(false);
         WiFi.begin(ssid, password);
+        connected = true;
+
+        // xTaskCreate(Utils::Wifi::checkNetwork, "check wifi", 1000, NULL, 1 | portPRIVILEGE_BIT, NULL);
+
+        // if(!m_inited)
+        // {
+        //     xTaskCreate(checkNetwork, "check wifi", 1000, NULL, 1 | portPRIVILEGE_BIT, NULL);
+
+        // }
         return true;
     }
 

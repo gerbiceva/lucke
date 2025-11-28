@@ -1,6 +1,6 @@
 #include "FixtureHandler.h"
 #include "Utils/Wifi.h"
-#include "Fixture/Fixture.h"
+#include "Core/Fixture.h"
 #include "Output/HardwareLED.h"
 
 namespace Handler
@@ -28,7 +28,7 @@ namespace Handler
         return fixtures;
     }
     
-    void FixtureHandler::updateTask()
+    void FixtureHandler::update()
     {
         for(Fixture* fix : fixtures)
         {
@@ -40,6 +40,7 @@ namespace Handler
     JsonDocument FixtureHandler::describe()
     {
         JsonDocument doc;
+        doc["num_fixtures"] = fixtures.size();
         doc["fixtures"] = JsonDocument();
         JsonArray arr = doc["fixtures"].to<JsonArray>();
     

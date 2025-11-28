@@ -11,7 +11,7 @@
 namespace Traits
 {
 
-    class InputInterface
+    class InputInterface : public Serializable
     {
         static uint8_t s_ID;
     public:
@@ -25,7 +25,7 @@ namespace Traits
         uint8_t* m_dmxBuffer;
         uint8_t m_universe;
         InputType m_type;
-        // uint8_t m_ID;
+        uint8_t m_ID;
 
         std::string typeToString() const;
     public:
@@ -37,6 +37,5 @@ namespace Traits
 
         virtual void setUniverse(uint8_t universe) { m_universe = universe; }
         virtual void update() = 0;
-        virtual JsonDocument describe() = 0;
     };
 }
