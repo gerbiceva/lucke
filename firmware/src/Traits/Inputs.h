@@ -1,10 +1,5 @@
 #pragma once
 #include <cstdint>
-#include <esp_wifi.h>
-#include <WiFi.h>
-#include "sACN.h"
-
-#include "Utils/Wifi.h"
 #include <ArduinoJson.h>
 #include "Traits/Serializable.h"
 

@@ -3,7 +3,7 @@
 namespace Input 
 {
     Sacn::Sacn(uint8_t universe)
-        : InputInterface(universe)
+        : udp(WiFiUDP()), InputInterface(universe)
     {
         m_type = InputType::SACN;
         recv = new Receiver(udp);
@@ -22,8 +22,7 @@ namespace Input
 
     void Sacn::update()
     {
-            // Utils::Logger::println("Here");
-        // recv->dmx(m_dmxBuffer);
+        recv->dmx(m_dmxBuffer);
         recv->update();
     }
 

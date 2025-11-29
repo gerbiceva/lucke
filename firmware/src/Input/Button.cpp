@@ -6,8 +6,8 @@
 namespace Input
 {
 
-Button::Button(const uint8_t pin, void(*risingFunction)(), void(*holdFunction)(), unsigned long holdTimeMillis) 
-	: buttonPin(pin), risingCallback(risingFunction), holdCallback(holdFunction), holdTime(holdTimeMillis) 
+Button::Button(const std::string& name, const uint8_t pin, void(*risingFunction)(), void(*holdFunction)(), unsigned long holdTimeMillis) 
+	: buttonName(name), buttonPin(pin), risingCallback(risingFunction), holdCallback(holdFunction), holdTime(holdTimeMillis) 
 {
     if(Handler::PinHandler::available(buttonPin))
 	{
@@ -15,12 +15,13 @@ Button::Button(const uint8_t pin, void(*risingFunction)(), void(*holdFunction)()
     }
     else 
     {
-        Utils::Logger::printf("Error adding button: pin %d already used.\n", buttonPin);
+        Utils::Logger::printf("Error adding button '%s': pin %d already used.\n", buttonName.c_str(), buttonPin);
     }
 }
 
 Button::Button(Button&& other) noexcept
-    : buttonPin(other.buttonPin),       // copy const member
+    : buttonName(other.buttonName),       // copy const member
+      buttonPin(other.buttonPin),       // copy const member
       holdTime(other.holdTime),
       pressTime(other.pressTime),
       execute(other.execute),
@@ -96,5 +97,14 @@ void Button::update()
 		execute = false;
 	}
 }
+
+JsonDocument Button::describe() 
+{
+    JsonDocument doc;
+    doc["name"] = buttonName;
+    doc["pin"] = buttonPin;
+    return doc;
+}
+
 
 }

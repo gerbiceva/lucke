@@ -1,5 +1,7 @@
 #pragma once
 #include "Traits/Inputs.h"
+#include <WiFi.h>
+#include "sACN.h"
 
 namespace Input
 {

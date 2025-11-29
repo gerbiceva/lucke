@@ -5,30 +5,30 @@
 #include <string>
 #include <unordered_map>
 
-#define ENGINE_VERSION "1.1"
+// #define ENGINE_VERSION "1.1"
 
 class Engine
 {
-    class Settings
-    {
-        std::unordered_map<std::string, std::string> m_settings;
+    // class Settings
+    // {
+    //     std::unordered_map<std::string, std::string> m_settings;
 
-    public:
-        void setString(std::string key, std::string value)
-        {
-            m_settings[key] = value;
-        }
+    // public:
+    //     void setString(std::string key, std::string value)
+    //     {
+    //         m_settings[key] = value;
+    //     }
 
-        void setShort(std::string key, uint16_t number)
-        {
-            m_settings[key] = std::to_string(number);
-        }
+    //     void setShort(std::string key, uint16_t number)
+    //     {
+    //         m_settings[key] = std::to_string(number);
+    //     }
 
-        uint16_t getShort(std::string key)
-        {
-            return std::atoi(m_settings[key].c_str());
-        }
-    };
+    //     uint16_t getShort(std::string key)
+    //     {
+    //         return std::atoi(m_settings[key].c_str());
+    //     }
+    // };
     
     Engine ();
     static void update(void*);
@@ -36,7 +36,7 @@ class Engine
     static void printReport(void*);
 
 public:
-    static Settings settings;
+    // static Settings settings;
     static Fixture* wifiAnimFix;
     static Engine& instance();
 

@@ -28,5 +28,19 @@ namespace Handler
     
         buttons.push_back(std::move(b));
     }
+
+    JsonDocument ButtonManager::describe()
+    {
+        JsonDocument doc;
+        doc["buttons"] = JsonDocument();
+        JsonArray arr = doc["buttons"].to<JsonArray>();
+
+        for(Input::Button& button : buttons)
+        {
+            arr.add(button.describe());
+        }
+
+        return doc;
+    }
 }
 

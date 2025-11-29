@@ -4,16 +4,18 @@
 #include "Handlers/InputHandler.h"
 #include "Handlers/ButtonManager.h"
 
+#include <WiFi.h>
 
-Engine::Settings Engine::settings;
+
+// Engine::Settings Engine::settings;
 Fixture* Engine::wifiAnimFix = nullptr;
 
 Engine::Engine ()
 {
-    settings.setString("wifi_ssid", "ledique");
-    settings.setString("wifi_password", "dasenebipovezau");
+    // settings.setString("wifi_ssid", "ledique");
+    // settings.setString("wifi_password", "dasenebipovezau");
 
-    settings.setShort("button_holdtime", 200);
+    // settings.setShort("button_holdtime", 200);
 
     Utils::Logger::enable();
     sleep(2);
@@ -21,7 +23,6 @@ Engine::Engine ()
     if(!Utils::Wifi::setup("ledique", "dasenebipovezau"))
     {
         // Utils::Logger::println("Error connecting");
-        
     }
     sleep(2);   
 }
@@ -90,13 +91,12 @@ void Engine::update(void*)
 {
     while(true)
     {
-        if(Utils::Wifi::isConnected())
-        {
-            Handler::InputHandler::update();
-        }
+        // if(Utils::Wifi::isConnected())
+        // {
+        //     Handler::InputHandler::update();
+        // }
 
         Handler::FixtureHandler::update();
-
         Output::updateFastLED();
         vTaskDelay(20);
     }

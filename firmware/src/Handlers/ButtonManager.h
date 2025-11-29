@@ -11,6 +11,7 @@ namespace Handler
         static void update(void*);
     public:
         static void add(Input::Button&& b);
+        static JsonDocument describe();
         
     };
 }

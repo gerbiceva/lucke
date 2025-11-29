@@ -5,16 +5,26 @@
 
 
 Fixture::Fixture()    
+    : Core::Fixture::FixtureConfig(name, type)
 {
+    // deserializeJson(jsonPreset, presets);
 
+    Utils::Logger::println("Empty fix");
+
+    setUniverse(this->universe);
+    setAddress(this->address);
+    setName(this->name);
+    // setPreset(selectedPreset);
 }
 
 Fixture::Fixture(std::string name, std::string type, std::string presets)
     : Core::Fixture::FixtureConfig(name, type)
 {
+    Utils::Logger::println("Not empty fix");
+
     deserializeJson(jsonPreset, presets);
 
-    setUniverse(1);
+    setUniverse(this->universe);
     setAddress(this->address);
     setName(this->name);
     // setPreset(selectedPreset);
@@ -23,7 +33,7 @@ Fixture::Fixture(std::string name, std::string type, std::string presets)
 void Fixture::setUniverse(uint8_t new_universe)
 {
     this->universe = new_universe;
-    m_storage.putUShort("universe", universe);
+    m_storage.putUShort("universe", new_universe);
 
     m_srcBuffer = Handler::InputHandler::interface(new_universe)->getBuffer();
     
