@@ -42,7 +42,7 @@ void Engine::init()
         xTaskCreate(Utils::Wifi::checkNetwork, "check wifi", 1000, NULL, 1 | portPRIVILEGE_BIT, NULL);
         xTaskCreate(Engine::update, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, NULL);
         // xTaskCreate(Engine::sendReport, "send report", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
-        xTaskCreate(Engine::printReport, "print report", 4000, NULL, 1 | portPRIVILEGE_BIT, NULL);
+        xTaskCreate(Engine::printReport, "print report", 3000, NULL, 1 | portPRIVILEGE_BIT, NULL);
         inited = true;
     }
 }
@@ -91,10 +91,10 @@ void Engine::update(void*)
 {
     while(true)
     {
-        // if(Utils::Wifi::isConnected())
-        // {
-        //     Handler::InputHandler::update();
-        // }
+        if(Utils::Wifi::isConnected())
+        {
+            Handler::InputHandler::update();
+        }
 
         Handler::FixtureHandler::update();
         Output::updateFastLED();

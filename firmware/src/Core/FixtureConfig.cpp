@@ -12,23 +12,23 @@ namespace Core
             m_ID = s_ID++;
             m_storage.setPartition(std::to_string(m_ID));
         
-            if(m_storage.isKey("universe"))
-            {
-                universe = m_storage.getUChar("universe");
-                address = m_storage.getUShort("address");
-                selectedPreset = m_storage.getUChar("preset_index");
-                name = m_storage.getString("name");
-                inputIndex = m_storage.getUChar("inputIndex");
-            }
-            else 
-            {
-                m_storage.putUChar("universe", universe);
-                m_storage.putUShort("address", address);
-                m_storage.putUChar("preset_index", selectedPreset);
-                m_storage.putString("name", name);
-                m_storage.putUChar("inputIndex", inputIndex);
+            // if(m_storage.isKey("universe"))
+            // {
+            //     universe = m_storage.getUChar("universe");
+            //     address = m_storage.getUShort("address");
+            //     selectedPreset = m_storage.getUChar("preset_index");
+            //     name = m_storage.getString("name");
+            //     inputIndex = m_storage.getUChar("inputIndex");
+            // }
+            // else 
+            // {
+            //     m_storage.putUChar("universe", universe);
+            //     m_storage.putUShort("address", address);
+            //     m_storage.putUChar("preset_index", selectedPreset);
+            //     m_storage.putString("name", name);
+            //     m_storage.putUChar("inputIndex", inputIndex);
 
-            }
+            // }
 
             // setupDefulat();
             

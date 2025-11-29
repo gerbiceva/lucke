@@ -14,7 +14,7 @@ namespace Core
             Utils::Storage m_storage;
         public:
             uint8_t m_ID = 0;
-            uint8_t universe = 1U;
+            uint8_t universe = 8U;
             uint16_t address = 0U;
             uint8_t selectedPreset = 0U;
             uint8_t inputIndex = 0U;

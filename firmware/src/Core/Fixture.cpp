@@ -33,7 +33,7 @@ Fixture::Fixture(std::string name, std::string type, std::string presets)
 void Fixture::setUniverse(uint8_t new_universe)
 {
     this->universe = new_universe;
-    m_storage.putUShort("universe", new_universe);
+    // m_storage.putUShort("universe", new_universe);
 
     m_srcBuffer = Handler::InputHandler::interface(new_universe)->getBuffer();
     
@@ -43,7 +43,7 @@ void Fixture::setUniverse(uint8_t new_universe)
 void Fixture::setAddress(uint16_t new_address)
 {
     this->address = new_address;
-    m_storage.putUShort("address", this->address);
+    // m_storage.putUShort("address", this->address);
     
     updatePresets();
 }
@@ -51,7 +51,7 @@ void Fixture::setAddress(uint16_t new_address)
 void Fixture::setPreset(uint8_t new_preset)
 {
     this->selectedPreset = new_preset;
-    m_storage.putUChar("preset_index", this->selectedPreset);
+    // m_storage.putUChar("preset_index", this->selectedPreset);
 
     uint8_t counter = 0;
     for(Traits::OutputInterface* o : m_outputs)
@@ -66,7 +66,7 @@ void Fixture::setPreset(uint8_t new_preset)
 void Fixture::setName(const std::string& other) 
 {
     this->name = other;
-    m_storage.putString("name", this->name);
+    // m_storage.putString("name", this->name);
 }
 
 void Fixture::updatePresets()
