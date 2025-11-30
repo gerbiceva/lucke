@@ -24,7 +24,7 @@ namespace Utils
     
     bool Wifi::setup (const char* ssid, const char* password) 
     {
-        Logger::println("Setup Wifi");
+        Logger::printf("[WIFI] Connecting to '%s'\n", ssid);
         // uint8_t mac[] = {0x90, 0xA2, 0xDA, 0x10, 0x10, 0xAF}; // MAC Adress of your device
         // esp_err_t err = esp_wifi_set_mac(WIFI_IF_STA, &mac[0]);
         // if (err != ESP_OK)
@@ -36,9 +36,9 @@ namespace Utils
         WiFi.mode(WIFI_STA);
         WiFi.setSleep(false);
         WiFi.begin(ssid, password);
-        connected = true;
+        connected = false;
 
-        // xTaskCreate(Utils::Wifi::checkNetwork, "check wifi", 1000, NULL, 1 | portPRIVILEGE_BIT, NULL);
+        xTaskCreate(Utils::Wifi::checkNetwork, "check wifi", 1000, NULL, 1 | portPRIVILEGE_BIT, NULL);
 
         // if(!m_inited)
         // {
@@ -61,48 +61,55 @@ namespace Utils
     }
 
     void Wifi::checkNetwork(void *) {
-    while (true) {
-        // if not connected
-        if (WiFi.status() != WL_CONNECTED) {
-            Logger::println("Wifi disconnected");
-            connected = false;
+        Logger::println("[TASK] Created 'WIFI check network' task");
+        while (true) 
+        {
+            // if not connected
+            if (WiFi.status() != WL_CONNECTED) 
+            {
+                Logger::println("[WIFI] Disconnected, reconnecting...");
+                connected = false;
 
-            TaskHandle_t animation = NULL;
-            xTaskCreate(
-                Wifi::playIdleAnimation, 		// Task function
-                "Animation",						// Name of the task (for debugging)
-                2000,								// Stack size in words
-                NULL,								// Parameter passed to the task
-                1,									// Task priority
-                &animation							// Handle to the task
-            );
+                TaskHandle_t animation = NULL;
+                xTaskCreate(
+                    Wifi::playIdleAnimation, 		// Task function
+                    "Animation",						// Name of the task (for debugging)
+                    2000,								// Stack size in words
+                    NULL,								// Parameter passed to the task
+                    1,									// Task priority
+                    &animation							// Handle to the task
+                );
 
-            // while not connected
-            while (WiFi.status() != WL_CONNECTED) {
-                Logger::print(".");
-                vTaskDelay(10);
+                // while not connected
+                uint16_t counter = 0;
+                while (WiFi.status() != WL_CONNECTED) 
+                {
+                    // if(counter++ % 10 == 0)
+                    // {
+                    //     Logger::print(".");
+                    // }
+                    vTaskDelay(10);
+                }
+
+                Logger::println("\n[WIFI] Connected");
+
+                vTaskDelete(animation);
+                connected = true;
+                Engine::instance().clearSrcBuffers();
             }
 
-            Logger::println("\nWifi connected");
-
-            connected = true;
-            vTaskDelete(animation);
-            Engine::instance().clearSrcBuffers();
-            // Controller::get().clear();
+            vTaskDelay(50);
         }
-
-        vTaskDelay(50);
     }
-}
 
-JsonDocument Wifi::describe()
-{
-    JsonDocument doc;
-    
-	doc["ssid"] = WiFi.SSID();
-	doc["rssi"] = WiFi.RSSI();
-	doc["local_ip"] = WiFi.localIP();
-    doc["connected"] = isConnected();
-    return doc;
-}
+    JsonDocument Wifi::describe()
+    {
+        JsonDocument doc;
+        
+        doc["ssid"] = WiFi.SSID();
+        doc["rssi"] = WiFi.RSSI();
+        doc["local_ip"] = WiFi.localIP();
+        doc["connected"] = isConnected();
+        return doc;
+    }
 }

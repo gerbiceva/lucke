@@ -20,9 +20,7 @@ Fixture::Fixture()
 Fixture::Fixture(std::string name, std::string type, std::string presets)
     : Core::Fixture::FixtureConfig(name, type)
 {
-    Utils::Logger::println("Not empty fix");
-
-    deserializeJson(jsonPreset, presets);
+    // deserializeJson(jsonPreset, presets);
 
     setUniverse(this->universe);
     setAddress(this->address);

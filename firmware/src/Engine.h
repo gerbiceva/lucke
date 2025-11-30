@@ -4,10 +4,11 @@
 #include "Handlers/ButtonManager.h"
 #include <string>
 #include <unordered_map>
+#include "Traits/Serializable.h"
 
 // #define ENGINE_VERSION "1.1"
 
-class Engine
+class Engine : public Traits::Serializable
 {
     // class Settings
     // {
@@ -68,9 +69,7 @@ public:
     void init();
     void clearSrcBuffers();
     void addButton(Input::Button&& button);
-    static JsonDocument describe();
-    static std::string toString();
-
-    Fixture* getFixture(uint16_t index);
-    Fixture* operator[](uint16_t index);
+    
+    JsonDocument describe() override;
+    std::string toString();
 };

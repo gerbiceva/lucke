@@ -8,6 +8,7 @@ namespace Handler
     using Traits::InputInterface;
 
     std::vector<InputInterface*> InputHandler::m_inputs;
+    std::mutex InputHandler::m_lock;
 
     // std::unordered_map<uint8_t, Traits::InputInterface*> InputHandler::m_inputs;
     // std::vector<std::pair<uint8_t, Traits::InputInterface*>> InputHandler::m_vecInputs;

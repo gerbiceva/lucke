@@ -45,6 +45,7 @@ namespace Output
         {
             JsonDocument doc;
             doc["type"] = "FastLED-1D";
+            doc["hardware_pin"] = TPin;
             doc["num_leds"] = this->m_numLeds;
             doc["num_groups"] = m_numGroups;
 

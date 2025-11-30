@@ -18,13 +18,12 @@ Engine::Engine ()
     // settings.setShort("button_holdtime", 200);
 
     Utils::Logger::enable();
-    sleep(2);
+    sleep(5);
 
     if(!Utils::Wifi::setup("ledique", "dasenebipovezau"))
     {
         // Utils::Logger::println("Error connecting");
     }
-    sleep(2);   
 }
 
 Engine& Engine::instance()
@@ -39,7 +38,7 @@ void Engine::init()
 
     if(!inited)
     {
-        xTaskCreate(Utils::Wifi::checkNetwork, "check wifi", 1000, NULL, 1 | portPRIVILEGE_BIT, NULL);
+        // xTaskCreate(Utils::Wifi::checkNetwork, "check wifi", 1000, NULL, 1 | portPRIVILEGE_BIT, NULL);
         xTaskCreate(Engine::update, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, NULL);
         // xTaskCreate(Engine::sendReport, "send report", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
         xTaskCreate(Engine::printReport, "print report", 3000, NULL, 1 | portPRIVILEGE_BIT, NULL);
@@ -68,7 +67,7 @@ JsonDocument Engine::describe()
 std::string Engine::toString()
 {
     std::string ret;
-    serializeJson(describe(), ret);
+    serializeJson(Engine::instance().describe(), ret);
     return ret;
 }
 
@@ -77,24 +76,15 @@ void Engine::addButton(Input::Button&& button)
     Handler::ButtonManager::add(std::move(button));
 }
 
-Fixture* Engine::getFixture(uint16_t index)
-{
-    return Handler::FixtureHandler::get(index);
-}
-
-Fixture* Engine::operator[](uint16_t index)
-{
-    return getFixture(index);
-}
-
 void Engine::update(void*)
 {
+    Utils::Logger::println("[TASK] Created 'DMX update' task");
     while(true)
     {
-        if(Utils::Wifi::isConnected())
-        {
-            Handler::InputHandler::update();
-        }
+        // if(Utils::Wifi::isConnected())
+        // {
+        //     Handler::InputHandler::update();
+        // }
 
         Handler::FixtureHandler::update();
         Output::updateFastLED();
@@ -104,13 +94,15 @@ void Engine::update(void*)
 
 void Engine::sendReport(void*)
 {
+    Utils::Logger::println("[TASK] Created 'Send report' task");
+
     WiFiUDP udp;
     while(true)
     {
         if(Utils::Wifi::isConnected())
         {
             udp.beginPacket(WiFi.broadcastIP(), 12345);
-            serializeJson(Engine::describe(), udp);
+            serializeJson(Engine::instance().describe(), udp);
             udp.endPacket();
         }
 
@@ -120,9 +112,11 @@ void Engine::sendReport(void*)
 
 void Engine::printReport(void*)
 {
+    Utils::Logger::println("[TASK] Created 'print report' task");
+
     while(true)
     {
-        Utils::Logger::println(toString().c_str());
-        vTaskDelay(5000);
+        Utils::Logger::println(Engine::instance().toString().c_str());
+        vTaskDelay(10000);
     }
 }

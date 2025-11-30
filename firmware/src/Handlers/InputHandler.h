@@ -2,6 +2,7 @@
 #include "Traits/Inputs.h"
 #include <unordered_map>
 #include <vector>
+#include <mutex>
 
 
 namespace Handler
@@ -9,6 +10,7 @@ namespace Handler
     class InputHandler
     {
         static std::vector<Traits::InputInterface*> m_inputs;
+        static std::mutex m_lock;
         // static std::unordered_map<uint8_t, Traits::InputInterface*> m_inputs;
         // static std::vector<std::pair<uint8_t, Traits::InputInterface*>> m_vecInputs;
 
