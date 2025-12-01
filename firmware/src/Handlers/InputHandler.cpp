@@ -8,7 +8,7 @@ namespace Handler
     using Traits::InputInterface;
 
     std::vector<InputInterface*> InputHandler::m_inputs;
-    std::mutex InputHandler::m_lock;
+    TaskHandle_t InputHandler::m_handle;
 
     // std::unordered_map<uint8_t, Traits::InputInterface*> InputHandler::m_inputs;
     // std::vector<std::pair<uint8_t, Traits::InputInterface*>> InputHandler::m_vecInputs;
@@ -38,34 +38,45 @@ namespace Handler
         }
         
         return ptr; 
-    
-        // if(type == Traits::InputInterface::InputType::SACN)
-        // {
-        //     ptr = new Input::Sacn(uni);
-        // }
-        // else
-        // {
-        //     Utils::Logger::printf("Error adding interface that is not SACN for uni: %d\n", uni);
-        //     Utils::Logger::println("Adding SACN interface");
-        //     ptr = new Input::Sacn(uni);
-        // }
-    
-        // m_vecInputs.push_back(std::pair<uint8_t, Traits::InputInterface*>(uni, ptr));
-        // return ptr;
-            
-            // m_inputs[uni] = ptr;
-        // }
-    
-        // return m_inputs[uni];
     }
-    
-    void InputHandler::update()
-    {
-            // Utils::Logger::println("Here");
 
-        for(InputInterface* p : m_inputs)
+    void InputHandler::canUpdate(bool b)
+    {
+        static bool m_inited = false;
+
+        if(!m_inited)
         {
-            p->update();
+            if(b)
+            {
+                xTaskCreate(InputHandler::updateTask, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, &m_handle);
+                m_inited = true;
+            }
+
+            return;
+        }
+
+        if(b)
+        {
+            vTaskResume(m_handle);
+        }
+        else
+        {
+            vTaskSuspend(m_handle);
+        }
+    }
+
+    
+    void InputHandler::updateTask(void*)
+    {
+        Utils::Logger::println("[TASK] Created 'DMX Input' task!");
+
+        while(true)
+        {
+            for(InputInterface* p : m_inputs)
+            {
+                p->update();
+            }
+            vTaskDelay(20);
         }
     }
 

@@ -6,6 +6,8 @@
 #include "WiFi.h"
 #include <esp_wifi.h>
 
+#include "Handlers/InputHandler.h"
+
 namespace Utils
 {
     const char* Wifi::m_ssid = "ledique";
@@ -69,6 +71,7 @@ namespace Utils
             {
                 Logger::println("[WIFI] Disconnected, reconnecting...");
                 connected = false;
+                Handler::InputHandler::canUpdate(false);
 
                 TaskHandle_t animation = NULL;
                 xTaskCreate(
@@ -95,6 +98,7 @@ namespace Utils
 
                 vTaskDelete(animation);
                 connected = true;
+                Handler::InputHandler::canUpdate(true);
                 Engine::instance().clearSrcBuffers();
             }
 
