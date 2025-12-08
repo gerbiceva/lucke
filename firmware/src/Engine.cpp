@@ -18,7 +18,6 @@ Engine::Engine ()
     // settings.setShort("button_holdtime", 200);
 
     Utils::Logger::enable();
-    sleep(5);
 
     if(!Utils::Wifi::setup("ledique", "dasenebipovezau"))
     {
@@ -38,7 +37,6 @@ void Engine::init()
 
     if(!inited)
     {
-        // xTaskCreate(Utils::Wifi::checkNetwork, "check wifi", 1000, NULL, 1 | portPRIVILEGE_BIT, NULL);
         xTaskCreate(Engine::update, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, NULL);
         // xTaskCreate(Engine::sendReport, "send report", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
         xTaskCreate(Engine::printReport, "print report", 3000, NULL, 1 | portPRIVILEGE_BIT, NULL);
@@ -81,11 +79,6 @@ void Engine::update(void*)
     Utils::Logger::println("[TASK] Created 'DMX update' task");
     while(true)
     {
-        // if(Utils::Wifi::isConnected())
-        // {
-        //     Handler::InputHandler::update();
-        // }
-
         Handler::FixtureHandler::update();
         Output::updateFastLED();
         vTaskDelay(20);
@@ -99,14 +92,11 @@ void Engine::sendReport(void*)
     WiFiUDP udp;
     while(true)
     {
-        if(Utils::Wifi::isConnected())
-        {
-            udp.beginPacket(WiFi.broadcastIP(), 12345);
-            serializeJson(Engine::instance().describe(), udp);
-            udp.endPacket();
-        }
+        udp.beginPacket(WiFi.broadcastIP(), 12345);
+        serializeJson(Engine::instance().describe(), udp);
+        udp.endPacket();
 
-        vTaskDelay(100);
+        vTaskDelay(1000);
     }
 }
 

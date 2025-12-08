@@ -3,27 +3,20 @@
 namespace Input 
 {
     Sacn::Sacn(uint8_t universe)
-        : udp(WiFiUDP()), InputInterface(universe)
+        : InputInterface(universe)
     {
         m_type = InputType::SACN;
-        recv = new Receiver(udp);
-        recv->begin(universe);
+        m_sacn.begin(universe);
     }
 
     Sacn::~Sacn()
     {
-        delete recv;
+        m_sacn.stop();
     }
-
-    // void Sacn::init()
-    // {
-        
-    // }
 
     void Sacn::update()
     {
-        recv->dmx(m_dmxBuffer);
-        recv->update();
+        m_sacn.dmx(m_dmxBuffer);
     }
 
     JsonDocument Sacn::describe()
@@ -32,8 +25,8 @@ namespace Input
         doc["id"] = m_ID;
         doc["universe"] = m_universe;
         doc["type"] = "SACN";
-        doc["seq_diff"] = recv->seqdiff();
-        doc["fps"] = recv->framerate();
+        // doc["seq_diff"] = recv->seqdiff();
+        // doc["fps"] = recv->framerate();
 
         return doc;
     }

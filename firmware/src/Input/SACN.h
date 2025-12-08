@@ -1,19 +1,16 @@
 #pragma once
 #include "Traits/Inputs.h"
-#include <WiFi.h>
-#include "sACN.h"
+#include "Utils/SacnParser.h"
 
 namespace Input
 {
     class Sacn : public Traits::InputInterface
     {
-        WiFiUDP udp;
-        Receiver* recv;
+        Utils::SacnParser m_sacn;
     public:
         Sacn(uint8_t universe);
         ~Sacn();
 
-        // void init() override;
         void update() override;
 
         JsonDocument describe() override;
