@@ -1,5 +1,8 @@
 #include "SacnParser.h"
 
+#define ADDR_SEQ 111
+#define ADDR_DMX 126
+
 namespace Utils
 {
 
@@ -33,7 +36,8 @@ namespace Utils
 		{
 			m_udp.read(packet, size);
 
-			memcpy(m_buffer, packet + m_dataOffset, 512);
+			memcpy(m_buffer, packet + ADDR_DMX, 512);
+            m_seq = packet[ADDR_SEQ];
 			return true;
 		}
 
@@ -47,5 +51,10 @@ namespace Utils
             memcpy(copyBuffer, m_buffer, 512);
         }
 	}
+
+    uint8_t SacnParser::getSeq()
+    {
+        return m_seq;
+    }
 
 }

@@ -10,11 +10,10 @@ class SacnParser
 	WiFiUDP m_udp;
     uint8_t packet[1500];
 
+    uint8_t m_seq;
+	uint8_t m_buffer[512];
 
     bool m_inited = false;
-	uint8_t m_buffer[512];
-	const uint16_t m_dataOffset = 126U;
-	// uint8_t inter
 
 	bool update();
 public:
@@ -25,7 +24,7 @@ public:
     void stop();
 
 	void dmx(uint8_t* copyBuffer);
-
+    uint8_t getSeq();
 };
 
 }
