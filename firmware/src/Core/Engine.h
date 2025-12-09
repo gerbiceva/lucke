@@ -1,9 +1,10 @@
 #pragma once
-#include "Fixtures.h"
+// #include "Fixtures.h"
 #include "Handlers/FixtureHandler.h"
 #include "Handlers/ButtonManager.h"
 #include <string>
 #include <unordered_map>
+#include <functional>
 #include "Traits/Serializable.h"
 
 // #define ENGINE_VERSION "1.1"
@@ -31,12 +32,19 @@ class Engine : public Traits::Serializable
     //     }
     // };
     
-    Engine ();
-    static void update(void*);
-    static void sendReport(void*);
-    static void printReport(void*);
+    TaskHandle_t m_inputHandle;
 
+    Engine ();
+    static void playIdleAnimation(void*);
+    static void checkNetwork(void*);
+    void updateInput(void*);
+    void update(void*);
+    void sendReport(void*);
+    void printReport(void*);
+
+    
 public:
+    std::function<void()> wifiAnimation;
     // static Settings settings;
     static Fixture* wifiAnimFix;
     static Engine& instance();
@@ -47,7 +55,11 @@ public:
         Fixture* fix = Handler::FixtureHandler::addFixture<TFixture>();
         if(animateWifiConnecting)
         {
-            wifiAnimFix = fix;
+            wifiAnimation = [fix]() 
+            {
+                fix->wifiAnimation();
+            };
+            // animateWifi = &(fix->wifiAnimation);
         }
 
         return fix;
@@ -67,6 +79,17 @@ public:
     // }
 
     void init();
+    void canUpdate(bool b)
+    {
+        if(b)
+        {
+            vTaskResume(m_inputHandle);
+        }
+        else
+        {
+            vTaskSuspend(m_inputHandle);
+        }
+    }
     void clearSrcBuffers();
     void addButton(Input::Button&& button);
     

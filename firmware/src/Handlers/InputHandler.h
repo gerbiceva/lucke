@@ -17,6 +17,7 @@ namespace Handler
         static Traits::InputInterface* find(uint8_t universe);
     public:
         static Traits::InputInterface* interface(uint8_t universe, Traits::InputInterface::InputType type = Traits::InputInterface::InputType::SACN);
+        static void update();
         static void updateTask(void*);
         static void canUpdate(bool b);
         // static void initInputs();

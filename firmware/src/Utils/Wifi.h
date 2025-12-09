@@ -1,24 +1,29 @@
 #pragma once
-#include <atomic>
+// #include <atomic>
 #include <ArduinoJson.h>
+#include <memory>
 
 namespace Utils 
 {
 class Wifi
 {
-    static std::atomic<bool> connected;
-    static const char* m_ssid;
-    static const char* m_password;
-    
-    [[nodiscard]] static uint8_t randomInt();
-    static void playIdleAnimation(void*);
+    Wifi(const char *ssid, const char *password, const std::function<void(bool)>& connection_status_callback);
+
+    static void monitorConnection(void*);
+
+    static std::unique_ptr<Wifi> m_instance;
+    const char* m_ssid;
+    const char* m_password;
+    std::function<void(bool)> m_connection_status_callback;
 public:
-    static bool setup ();
-    static bool setup (const char* ssid, const char* password);
+    static Wifi& initialize(const char* ssid, const char* password, std::function<void(bool)> connection_status_callback);
 
-    static bool isConnected() { return connected; }
-    static void checkNetwork(void*);
+    static Wifi& instance();
 
-    static JsonDocument describe();
+    bool isConnected();
+    // bool isConnected() { return connected; }
+    // void checkNetwork(void*);
+
+    JsonDocument describe();
 };
 }

@@ -65,6 +65,14 @@ namespace Handler
         }
     }
 
+
+    void InputHandler::update()
+    {
+        for(InputInterface* p : m_inputs)
+        {
+            p->update();
+        }
+    }
     
     void InputHandler::updateTask(void*)
     {

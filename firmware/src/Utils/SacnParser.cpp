@@ -37,6 +37,7 @@ namespace Utils
 			m_udp.read(packet, size);
 
 			memcpy(m_buffer, packet + ADDR_DMX, 512);
+			m_seq_prev = m_seq;
             m_seq = packet[ADDR_SEQ];
 			return true;
 		}
@@ -56,5 +57,11 @@ namespace Utils
     {
         return m_seq;
     }
+
+	uint8_t SacnParser::getSeqDiff() const
+	{
+		return (m_seq - m_seq_prev);
+	}
+
 
 }

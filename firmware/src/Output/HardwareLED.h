@@ -36,5 +36,13 @@ namespace Output {
             m_cled->clearLeds();
             updateFastLED();
 		};
+
+        void applyDimmer(float percentage) override
+        {
+            for(uint16_t i = 0; i < m_numLeds * m_numPxls; i++)
+            {
+                m_dstBuffer[i] = static_cast<uint8_t>(255.f * percentage);
+            }
+        }
     };
 }

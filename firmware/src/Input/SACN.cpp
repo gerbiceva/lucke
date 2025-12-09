@@ -25,7 +25,7 @@ namespace Input
         doc["id"] = m_ID;
         doc["universe"] = m_universe;
         doc["type"] = "SACN";
-        // doc["seq_diff"] = recv->seqdiff();
+        doc["seq_diff"] = m_sacn.getSeqDiff();
         // doc["fps"] = recv->framerate();
 
         return doc;

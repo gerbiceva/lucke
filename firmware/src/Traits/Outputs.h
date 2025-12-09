@@ -31,6 +31,7 @@ namespace Traits
         virtual void bind() = 0;
         virtual void update() {}
         virtual void clear() {}
+        virtual void applyDimmer(float perctentage) {}
         virtual void setPreset(const JsonDocument& doc) = 0;
     };
 
