@@ -5,12 +5,12 @@
 
 namespace Handler
 {
-    std::vector<Input::Button> ButtonManager::buttons;
-    
-    void ButtonManager::update(void*) 
+    void ButtonManager::update() 
     {
-        while(true) {
-            for(auto& b : buttons) {
+        while(true) 
+        {
+            for(auto& b : buttons) 
+            {
                 b.update();
             }
     
@@ -20,12 +20,6 @@ namespace Handler
     
     void ButtonManager::add(Input::Button&& b) 
     {
-        static bool enabled = false;
-        if(!enabled) {
-            xTaskCreate(ButtonManager::update, "Button Input", 2000, NULL, 2 | portPRIVILEGE_BIT, NULL);
-            enabled = true;
-        }
-    
         buttons.push_back(std::move(b));
     }
 

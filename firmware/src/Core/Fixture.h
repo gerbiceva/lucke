@@ -9,7 +9,7 @@ class Fixture : public Traits::Serializable
 {
     struct Config
     {
-        uint8_t universe = 9U;
+        uint8_t universe = 8U;
         uint16_t address = 0U;
         uint8_t selectedPreset = 0U;
 

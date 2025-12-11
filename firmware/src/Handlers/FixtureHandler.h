@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <cstdint>
+#include "Traits/Serializable.h"
 // #include "Fixture/Fixture.h"
 #include "Fixtures.h"
 
@@ -8,14 +9,14 @@ class Fixture;
 
 namespace Handler
 {
-    class FixtureHandler
+    class FixtureHandler : public Traits::Serializable
     {
-        static std::vector<Fixture*> fixtures;
+        std::vector<Fixture*> fixtures;
     public:
         // static void addFixture(Fixture* fixture);
     
         template<typename TFixture>
-        static Fixture* addFixture()
+        Fixture* addFixture()
         {
             Utils::Logger::println("[FIXTURE HANDLER] Added new fixture");
             Fixture* fix = new TFixture();
@@ -24,10 +25,10 @@ namespace Handler
             return fix;
         }
     
-        static Fixture* get(uint8_t index);
-        static std::vector<Fixture*>& allFixtures();
+        Fixture* get(uint8_t index);
+        std::vector<Fixture*>& allFixtures();
 
-        static void update();
-        static JsonDocument describe();
+        void update();
+        JsonDocument describe() override;
     };
 }

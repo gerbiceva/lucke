@@ -5,7 +5,7 @@
 
 namespace Handler
 {
-    std::vector<Fixture*> FixtureHandler::fixtures;
+    // std::vector<Fixture*> FixtureHandler::fixtures;
     
     // void FixtureHandler::addFixture(Fixture* fixture)
     // {
@@ -30,11 +30,16 @@ namespace Handler
     
     void FixtureHandler::update()
     {
-        for(Fixture* fix : fixtures)
+         Utils::Logger::println("[TASK] Created 'DMX update' task");
+        while(true)
         {
-            fix->update();
+            for(Fixture* fix : fixtures)
+            {
+                fix->update();
+            }
+            Output::updateFastLED();
+            vTaskDelay(20);
         }
-            
     }
     
     JsonDocument FixtureHandler::describe()

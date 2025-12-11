@@ -18,10 +18,8 @@ public:
         rec.id = id;
         rec.fn = [this, id, invocable]() 
         { 
-            Utils::Logger::printf("Created task: %d\n", id);
             invocable();
             // m_tasks.erase(it);
-            Utils::Logger::printf("Destroyed task: %d\n", id);
             // vTaskDelete(nullptr);
             this->stopTask(id);
         };
@@ -52,16 +50,7 @@ public:
         return stored.handle;
     }
 
-    void stopTask(uint32_t id) {
-        auto it = find(id);
-
-        if (it == m_tasks.end()) {
-            return;
-        } 
-
-        vTaskDelete(it->handle);
-        m_tasks.erase(it);
-    }
+    void stopTask(uint32_t id);
 
 private:
     struct TaskRecord {
@@ -70,11 +59,7 @@ private:
         std::function<void()> fn;
     };
 
-    std::list<TaskRecord>::iterator find(uint32_t id) 
-    {
-        return std::find_if(m_tasks.begin(), m_tasks.end(),
-            [&](const TaskRecord& r) { return r.id == id; });
-    }
+    std::list<TaskRecord>::iterator find(uint32_t id);
 
     static void trampoline(void* fn) 
     {

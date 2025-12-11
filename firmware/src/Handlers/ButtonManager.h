@@ -1,18 +1,19 @@
 #pragma once
 #include "Input/Button.h"
+#include "Traits/Serializable.h"
 #include <vector>
 
 namespace Handler
 {
-    class ButtonManager {
-        static std::vector<Input::Button> buttons;
-        // std::unordered_map<uint8_t, bool> isPinRegistered;
+    class ButtonManager : public Traits::Serializable
+    {
+        std::vector<Input::Button> buttons;
         
-        static void update(void*);
     public:
-        static void add(Input::Button&& b);
-        static JsonDocument describe();
+        void update();
+        void add(Input::Button&& b);
         
+        JsonDocument describe() override;        
     };
 }
 

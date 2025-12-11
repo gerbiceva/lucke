@@ -1,18 +1,13 @@
 #include "Engine.h"
 #include "Utils/Logger.h"
 #include "Utils/Wifi.h"
-#include "Handlers/InputHandler.h"
-#include "Handlers/ButtonManager.h"
 
 #include <WiFi.h>
 
 
 // Engine::Settings Engine::settings;
-// std::function<void()> Engine::wifiAnimation = nullptr;
-
-Fixture* Engine::wifiAnimFix = nullptr;
-
 Engine::Engine ()
+    : m_storage(Utils::Storage("engine"))
 {
     // settings.setString("wifi_ssid", "ledique");
     // settings.setString("wifi_password", "dasenebipovezau");
@@ -20,18 +15,47 @@ Engine::Engine ()
     // settings.setShort("button_holdtime", 200);
 
     Utils::Logger::enable();
-    Utils::Wifi::initialize("Ledique", "dasenebipovezau", [](bool is_connected) {
-        
-        if (is_connected) {
-            Utils::Logger::println("[WIFI] Connected...");
-            return;
+    sleep(3);
+
+
+    Utils::Wifi::initialize("Ledique", "dasenebipovezau", [this](bool is_connected) {
+        Utils::Logger::println("[WIFI] Disconnected...");
+        this->suspendInputTask();
+
+        TaskHandle_t animation;
+        if(this->shouldPlayWifiAnimation)
+        {
+            animation = this->m_taskExecutor.spawnTask("Wifi animation", [this]()
+            {
+                while(true)
+                {
+                    if(this->wifiAnimation != nullptr)
+                    {
+                        this->wifiAnimation();
+                    }
+                    vTaskDelay(40);
+                }
+            }, 1, 1000);
         }
 
-        Utils::Logger::println("[WIFI] Disconnected...");
-
+        while(!Utils::Wifi::instance().isConnected())
+        {
+            vTaskDelay(10);
+        }
+        
+        Utils::Logger::println("[WIFI] Connected...");
+        if(this->shouldPlayWifiAnimation)
+        {
+            vTaskDelete(animation);
+        }
+        this->resumeInputTask();
+        this->clearSrcBuffers();
     });
 
-    //xTaskCreate(Engine::checkNetwork, "Check Wifi", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
+    if(m_storage.isKey("input_handler"))
+    {
+        m_inputHandler.fromJson(m_storage.getString("input_handler"));
+    }
 }
 
 Engine& Engine::instance()
@@ -46,23 +70,85 @@ void Engine::init()
 
     if(!inited)
     {
-        // Create N tasks
-        []() {
+        // if(m_storage.isKey("input_handler"))
+        // {
+            // Utils::Logger::println(m_storage.getString("input_handler").c_str());
+        //     m_storage.putString("input_handler", R"(
+        //         {"inputs":[{"id":1,"universe":8,"type":"SACN","seq_diff":1}]})");
 
-        };
+            // Utils::Logger::println(m_storage.getString("input_handler").c_str());
 
+            // std::string temp = m_storage.getString("input_handler");
+            // m_inputHandler.fromJson(temp);
 
-        xTaskCreate([](void*){Engine::instance().updateInput(nullptr);}, "DMX Input", 4000, NULL, 3 | portPRIVILEGE_BIT, &m_inputHandle);
-        xTaskCreate([](void*){Engine::instance().update(nullptr);}, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, NULL);
-        xTaskCreate([](void*){Engine::instance().sendReport(nullptr);}, "send report", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
-        // xTaskCreate([](void*){Engine::instance().printReport(nullptr);}, "print report", 3000, NULL, 1 | portPRIVILEGE_BIT, NULL);
+        // }
+        
+        m_inputHandle = m_taskExecutor.spawnTask("DMX Input", [this]()
+        {
+            this->m_inputHandler.update();
+        },
+        3, 4000);
+
+        m_taskExecutor.spawnTask("Output", [this]()
+        {
+            this->m_fixtureHandler.update();
+        }, 
+        3, 5000);
+
+        m_taskExecutor.spawnTask("Print Report", [this]()
+        {
+            this->printReport();
+        }, 
+        1, 3000);
+        // xTaskCreate([](void*){Engine::instance().sendReport(nullptr);}, "send report", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
         inited = true;
+
+        syncToStorage();
     }
 }
 
+void Engine::addButton(Input::Button&& button)
+{
+    static bool enabled = false;
+    if(!enabled) 
+    {
+        m_taskExecutor.spawnTask("Button Input", [this]()
+        {
+            this->m_buttonManager.update();
+        }, 2);
+        enabled = true;
+    }
+
+    m_buttonManager.add(std::move(button));
+}
+
+void Engine::resumeInputTask()
+{
+    vTaskResume(m_inputHandle);
+}
+
+void Engine::suspendInputTask()
+{
+    vTaskSuspend(m_inputHandle);
+}
+
+void Engine::syncToStorage()
+{
+    std::string temp;
+    serializeJson(m_inputHandler.describe(), temp);
+    m_storage.putString("input_handler", temp);
+}
+
+
+Traits::InputInterface* Engine::getDMXInput(uint8_t universe)
+{
+    return m_inputHandler.interface(universe);
+}
+
+
 void Engine::clearSrcBuffers()
 {
-    Handler::InputHandler::clearSrcBuffers();
+    m_inputHandler.clearSrcBuffers();
 }
 
 
@@ -73,103 +159,30 @@ JsonDocument Engine::describe()
 	// doc["heap_free"] = ESP.getFreeHeap();
     doc["wifi"] = Utils::Wifi::instance().describe();
     doc["pin_handler"] = Handler::PinHandler::describe();
-    doc["input_handler"] = Handler::InputHandler::describe();
-    doc["fixture_handler"] = Handler::FixtureHandler::describe();
+    doc["input_handler"] = m_inputHandler.describe();
+    doc["fixture_handler"] = m_fixtureHandler.describe();
     return doc;
 }
 
 std::string Engine::toString()
 {
     std::string ret;
-    serializeJson(Engine::instance().describe(), ret);
+    serializeJson(describe(), ret);
     return ret;
 }
 
-void Engine::addButton(Input::Button&& button)
-{
-    Handler::ButtonManager::add(std::move(button));
-}
-
-void Engine::playIdleAnimation(void*)
+void Engine::playIdleAnimation()
 {
     while(true)
     {
-        if(Engine::instance().wifiAnimation)
+        if(wifiAnimation)
         {
-            Engine::instance().wifiAnimation();
-            // Engine::animateWifi();
+            wifiAnimation();
         }
         vTaskDelay(30);
     }
 }
 
-void Engine::checkNetwork(void *) {
-    Utils::Logger::println("[TASK] Created 'WIFI check network' task");
-    while (true) 
-    {
-        // if not connected
-        if (!Utils::Wifi::instance().isConnected()) 
-        {
-            Utils::Logger::println("[WIFI] Disconnected, reconnecting...");
-            // connected = false;
-            // Handler::InputHandler::canUpdate(false);
-            Engine::instance().canUpdate(false);
-
-            TaskHandle_t animation = NULL;
-            xTaskCreate(
-                Engine::playIdleAnimation, 		// Task function
-                "Animation",						// Name of the task (for debugging)
-                2000,								// Stack size in words
-                NULL,								// Parameter passed to the task
-                1,									// Task priority
-                &animation							// Handle to the task
-            );
-
-            // while not connected
-            uint16_t counter = 0;
-            while (!Utils::Wifi::instance().isConnected()) 
-            {
-                // if(counter++ % 10 == 0)
-                // {
-                //     Logger::print(".");
-                // }
-                vTaskDelay(10);
-            }
-
-            Utils::Logger::println("\n[WIFI] Connected");
-
-            vTaskDelete(animation);
-            // connected = true;
-            Engine::instance().canUpdate(true);
-            Engine::instance().clearSrcBuffers();
-        }
-
-        vTaskDelay(50);
-    }
-}
-
-void Engine::updateInput(void*)
-{
-    Utils::Logger::println("[TASK] Created 'DMX Input' task!");
-
-    while(true)
-    {
-        Handler::InputHandler::update();
-        
-        vTaskDelay(20);
-    }
-}
-
-void Engine::update(void*)
-{
-    Utils::Logger::println("[TASK] Created 'DMX update' task");
-    while(true)
-    {
-        Handler::FixtureHandler::update();
-        Output::updateFastLED();
-        vTaskDelay(20);
-    }
-}
 
 void Engine::sendReport(void*)
 {
@@ -186,13 +199,13 @@ void Engine::sendReport(void*)
     }
 }
 
-void Engine::printReport(void*)
+void Engine::printReport()
 {
     Utils::Logger::println("[TASK] Created 'print report' task");
 
     while(true)
     {
-        Utils::Logger::println(Engine::instance().toString().c_str());
+        Utils::Logger::println(toString().c_str());
         vTaskDelay(10000);
     }
 }

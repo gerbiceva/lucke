@@ -1,6 +1,6 @@
 #include "Wifi.h"
 #include "Logger.h"
-// #include "Core/Engine.h"
+#include "Core/Engine.h"
 
 // #include <Arduino.h>
 #include "WiFi.h"
@@ -25,11 +25,12 @@ namespace Utils
             Utils::Logger::println("[TASK] Created 'WIFI check network' task");
             Wifi& instance = Wifi::instance();
             bool is_connected = instance.isConnected();
-            instance.m_connection_status_callback(is_connected);
+            // instance.m_connection_status_callback(is_connected);
 
             while (true) 
             {
-                if (instance.isConnected() != is_connected) {
+                if (!instance.isConnected()) 
+                {
                     is_connected = instance.isConnected();
                     instance.m_connection_status_callback(is_connected);
                 }
@@ -93,7 +94,7 @@ namespace Utils
     //     }
     // }
 
-    // void Wifi::checkNetwork(void *) {
+    // void Wifi::checkNetwork() {
     //     Logger::println("[TASK] Created 'WIFI check network' task");
     //     while (true) 
     //     {
@@ -101,36 +102,36 @@ namespace Utils
     //         if (WiFi.status() != WL_CONNECTED) 
     //         {
     //             Logger::println("[WIFI] Disconnected, reconnecting...");
-    //             connected = false;
-    //             Handler::InputHandler::canUpdate(false);
+    //             Engine::instance().canUpdate(false);
 
-    //             // TaskHandle_t animation = NULL;
-    //             // xTaskCreate(
-    //             //     Wifi::playIdleAnimation, 		// Task function
-    //             //     "Animation",						// Name of the task (for debugging)
-    //             //     2000,								// Stack size in words
-    //             //     NULL,								// Parameter passed to the task
-    //             //     1,									// Task priority
-    //             //     &animation							// Handle to the task
-    //             // );
+                // TaskHandle_t animation = NULL;
+                // xTaskCreate(
+                //     Wifi::playIdleAnimation, 		// Task function
+                //     "Animation",						// Name of the task (for debugging)
+                //     2000,								// Stack size in words
+                //     NULL,								// Parameter passed to the task
+                //     1,									// Task priority
+                //     &animation							// Handle to the task
+                // );
 
-    //             // while not connected
-    //             uint16_t counter = 0;
-    //             while (WiFi.status() != WL_CONNECTED) 
-    //             {
-    //                 // if(counter++ % 10 == 0)
-    //                 // {
-    //                 //     Logger::print(".");
-    //                 // }
-    //                 vTaskDelay(10);
-    //             }
+                // while not connected
+                // uint16_t counter = 0;
+                // while (WiFi.status() != WL_CONNECTED) 
+                // {
+                    // if(counter++ % 10 == 0)
+                    // {
+                    //     Logger::print(".");
+                    // }
+                //     vTaskDelay(10);
+                // }
 
-    //             Logger::println("\n[WIFI] Connected");
+                // Logger::println("\n[WIFI] Connected");
 
-    //             // vTaskDelete(animation);
-    //             connected = true;
-    //             Handler::InputHandler::canUpdate(true);
-    //             Engine::instance().clearSrcBuffers();
+                // vTaskDelete(animation);
+                // connected = true;
+                // Engine::instance().canUpdate(true);
+                // Handler::InputHandler::canUpdate(true);
+                // Engine::instance().clearSrcBuffers();
     //         }
 
     //         vTaskDelay(50);

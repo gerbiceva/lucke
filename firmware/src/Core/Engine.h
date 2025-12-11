@@ -1,10 +1,15 @@
 #pragma once
 // #include "Fixtures.h"
-#include "Handlers/FixtureHandler.h"
-#include "Handlers/ButtonManager.h"
 #include <string>
 #include <unordered_map>
 #include <functional>
+
+#include "Handlers/FixtureHandler.h"
+#include "Handlers/InputHandler.h"
+#include "Handlers/ButtonManager.h"
+#include "Handlers/PinHandler.h"
+#include "Utils/TaskExecutor.h"
+#include "Utils/Storage.h"
 #include "Traits/Serializable.h"
 
 // #define ENGINE_VERSION "1.1"
@@ -31,28 +36,26 @@ class Engine : public Traits::Serializable
     //         return std::atoi(m_settings[key].c_str());
     //     }
     // };
-    
-    TaskHandle_t m_inputHandle;
 
     Engine ();
-    static void playIdleAnimation(void*);
-    static void checkNetwork(void*);
-    void updateInput(void*);
-    void update(void*);
-    void sendReport(void*);
-    void printReport(void*);
 
+    void resumeInputTask();
+    void suspendInputTask();
+
+    void syncToStorage();
+    void playIdleAnimation();
+    void sendReport(void*);
+    void printReport();
     
 public:
-    std::function<void()> wifiAnimation;
     // static Settings settings;
-    static Fixture* wifiAnimFix;
     static Engine& instance();
+    void init();
 
     template<typename TFixture>
     Fixture* addFixture(bool animateWifiConnecting = false)
     {
-        Fixture* fix = Handler::FixtureHandler::addFixture<TFixture>();
+        Fixture* fix = m_fixtureHandler.addFixture<TFixture>();
         if(animateWifiConnecting)
         {
             wifiAnimation = [fix]() 
@@ -66,6 +69,9 @@ public:
         // return nullptr;
     }
 
+    void addButton(Input::Button&& button);
+
+
     // template<typename TFixture>
     // Fixture* addFixture(std::string name, std::string type, bool animateWifiConnecting = false)
     // {
@@ -78,21 +84,24 @@ public:
     //     return fix;
     // }
 
-    void init();
-    void canUpdate(bool b)
-    {
-        if(b)
-        {
-            vTaskResume(m_inputHandle);
-        }
-        else
-        {
-            vTaskSuspend(m_inputHandle);
-        }
-    }
+    Traits::InputInterface* getDMXInput(uint8_t universe);
     void clearSrcBuffers();
-    void addButton(Input::Button&& button);
     
     JsonDocument describe() override;
     std::string toString();
+
+private:
+    Utils::TaskExecutor m_taskExecutor;
+    Handler::FixtureHandler m_fixtureHandler;
+    Handler::InputHandler m_inputHandler;
+    Handler::ButtonManager m_buttonManager;
+    Handler::PinHandler m_pinManager;
+    
+    TaskHandle_t m_inputHandle;
+    std::function<void()> wifiAnimation;
+    
+    Utils::Storage m_storage;
+
+    const bool shouldPlayWifiAnimation = true;
+
 };

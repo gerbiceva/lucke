@@ -1,7 +1,8 @@
 #include "Fixture.h"
-#include "Handlers/InputHandler.h"
+// #include "Handlers/InputHandler.h"
 #include <ArduinoJson.h>
 #include "Utils/Logger.h"
+#include "Engine.h"
 
 
 uint8_t Fixture::s_ID = 0;
@@ -33,20 +34,19 @@ void Fixture::loadIfExist()
 {
     m_storage = new Utils::Storage(std::to_string(m_ID));
 
-    if(m_storage->isKey("universe"))
-    {
-        m_config.universe = m_storage->getUChar("universe");
-        m_config.address = m_storage->getUChar("address");
-        m_config.selectedPreset = m_storage->getUChar("selectedPreset");
-        m_config.name = m_storage->getString("name");
-    }
+    // if(m_storage->isKey("universe"))
+    // {
+    //     m_config.universe = m_storage->getUChar("universe");
+    //     m_config.address = m_storage->getUChar("address");
+    //     m_config.selectedPreset = m_storage->getUChar("selectedPreset");
+    //     m_config.name = m_storage->getString("name");
+    // }
 }
 
 void Fixture::init()
 {
     loadIfExist();
-
-    m_srcBuffer = Handler::InputHandler::interface(m_config.universe)->getBuffer();
+    m_srcBuffer = Engine::instance().getDMXInput(m_config.universe)->getBuffer();
     updatePresets();
 }
 
@@ -55,8 +55,7 @@ void Fixture::setUniverse(uint8_t new_universe)
     m_config.universe = new_universe;
     m_storage->putUChar("universe", new_universe);
 
-    // m_srcBuffer = Handler::InputHandler::interface(new_universe)->getBuffer();
-    
+    m_srcBuffer = Engine::instance().getDMXInput(m_config.universe)->getBuffer();    
     updatePresets();
 }
 

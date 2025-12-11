@@ -6,7 +6,7 @@
 namespace Input
 {
 
-Button::Button(const std::string& name, const uint8_t pin, void(*risingFunction)(), void(*holdFunction)(), unsigned long holdTimeMillis) 
+Button::Button(const std::string& name, const uint8_t pin, std::function<void()> risingFunction, std::function<void()> holdFunction, unsigned long holdTimeMillis) 
 	: buttonName(name), buttonPin(pin), risingCallback(risingFunction), holdCallback(holdFunction), holdTime(holdTimeMillis) 
 {
     if(Handler::PinHandler::available(buttonPin))
@@ -42,12 +42,12 @@ Button::Button(Button&& other) noexcept
 
 
 
-void Button::setRisingFunction(void(*risingFunction)()) 
+void Button::setRisingFunction(std::function<void()> risingFunction)
 {
 	risingCallback = risingFunction;
 }
 
-void Button::setHoldFunction(void(*holdFunction)()) 
+void Button::setHoldFunction(std::function<void()> holdFunction) 
 {
 	holdCallback = holdFunction;
 }
@@ -105,6 +105,5 @@ JsonDocument Button::describe()
     doc["pin"] = buttonPin;
     return doc;
 }
-
 
 }

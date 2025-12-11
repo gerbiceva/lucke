@@ -7,8 +7,8 @@ namespace Handler
 {
     using Traits::InputInterface;
 
-    std::vector<InputInterface*> InputHandler::m_inputs;
-    TaskHandle_t InputHandler::m_handle;
+    // std::vector<InputInterface*> InputHandler::m_inputs;
+    // TaskHandle_t InputHandler::m_handle;
 
     // std::unordered_map<uint8_t, Traits::InputInterface*> InputHandler::m_inputs;
     // std::vector<std::pair<uint8_t, Traits::InputInterface*>> InputHandler::m_vecInputs;
@@ -28,8 +28,6 @@ namespace Handler
 
     InputInterface* InputHandler::interface(uint8_t universe, InputInterface::InputType type)
     {
-        // if(m_inputs.find(uni) == m_inputs.end())
-        // {
         InputInterface* ptr = find(universe);
         if(!ptr)
         {
@@ -42,18 +40,18 @@ namespace Handler
 
     void InputHandler::canUpdate(bool b)
     {
-        static bool m_inited = false;
+        // static bool m_inited = false;
 
-        if(!m_inited)
-        {
-            if(b)
-            {
-                xTaskCreate(InputHandler::updateTask, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, &m_handle);
-                m_inited = true;
-            }
+        // if(!m_inited)
+        // {
+        //     if(b)
+        //     {
+        //         xTaskCreate(InputHandler::updateTask, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, &m_handle);
+        //         m_inited = true;
+        //     }
 
-            return;
-        }
+        //     return;
+        // }
 
         if(b)
         {
@@ -68,14 +66,6 @@ namespace Handler
 
     void InputHandler::update()
     {
-        for(InputInterface* p : m_inputs)
-        {
-            p->update();
-        }
-    }
-    
-    void InputHandler::updateTask(void*)
-    {
         Utils::Logger::println("[TASK] Created 'DMX Input' task!");
 
         while(true)
@@ -87,21 +77,25 @@ namespace Handler
             vTaskDelay(20);
         }
     }
-
-    // void InputHandler::initInputs()
-    // {
-    //     for(InputInterface* p : m_inputs)
-    //     {
-    //         p->init();
-    //     }
-    // }
-
-
+    
     void InputHandler::clearSrcBuffers()
     {
         for(InputInterface* p : m_inputs)
         {
             p->clearSrcBuffer();
+        }
+    }
+
+    void InputHandler::fromJson(std::string json)
+    {
+        DynamicJsonDocument doc(512);
+        deserializeJson(doc, json);
+
+        JsonArray arr = doc["inputs"].as<JsonArray>();
+        for(JsonObject a : arr)
+        {
+            uint8_t universe = static_cast<uint8_t>(a["universe"]);   // extract value
+            interface(universe);
         }
     }
 
