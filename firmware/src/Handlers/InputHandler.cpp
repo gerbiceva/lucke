@@ -92,7 +92,7 @@ namespace Handler
         deserializeJson(doc, json);
 
         JsonArray arr = doc["inputs"].as<JsonArray>();
-        for(JsonObject a : arr)
+        for(JsonDocument a : arr)
         {
             uint8_t universe = static_cast<uint8_t>(a["universe"]);   // extract value
             interface(universe);

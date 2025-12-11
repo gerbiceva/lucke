@@ -15,33 +15,33 @@ public:
         {
             "name": "group by 1",
             "settings": [
-            [
+            
                 { "num_groups": 60 }
-            ]
+            
             ]
         },
         {
             "name": "group by 2",
             "settings": [
-            [
+            
                 { "num_groups": 30 }
-            ]
+            
             ]
         },
         {
             "name": "group by 4",
             "settings": [
-            [
+            
                 { "num_groups": 15 }
-            ]
+            
             ]
         },
         {
             "name": "group by 10",
             "settings": [
-            [
+            
                 { "num_groups": 6 }
-            ]
+            
             ]
         }
         ]

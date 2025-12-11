@@ -11,7 +11,7 @@ class Fixture : public Traits::Serializable
     {
         uint8_t universe = 8U;
         uint16_t address = 0U;
-        uint8_t selectedPreset = 0U;
+        uint8_t selectedPreset = 1U;
 
         std::string name = "name";
         std::string type = "type";

@@ -33,8 +33,6 @@ namespace Output
 
         void setPreset(const JsonDocument& doc) override
         {
-            sleep(5);
-            Utils::Logger::println(doc["num_groups"]);
             m_numGroups = doc["num_groups"];
         }
 

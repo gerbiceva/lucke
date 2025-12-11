@@ -83,19 +83,76 @@ void Fixture::setName(const std::string& other)
 
 void Fixture::updatePresets()
 {
-    uint16_t offset = 0;
-    uint8_t counter = 0;
-    // std::string test;
-    for(Traits::OutputInterface* o : m_outputs)
+    // JsonArray presets;
+    JsonArray arr1 = jsonPreset["groups"].as<JsonArray>();
+    uint8_t c = 0;
+
+    for(JsonDocument o : arr1)
     {
-        o->setSrcBuffer(m_srcBuffer + m_config.address + offset);
-        offset += o->getSize();
+        if(c++ == m_config.selectedPreset)
+        {
+            JsonArray presets = o["settings"].as<JsonArray>();
+            uint16_t offset = 0;
+            uint8_t counter = 0;
+            for(JsonDocument d : presets)
+            {
+                if(m_outputs.size() == presets.size())
+                {
+                    Traits::OutputInterface* o = m_outputs[counter++];
+                    o->setPreset(d);
+                    o->setSrcBuffer(m_srcBuffer + m_config.address + offset);
+                    offset += o->getSize();
+                }
+
+            }
+            break;
+        }
+    }
+
+    
+    // std::string test;
+    {
+    }
+    // for(Traits::OutputInterface* o : m_outputs)
+    // {
+
+        
+
+    //     // serializeJson(jsonPreset, test);
+    //     // Utils::Logger::println(test.c_str());
+
+    //     // o->setPreset(jsonPreset["groups"][selectedPreset]["settings"][counter++]);
+    // }
+}
+
+/*
+uint16_t offset = 0;
+    // std::string test;
+    
+    JsonArray presets = jsonPreset["groups"].as<JsonArray>();
+    uint8_t c = 0;
+    
+    for(JsonDocument o : presets)
+    {
+        if(c++ == m_config.selectedPreset)
+        {
+            uint8_t counter = 0;
+            JsonArray arr = o["settings"].as<JsonArray>();
+            for(JsonDocument d : arr)
+            {
+                Traits::OutputInterface* o = m_outputs[counter++];
+                o->setSrcBuffer(m_srcBuffer + m_config.address + offset);
+                offset += o->getSize();
+                o->setPreset(d);
+            }
+            break;
+        }
+
         // serializeJson(jsonPreset, test);
         // Utils::Logger::println(test.c_str());
 
         // o->setPreset(jsonPreset["groups"][selectedPreset]["settings"][counter++]);
-    }
-}
+    } */
 
 void Fixture::update()
 {

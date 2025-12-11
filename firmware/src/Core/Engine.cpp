@@ -15,7 +15,7 @@ Engine::Engine ()
     // settings.setShort("button_holdtime", 200);
 
     Utils::Logger::enable();
-    sleep(3);
+    // sleep(3);
 
 
     Utils::Wifi::initialize("Ledique", "dasenebipovezau", [this](bool is_connected) {
@@ -103,7 +103,7 @@ void Engine::init()
         // xTaskCreate([](void*){Engine::instance().sendReport(nullptr);}, "send report", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
         inited = true;
 
-        syncToStorage();
+        // syncToStorage();
     }
 }
 
