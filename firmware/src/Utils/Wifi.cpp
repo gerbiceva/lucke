@@ -9,36 +9,68 @@ namespace Utils
 {
     std::unique_ptr<Wifi> Wifi::m_instance = nullptr;
 
-    // std::atomic<bool> Wifi::connected;
-
     uint8_t randomInt()
     {
         return static_cast<uint8_t>(random(300));
     }
 
-    void Wifi::monitorConnection(void*) {
-         {
-            Utils::Logger::println("[TASK] Created 'WIFI check network' task");
-            Wifi& instance = Wifi::instance();
-            bool is_connected = instance.isConnected();
-            // instance.m_connection_status_callback(is_connected);
+    void Wifi::monitorConnection(void*) 
+    {
+        Utils::Logger::println("[TASK] Created 'WIFI check network' task");
+        Wifi& instance = Wifi::instance();
+        bool is_connected = instance.isConnected();
 
-            while (true) 
+        while (true) 
+        {
+            if (!instance.isConnected()) 
             {
-                if (!instance.isConnected()) 
-                {
-                    is_connected = instance.isConnected();
-                    instance.m_connection_status_callback(is_connected);
-                }
-
-                vTaskDelay(50);
+                is_connected = instance.isConnected();
+                instance.m_connection_status_callback(is_connected);
             }
+
+            vTaskDelay(50);
+        }
+    }
+
+    void Wifi::receiveData(void*) 
+    {
+        Utils::Logger::println("[TASK] Created 'WIFI receive data' task");
+        Wifi& instance = Wifi::instance();
+        bool is_connected = instance.isConnected();
+
+        WiFiServer server(8888);
+        server.begin();
+        while (true) 
+        {
+            if (!instance.isConnected()) 
+            {
+                WiFiClient client = server.available();
+                if (client) {
+                    while (client.connected()) {
+                        if (client.available()) {
+                            instance.m_receive_callback(client.readString().c_str());
+                            // String name = client.readStringUntil(',');
+                            // String universe = client.readStringUntil(',');
+                            // String offset = client.readStringUntil(',');
+                            // String preset = client.readStringUntil('\n');
+                            // Serial.println("Universe: " + universe);
+                            // Serial.println("Offset: " + offset);
+                            // Serial.println("Preset: " + preset);
+                            // Controller::get().init(universe.toInt(), offset.toInt(), preset.toInt());
+                        }
+                    }
+                    client.stop();
+                }
+                // instance;
+            }
+
+            vTaskDelay(50);
         }
     }
 
 
-    Wifi::Wifi(const char *ssid, const char *password, const std::function<void(bool)>& connection_status_callback) 
-        : m_ssid(ssid), m_password(password), m_connection_status_callback(connection_status_callback) {
+    Wifi::Wifi(const char *ssid, const char *password, const std::function<void(bool)>& connection_status_callback, const std::function<void(std::string)>& receive_callback) 
+        : m_ssid(ssid), m_password(password), m_connection_status_callback(connection_status_callback), m_receive_callback(receive_callback) {
             Logger::printf("[WIFI] Connecting to '%s'\n", ssid);
             // uint8_t mac[] = {0x90, 0xA2, 0xDA, 0x10, 0x10, 0xAF}; // MAC Adress of your device
             // esp_err_t err = esp_wifi_set_mac(WIFI_IF_STA, &mac[0]);
@@ -53,13 +85,14 @@ namespace Utils
             WiFi.begin(m_ssid, m_password);
 
             xTaskCreate(Wifi::monitorConnection, "Check Wifi", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
+            xTaskCreate(Wifi::receiveData, "Receive Data", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
         }
 
-    Wifi &Wifi::initialize(const char *ssid, const char *password, std::function<void(bool)> connection_status_callback)
+    Wifi &Wifi::initialize(const char *ssid, const char *password, std::function<void(bool)> connection_status_callback, std::function<void(std::string)> receive_callback)
     {
         assert(m_instance == nullptr);
 
-        m_instance = std::unique_ptr<Wifi>(new Wifi(ssid, password, connection_status_callback));
+        m_instance = std::unique_ptr<Wifi>(new Wifi(ssid, password, connection_status_callback, receive_callback));
 
         return *m_instance;
     }
