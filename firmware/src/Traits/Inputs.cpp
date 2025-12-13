@@ -19,14 +19,10 @@ namespace Traits
     InputInterface::InputInterface(uint8_t universe)
         : m_universe(universe) 
     {
-        m_dmxBuffer = new uint8_t[512];
-        for(uint16_t i = 0; i<512; i++)
-        {
-            m_dmxBuffer[i] = 0;
-        }
+        m_ID = s_ID++;
 
-        m_ID = ++s_ID;
-        // memcpy(m_dmxBuffer, 0, 512);
+        m_dmxBuffer = new uint8_t[512];
+        memset(m_dmxBuffer, 0, 512);
     }
         
     InputInterface::~InputInterface() {}

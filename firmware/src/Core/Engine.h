@@ -14,7 +14,7 @@
 
 // #define ENGINE_VERSION "1.1"
 
-class Engine : public Traits::Serializable
+class Engine : public Traits::Deserializable
 {
     // class Settings
     // {
@@ -44,7 +44,8 @@ class Engine : public Traits::Serializable
 
     void syncToStorage();
     void playIdleAnimation();
-    void sendReport(void*);
+    void wirelessConfigTask();
+    void sendReport();
     void printReport();
     
 public:
@@ -62,32 +63,31 @@ public:
             {
                 fix->wifiAnimation();
             };
-            // animateWifi = &(fix->wifiAnimation);
+        }
+
+        std::string key = "fixture" + std::to_string(fix->id());
+        if(m_storage.isKey(key))
+        {
+            fix->fromJson(m_storage.getString(key));
+        }
+        else
+        {
+            std::string temp;
+            serializeJson(fix->toJson(), temp);
+            fix->fromJson(temp);
+            m_storage.putString(key, temp);
         }
 
         return fix;
-        // return nullptr;
     }
 
     void addButton(Input::Button&& button);
 
-
-    // template<typename TFixture>
-    // Fixture* addFixture(std::string name, std::string type, bool animateWifiConnecting = false)
-    // {
-    //     Fixture* fix = Handler::FixtureHandler::addFixture<TFixture>(name, type);
-    //     if(animateWifiConnecting)
-    //     {
-    //         wifiAnimFix = fix;
-    //     }
-
-    //     return fix;
-    // }
-
     Traits::InputInterface* getDMXInput(uint8_t universe);
     void clearSrcBuffers();
     
-    JsonDocument describe() override;
+    JsonDocument fixtureJson();
+    JsonDocument toJson() override;
     std::string toString();
 
 private:

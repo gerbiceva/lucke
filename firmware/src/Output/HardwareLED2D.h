@@ -73,7 +73,7 @@ namespace Output
             m_grid_hash.clear();
         }
 
-        JsonDocument describe() override
+        JsonDocument toJson() override
         {
             JsonDocument doc;
             doc["type"] = "FastLED-2D";

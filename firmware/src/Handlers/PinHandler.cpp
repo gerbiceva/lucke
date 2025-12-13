@@ -17,7 +17,7 @@ namespace Handler
         }
     }
     
-    JsonDocument PinHandler::describe()
+    JsonDocument PinHandler::toJson()
     {
         JsonDocument doc;
         doc["used_pins"] = JsonDocument();

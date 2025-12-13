@@ -98,7 +98,7 @@ void Button::update()
 	}
 }
 
-JsonDocument Button::describe() 
+JsonDocument Button::toJson() 
 {
     JsonDocument doc;
     doc["name"] = buttonName;

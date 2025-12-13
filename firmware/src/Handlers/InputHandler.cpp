@@ -100,7 +100,7 @@ namespace Handler
     }
 
     
-    JsonDocument InputHandler::describe()
+    JsonDocument InputHandler::toJson()
     {
         JsonDocument doc;
         doc["inputs"] = JsonDocument();
@@ -108,7 +108,7 @@ namespace Handler
     
         for(InputInterface* p : m_inputs)
         {
-            arr.add(p->describe());
+            arr.add(p->toJson());
         }
     
         return doc;

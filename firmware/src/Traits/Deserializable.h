@@ -1,11 +1,12 @@
 #pragma once
-#include <string>
+#include <ArduinoJson.h>
 
 namespace Traits
 {
-
     struct Deserializable
     {
-        virtual void fromJson(std::string json) = 0;
+        virtual JsonDocument toJson() = 0;
+        virtual JsonDocument toJsonFull() { return JsonDocument(); }
     };
+
 }

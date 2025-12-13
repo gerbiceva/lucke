@@ -18,14 +18,15 @@ namespace Handler
 
         Traits::InputInterface* find(uint8_t universe);
     public:
-        void fromJson(std::string json) override;
-
+    
         Traits::InputInterface* interface(uint8_t universe, Traits::InputInterface::InputType type = Traits::InputInterface::InputType::SACN);
         void update();
         void updateTask(void*);
         void canUpdate(bool b);
         // void initInputs();
         void clearSrcBuffers();
-        JsonDocument describe() override;
+        
+        void fromJson(std::string json) override;
+        JsonDocument toJson() override;
     };
 }

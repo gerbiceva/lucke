@@ -1,12 +1,12 @@
 #pragma once
 #include <cstdint>
 #include <ArduinoJson.h>
-#include "Traits/Serializable.h"
+#include "Traits/Deserializable.h"
 
 namespace Traits
 {
 
-    class InputInterface : public Serializable
+    class InputInterface : public Deserializable
     {
         static uint8_t s_ID;
     public:

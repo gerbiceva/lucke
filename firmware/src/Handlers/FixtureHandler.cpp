@@ -41,8 +41,16 @@ namespace Handler
             vTaskDelay(20);
         }
     }
+
+    void FixtureHandler::fromJson(std::string json) 
+    {
+        DynamicJsonDocument doc(512);
+        deserializeJson(doc, json);
+
+        JsonArray arr = doc["fixtures"].as<JsonArray>();
+    }
     
-    JsonDocument FixtureHandler::describe()
+    JsonDocument FixtureHandler::toJson()
     {
         JsonDocument doc;
         doc["num_fixtures"] = fixtures.size();
@@ -51,7 +59,22 @@ namespace Handler
     
         for(Fixture* f : fixtures)
         {
-            arr.add(f->describe());
+            arr.add(f->toJson());
+        }
+    
+        return doc;
+    }
+
+    JsonDocument FixtureHandler::toJsonFull()
+    {
+        JsonDocument doc;
+        doc["num_fixtures"] = fixtures.size();
+        doc["fixtures"] = JsonDocument();
+        JsonArray arr = doc["fixtures"].to<JsonArray>();
+    
+        for(Fixture* f : fixtures)
+        {
+            arr.add(f->toJsonFull());
         }
     
         return doc;

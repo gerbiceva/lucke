@@ -41,7 +41,7 @@ namespace Output
             return m_numGroups * this->m_numPxls;
         }
 
-        JsonDocument describe() override
+        JsonDocument toJson() override
         {
             JsonDocument doc;
             doc["type"] = "FastLED-1D";

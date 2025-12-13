@@ -1,12 +1,12 @@
 #pragma once
 #include <cstdint>
-#include "Traits/Serializable.h"
+#include "Traits/Deserializable.h"
 #include <functional>
 
 namespace Input 
 {
 
-class Button : public Traits::Serializable 
+class Button : public Traits::Deserializable 
 {
     std::string buttonName;
 	const uint8_t buttonPin;
@@ -33,7 +33,7 @@ public:
 	inline const uint8_t getPin() const;
 	inline const bool buttonStatus() const;
 
-    JsonDocument describe() override;
+    JsonDocument toJson() override;
 };
 
 }

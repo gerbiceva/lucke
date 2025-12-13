@@ -4,12 +4,12 @@
 
 #include <FastLED.h>
 #include <ArduinoJson.h>
-#include "Traits/Serializable.h"
+#include "Traits/Deserializable.h"
 
 namespace Traits
 {
 
-    class OutputInterface : public Serializable
+    class OutputInterface : public Deserializable
     {
     protected:
         // std::vector<uint8_t> m_dstBuffer;

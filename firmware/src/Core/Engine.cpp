@@ -2,17 +2,10 @@
 #include "Utils/Logger.h"
 #include "Utils/Wifi.h"
 
-#include <WiFi.h>
 
-
-// Engine::Settings Engine::settings;
 Engine::Engine ()
     : m_storage(Utils::Storage("engine"))
 {
-    // settings.setString("wifi_ssid", "ledique");
-    // settings.setString("wifi_password", "dasenebipovezau");
-
-    // settings.setShort("button_holdtime", 200);
 
     Utils::Logger::enable();
     // sleep(3);
@@ -69,20 +62,8 @@ void Engine::init()
     static bool inited = false;
 
     if(!inited)
-    {
-        // if(m_storage.isKey("input_handler"))
-        // {
-            // Utils::Logger::println(m_storage.getString("input_handler").c_str());
-        //     m_storage.putString("input_handler", R"(
-        //         {"inputs":[{"id":1,"universe":8,"type":"SACN","seq_diff":1}]})");
-
-            // Utils::Logger::println(m_storage.getString("input_handler").c_str());
-
-            // std::string temp = m_storage.getString("input_handler");
-            // m_inputHandler.fromJson(temp);
-
-        // }
-        
+    {        
+     
         m_inputHandle = m_taskExecutor.spawnTask("DMX Input", [this]()
         {
             this->m_inputHandler.update();
@@ -100,10 +81,14 @@ void Engine::init()
             this->printReport();
         }, 
         1, 3000);
-        // xTaskCreate([](void*){Engine::instance().sendReport(nullptr);}, "send report", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
+
+        // m_taskExecutor.spawnTask("Send report", [this]()
+        // {
+        //     this->sendReport();
+        // }, 
+        // 1, 2000);
         inited = true;
 
-        // syncToStorage();
     }
 }
 
@@ -135,7 +120,7 @@ void Engine::suspendInputTask()
 void Engine::syncToStorage()
 {
     std::string temp;
-    serializeJson(m_inputHandler.describe(), temp);
+    serializeJson(m_inputHandler.toJson(), temp);
     m_storage.putString("input_handler", temp);
 }
 
@@ -152,22 +137,30 @@ void Engine::clearSrcBuffers()
 }
 
 
-JsonDocument Engine::describe()
+JsonDocument Engine::fixtureJson()
+{
+    JsonDocument doc;
+    doc["fixtures"] = m_fixtureHandler.toJsonFull();
+    return doc;
+}
+
+
+JsonDocument Engine::toJson()
 {
     JsonDocument doc;
     // doc["heap_size"] = ESP.getHeapSize();
 	// doc["heap_free"] = ESP.getFreeHeap();
-    doc["wifi"] = Utils::Wifi::instance().describe();
-    doc["pin_handler"] = Handler::PinHandler::describe();
-    doc["input_handler"] = m_inputHandler.describe();
-    doc["fixture_handler"] = m_fixtureHandler.describe();
+    doc["wifi"] = Utils::Wifi::instance().toJson();
+    doc["pin_handler"] = Handler::PinHandler::toJson();
+    doc["input_handler"] = m_inputHandler.toJson();
+    doc["fixture_handler"] = m_fixtureHandler.toJson();
     return doc;
 }
 
 std::string Engine::toString()
 {
     std::string ret;
-    serializeJson(describe(), ret);
+    serializeJson(toJson(), ret);
     return ret;
 }
 
@@ -183,17 +176,41 @@ void Engine::playIdleAnimation()
     }
 }
 
+void Engine::wirelessConfigTask() {
+    // WiFiServer server(8888);
+    // server.begin();
+    
+    // while(true) {
+    //     // Serial.println(WiFi.localIP());
+    //     WiFiClient client = server.available();
+    //     if (client) {
+    //         while (client.connected()) {
+    //             if (client.available()) {
+    //                 // String name = client.readStringUntil(',');
+    //                 String universe = client.readStringUntil(',');
+    //                 String offset = client.readStringUntil(',');
+    //                 String preset = client.readStringUntil('\n');
+    //                 Serial.println("Universe: " + universe);
+    //                 Serial.println("Offset: " + offset);
+    //                 Serial.println("Preset: " + preset);
+    //                 Controller::get().init(universe.toInt(), offset.toInt(), preset.toInt());
+    //             }
+    //         }
+    //         client.stop();
+    //     }
+    //     vTaskDelay(100);
+    // }
+}
 
-void Engine::sendReport(void*)
+void Engine::sendReport()
 {
     Utils::Logger::println("[TASK] Created 'Send report' task");
 
-    WiFiUDP udp;
+    std::string temp;
     while(true)
     {
-        udp.beginPacket(WiFi.broadcastIP(), 12345);
-        serializeJson(Engine::instance().describe(), udp);
-        udp.endPacket();
+        serializeJson(m_fixtureHandler.toJsonFull(), temp);
+        Utils::Wifi::instance().sendUdpPacket(12345, temp);
 
         vTaskDelay(1000);
     }

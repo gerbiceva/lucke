@@ -2,6 +2,7 @@
 #include <vector>
 #include <cstdint>
 #include "Traits/Serializable.h"
+#include "Traits/Deserializable.h"
 // #include "Fixture/Fixture.h"
 #include "Fixtures.h"
 
@@ -9,7 +10,7 @@ class Fixture;
 
 namespace Handler
 {
-    class FixtureHandler : public Traits::Serializable
+    class FixtureHandler : public Traits::Serializable, public Traits::Deserializable
     {
         std::vector<Fixture*> fixtures;
     public:
@@ -29,6 +30,9 @@ namespace Handler
         std::vector<Fixture*>& allFixtures();
 
         void update();
-        JsonDocument describe() override;
+
+        void fromJson(std::string json) override;
+        JsonDocument toJson() override;
+        JsonDocument toJsonFull() override;
     };
 }

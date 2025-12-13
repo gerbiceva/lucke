@@ -1,13 +1,9 @@
 #include "Wifi.h"
 #include "Logger.h"
-#include "Core/Engine.h"
 
-// #include <Arduino.h>
-#include "WiFi.h"
+#include <WiFi.h>
+#include <WiFiUdp.h>
 #include <esp_wifi.h>
-#include <platforms/esp/esp_assert.h>
-
-// #include "Handlers/InputHandler.h"
 
 namespace Utils
 {
@@ -78,6 +74,18 @@ namespace Utils
     {
         return WiFi.status() == WL_CONNECTED;
     }
+    
+    void Wifi::sendUdpPacket(uint16_t port, const std::string& data)
+    {
+        if(isConnected())
+        {
+            WiFiUDP udp;
+            udp.beginPacket(WiFi.broadcastIP(), port);
+            udp.print(data.c_str());
+            udp.endPacket();
+        }
+    }
+
 
 
     // void Wifi::playIdleAnimation(void*)
@@ -138,7 +146,7 @@ namespace Utils
     //     }
     // }
 
-    JsonDocument Wifi::describe()
+    JsonDocument Wifi::toJson()
     {
         JsonDocument doc;
         

@@ -10,6 +10,6 @@ namespace Handler
         static std::set<uint8_t> m_usedPins;
     public:
         static bool available(uint8_t pin);
-        static JsonDocument describe();
+        static JsonDocument toJson();
     };
 }

@@ -1,11 +1,11 @@
 #pragma once
 #include "Input/Button.h"
-#include "Traits/Serializable.h"
+#include "Traits/Deserializable.h"
 #include <vector>
 
 namespace Handler
 {
-    class ButtonManager : public Traits::Serializable
+    class ButtonManager : public Traits::Deserializable
     {
         std::vector<Input::Button> buttons;
         
@@ -13,7 +13,7 @@ namespace Handler
         void update();
         void add(Input::Button&& b);
         
-        JsonDocument describe() override;        
+        JsonDocument toJson() override;        
     };
 }
 

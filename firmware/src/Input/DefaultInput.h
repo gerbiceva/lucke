@@ -11,6 +11,6 @@
 //         }
 
 //         virtual void update() override {}
-//         virtual JsonDocument describe() override { return JsonDocument(); }
+//         virtual JsonDocument toJson() override { return JsonDocument(); }
 //     };
 // }

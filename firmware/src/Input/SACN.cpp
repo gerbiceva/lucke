@@ -19,7 +19,7 @@ namespace Input
         m_sacn.dmx(m_dmxBuffer);
     }
 
-    JsonDocument Sacn::describe()
+    JsonDocument Sacn::toJson()
     {
         JsonDocument doc;
         doc["id"] = m_ID;
