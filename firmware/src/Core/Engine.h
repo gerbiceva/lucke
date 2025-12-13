@@ -84,6 +84,7 @@ public:
     void addButton(Input::Button&& button);
 
     Traits::InputInterface* getDMXInput(uint8_t universe);
+    void parseConfig(const std::string& data);
     void clearSrcBuffers();
     
     JsonDocument fixtureJson();

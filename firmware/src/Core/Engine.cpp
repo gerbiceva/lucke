@@ -43,6 +43,9 @@ Engine::Engine ()
         }
         this->resumeInputTask();
         this->clearSrcBuffers();
+    }, [this](std::string data)
+    {
+        this->parseConfig(data);
     });
 
     if(m_storage.isKey("input_handler"))
@@ -91,6 +94,9 @@ void Engine::init()
 
     }
 }
+
+void Engine::parseConfig(const std::string& data)
+{}
 
 void Engine::addButton(Input::Button&& button)
 {
