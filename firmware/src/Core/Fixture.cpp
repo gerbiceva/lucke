@@ -24,7 +24,8 @@ Fixture::Fixture(std::string name, std::string type, std::string presets)
 void Fixture::setUniverse(uint8_t new_universe)
 {
     m_config.universe = new_universe;
-    m_srcBuffer = Engine::instance().getDMXInput(m_config.universe)->getBuffer();    
+    m_dmxIn = Engine::instance().getDMXInput(m_config.universe);
+    m_srcBuffer = m_dmxIn->getBuffer();
     updatePresets();
 }
 
@@ -123,6 +124,7 @@ JsonDocument Fixture::toJson()
     doc["address"] = m_config.address;
     doc["presetIndex"] = m_config.selectedPreset;
     doc["preset"] = getSelectedPresetName();
+    doc["input"] = m_dmxIn->toJson();
 
     return doc;
 }
@@ -138,6 +140,7 @@ JsonDocument Fixture::toJsonFull()
     doc["presetIndex"] = m_config.selectedPreset;
     doc["preset"] = getSelectedPresetName();
 
+    doc["input"] = m_dmxIn->toJson();
     doc["outputs"] = JsonDocument();
 	JsonArray outputs = doc["outputs"].to<JsonArray>();
 

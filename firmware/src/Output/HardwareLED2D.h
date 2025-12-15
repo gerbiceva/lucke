@@ -48,13 +48,16 @@ namespace Output
 
         void update() override
         {
-            for(uint8_t y = 0; y < m_num_rows; y++) {
-                for(uint8_t x = 0; x < m_num_columns; x++) {
+            for(uint8_t y = 0; y < m_num_rows; y++) 
+            {
+                for(uint8_t x = 0; x < m_num_columns; x++) 
+                {
                     const auto& indexes = getGridIndexes(x,y);
-                    int dmxIndex = (x * this->m_numPxls) + (y * this->m_numPxls) * m_num_columns;
-                    // printf("dmxIndex = %d\n", dmxIndex);
-                    for(auto index : indexes) {
-                        for (uint16_t k = 0; k < this->m_numPxls; k++) {
+                    uint16_t dmxIndex = (x * this->m_numPxls) + (y * this->m_numPxls) * m_num_columns;
+                    for(auto index : indexes) 
+                    {
+                        for (uint16_t k = 0; k < this->m_numPxls; k++) 
+                        {
                             // LOGF("led[%d] = dmx [%d]\n", (index * lamp->numPxls + k), (dmxIndex + k));
                             this->m_dstBuffer[index * this->m_numPxls + k] = this->m_srcBuffer[dmxIndex + k]; 
                         }
@@ -65,8 +68,8 @@ namespace Output
 
         void setPreset(const JsonDocument& doc) override
         {
-            m_column_width = doc["column_width"];
             m_row_height = doc["row_height"];
+            m_column_width = doc["column_width"];
 
             m_num_columns = (m_width / m_column_width);
             m_num_rows = (m_height / m_row_height);

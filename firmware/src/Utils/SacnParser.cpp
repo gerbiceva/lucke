@@ -60,7 +60,7 @@ namespace Utils
 
 	uint8_t SacnParser::getSeqDiff() const
 	{
-		return (m_seq - m_seq_prev);
+		return static_cast<uint8_t>(m_seq - m_seq_prev);
 	}
 
 

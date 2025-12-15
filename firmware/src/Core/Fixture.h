@@ -21,8 +21,9 @@ class Fixture : public Traits::Serializable, public Traits::Deserializable
     uint8_t m_ID;
 
     Config m_config;
-
+    Traits::InputInterface* m_dmxIn;
     std::vector<Traits::OutputInterface*> m_outputs;
+    
     uint8_t* m_srcBuffer;
     uint16_t m_lastOffset = 0U;
     JsonDocument jsonPreset;

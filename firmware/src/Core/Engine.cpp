@@ -7,12 +7,12 @@ Engine::Engine ()
     : m_storage(Utils::Storage("engine"))
 {
 
-    readSettings();
     Utils::Logger::enable();
+    readSettings();
 
     if(settings.print_task)
     {
-        sleep(3);
+        // sleep(3);
     }
 
     Utils::Wifi::initialize(settings.ssid.c_str(), settings.password.c_str(), [this](bool is_connected) 
@@ -52,6 +52,7 @@ void Engine::readSettings()
         }
 
         settings.print_task = doc["print_task"];
+        settings.report_task = doc["auto_report_task"];
         settings.wifi_animation = doc["wifi_animation"];
         const char* ssid = doc["ssid"];
         settings.ssid = ssid;
@@ -98,11 +99,15 @@ void Engine::init()
             1, 3000);
         }
 
-        m_taskExecutor.spawnTask("Send report", [this]()
+        if(settings.report_task)
         {
-            this->sendReport();
-        }, 
-        1, 4000);
+            m_taskExecutor.spawnTask("Send report", [this]()
+            {
+                this->sendReport();
+            }, 
+            1, 4000);
+        }
+
         inited = true;
 
     }
@@ -176,27 +181,27 @@ void Engine::parseConfig(const std::string& data)
         Utils::Wifi::instance().sendUdpPacket(12345, temp);
         ESP.restart();
     }
-    else if(strcmp(req, "factory_reset") == 0)
-    {
-        std::string s = m_storage.getString("settings");
-        JsonDocument doc;
-        deserializeJson(doc, s);
-        settings.to_factory_settings = true;
-        m_storage.putString("settings", settings.toString());
-        ESP.restart();
-        return;
-    }
+    // else if(strcmp(req, "factory_reset") == 0)
+    // {
+    //     std::string s = m_storage.getString("settings");
+    //     JsonDocument doc;
+    //     deserializeJson(doc, s);
+    //     settings.to_factory_settings = true;
+    //     m_storage.putString("settings", settings.toString());
+    //     ESP.restart();
+    //     return;
+    // }
 
     else if(strcmp(req, "wifi") == 0)
     {
         bool dirty = false;
-        if(doc.containsKey("ssid"))
+        if(doc["ssid"].is<const char*>())
         {
             const char* ssid = doc["ssid"];
             settings.ssid = ssid;
             dirty = true;
         }
-        if(doc.containsKey("password"))
+        if(doc["password"].is<const char*>())
         {
             const char* password = doc["password"];
             settings.password = password;
@@ -214,32 +219,32 @@ void Engine::parseConfig(const std::string& data)
     }
     else if(strcmp(req, "setfixture") == 0)
     {
-        if(doc.containsKey("id"))
+        if(doc["id"].is<uint8_t>())
         {
             int id = doc["id"];
             Fixture* fix = m_fixtureHandler.get(id);
             if(fix)
             {
                 bool set = false;
-                if (doc.containsKey("universe"))
+                if (doc["universe"].is<uint8_t>())
                 {
                     int universe = doc["universe"];
                     fix->setUniverse(universe);
                     set = true;
                 }
-                if (doc.containsKey("address"))
+                if (doc["address"].is<uint16_t>())
                 {
                     int address = doc["address"];
                     fix->setAddress(address);
                     set = true;
                 }
-                if (doc.containsKey("presetIndex"))
+                if (doc["presetIndex"].is<uint8_t>())
                 {
                     int presetIndex = doc["presetIndex"];
                     fix->setPreset(presetIndex);
                     set = true;
                 }
-                if (doc.containsKey("name"))
+                if (doc["name"].is<const char*>())
                 {
                     const char* name = doc["name"];
                     fix->setName(name);
@@ -325,7 +330,6 @@ JsonDocument Engine::fixtureJson()
 JsonDocument Engine::settingsJson()
 {
     JsonDocument doc;
-
     if(m_storage.isKey("settings"))
     {
         std::string temp = m_storage.getString("settings");
@@ -340,10 +344,9 @@ JsonDocument Engine::toJson()
     JsonDocument doc;
     // doc["heap_size"] = ESP.getHeapSize();
 	// doc["heap_free"] = ESP.getFreeHeap();
+    doc["version"] = version.c_str();
     doc["settings"] = Engine::instance().settingsJson();
     doc["wifi"] = Utils::Wifi::instance().toJson();
-    // doc["pin_handler"] = Handler::PinHandler::toJson();
-    // doc["input_handler"] = m_inputHandler.toJson();
     doc["fixture_handler"] = m_fixtureHandler.toJson();
     return doc;
 }
@@ -360,7 +363,6 @@ void Engine::sendReport()
     Utils::Logger::println("[TASK] Created 'Send report' task");
 
     std::string temp;
-    // temp = "test";
     while(true)
     {
         serializeJson(m_fixtureHandler.toJson(), temp);

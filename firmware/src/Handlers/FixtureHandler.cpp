@@ -44,7 +44,7 @@ namespace Handler
 
     void FixtureHandler::fromJson(std::string json) 
     {
-        DynamicJsonDocument doc(512);
+        JsonDocument doc;
         deserializeJson(doc, json);
 
         JsonArray arr = doc["fixtures"].as<JsonArray>();

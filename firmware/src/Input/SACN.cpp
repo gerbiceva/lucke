@@ -23,11 +23,21 @@ namespace Input
     {
         JsonDocument doc;
         doc["id"] = m_ID;
-        doc["universe"] = m_universe;
         doc["type"] = "SACN";
         doc["seq_diff"] = m_sacn.getSeqDiff();
-        // doc["fps"] = recv->framerate();
 
         return doc;
     }
+
+    // JsonDocument Sacn::toJsonFull()
+    // {
+    //     JsonDocument doc;
+    //     doc["id"] = m_ID;
+    //     doc["universe"] = m_universe;
+    //     doc["type"] = "SACN";
+    //     doc["seq_diff"] = m_sacn.getSeqDiff();
+    //     // doc["fps"] = recv->framerate();
+
+    //     return doc;
+    // }
 }

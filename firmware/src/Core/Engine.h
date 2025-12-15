@@ -17,41 +17,44 @@ class Engine : public Traits::Deserializable
 {
     Engine ();
     void readSettings();
-
+    
     void resumeInputTask();
     void suspendInputTask();
-
+    
     void wifiStatus();
     void parseConfig(const std::string& data);
-
+    
     void sendReport();
     void printReport();
-
+    
     JsonDocument fixtureJson();
     JsonDocument settingsJson();
-
+    
     struct Settings
     {
         bool to_factory_settings = false;
         bool print_task = true;
+        bool report_task = true;
         bool wifi_animation = true;
         std::string ssid = "Ledique";
         std::string password = "dasenebipovezau";
-
+        
         std::string toString()
         {
             JsonDocument doc;
             doc["print_task"] = print_task;
+            doc["auto_report_task"] = report_task;
             doc["wifi_animation"] = wifi_animation;
             doc["ssid"] = ssid.c_str();
             doc["password"] = password.c_str();
-            doc["to_factory_settings"] = false;
+            // doc["to_factory_settings"] = to_factory_settings;
             std::string s;
             serializeJson(doc, s);
             return s;
         }
     } settings;
     
+    const std::string version = "0.8";
 public:
     static Engine& instance();
     void init();

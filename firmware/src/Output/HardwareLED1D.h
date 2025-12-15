@@ -33,7 +33,14 @@ namespace Output
 
         void setPreset(const JsonDocument& doc) override
         {
-            m_numGroups = doc["num_groups"];
+            if(doc["num_groups"].is<uint16_t>())
+            {
+                m_numGroups = doc["num_groups"];
+            }
+            else
+            {
+                Utils::Logger::println("[HLED_1D] json does not contain 'num_groups'");
+            }
         }
 
         uint16_t getSize() const override

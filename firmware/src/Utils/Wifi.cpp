@@ -127,67 +127,7 @@ namespace Utils
             udp.endPacket();
         }
     }
-
-
-
-    // void Wifi::playIdleAnimation(void*)
-    // {
-    //     while(true)    //             connected = true;
-
-    //     {
-    //         if(Engine::animateWifi != nullptr)
-    //         {
-    //             Engine::wifiAnimFix->wifiAnimation();
-    //             // Engine::animateWifi();
-    //         }
-    //         vTaskDelay(30);
-    //     }
-    // }
-
-    // void Wifi::checkNetwork() {
-    //     Logger::println("[TASK] Created 'WIFI check network' task");
-    //     while (true) 
-    //     {
-    //         // if not connected
-    //         if (WiFi.status() != WL_CONNECTED) 
-    //         {
-    //             Logger::println("[WIFI] Disconnected, reconnecting...");
-    //             Engine::instance().canUpdate(false);
-
-                // TaskHandle_t animation = NULL;
-                // xTaskCreate(
-                //     Wifi::playIdleAnimation, 		// Task function
-                //     "Animation",						// Name of the task (for debugging)
-                //     2000,								// Stack size in words
-                //     NULL,								// Parameter passed to the task
-                //     1,									// Task priority
-                //     &animation							// Handle to the task
-                // );
-
-                // while not connected
-                // uint16_t counter = 0;
-                // while (WiFi.status() != WL_CONNECTED) 
-                // {
-                    // if(counter++ % 10 == 0)
-                    // {
-                    //     Logger::print(".");
-                    // }
-                //     vTaskDelay(10);
-                // }
-
-                // Logger::println("\n[WIFI] Connected");
-
-                // vTaskDelete(animation);
-                // connected = true;
-                // Engine::instance().canUpdate(true);
-                // Handler::InputHandler::canUpdate(true);
-                // Engine::instance().clearSrcBuffers();
-    //         }
-
-    //         vTaskDelay(50);
-    //     }
-    // }
-
+    
     JsonDocument Wifi::toJson()
     {
         JsonDocument doc;
