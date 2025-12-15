@@ -11,7 +11,7 @@
 #include <string>
 #include <Preferences.h>
 #include "Lamp.h"
-
+#include <unordered_map>
 
 #if DIMENSION == DIMENSION_2D
 
@@ -250,7 +250,7 @@ private:
 						Serial.println("Universe: " + universe);
 						Serial.println("Offset: " + offset);
 						Serial.println("Preset: " + preset);
-						Controller::get().init(universe.toInt(), offset.toInt(), preset.toInt());
+						// Controller::get().init(universe.toInt(), offset.toInt(), preset.toInt());
 						/*
 						int16_t lastIndex = 0;
 						int16_t currentIndex;

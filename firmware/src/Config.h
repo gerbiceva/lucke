@@ -15,13 +15,13 @@
 // ---------------------------------------------------------------------------------------
 
 // ----- LED type params -----------------------------------------------------------------
-#define LED_TYPE WS2815						// ledstrip type (FASTLED)
+#define LED_TYPE WS2812						// ledstrip type (FASTLED)
 #define LED_ORDER RGB						// led order type (FASTLED)
 
 #define DIMENSION_1D 1						// led group 1d
 #define DIMENSION_2D 2						// led group 2d
 
-#define DIMENSION DIMENSION_1D				// use 1D or 2D indexing
+#define DIMENSION DIMENSION_2D				// use 1D or 2D indexing
 // ---------------------------------------------------------------------------------------
 
 #define NUM_GROUPS NUM_LEDS				 	// this sets number of pixels

@@ -32,10 +32,19 @@ struct LampLedbar2m : public Lamp {
 	}) {};
 };
 
+struct LampTest : public Lamp {
+    LampTest() : Lamp("Led2m", 24*16, {
+		{120, "group by 1"},
+		{60, "group by 2"},
+		{30, "group by 4"},
+		{12, "group by 10"}
+	}) {};
+};
+
 void setup() {	
 	// initialise the contorller
 	Controller::get().setLamp(new LampLedbar());
-	Controller::get().init(UNIVERSE, ADDR_OFFSET);
+	Controller::get().init2D(2, 2, 16, 24, UNIVERSE, ADDR_OFFSET);
 	Controller::createTasks();
 
 	// Button b1(

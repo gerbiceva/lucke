@@ -54,8 +54,8 @@ void Controller::init(uint8_t uni, uint16_t dmxAddressOffset, int8_t presetIndex
 }
 #else
 void Controller::init2D(int wsize, int hsize, int width, int height, uint8_t uni, uint16_t dmxAddressOffset) {
-	universe = uni;
-	dmxAddrOffset = dmxAddressOffset;
+	m_Universe = uni;
+	m_Address = dmxAddressOffset;
 	static bool inited = false;
 
 	if(!inited) {
@@ -66,7 +66,7 @@ void Controller::init2D(int wsize, int hsize, int width, int height, uint8_t uni
 		setupSacn();
 
 		mutex = xSemaphoreCreateMutex();
-		cled = &FastLED.addLeds<LED_TYPE, HARDWARE_DATA_PIN, LED_ORDER>((CRGB *)ledBuffer, NUM_LEDS);
+		cled = &FastLED.addLeds<LED_TYPE, HARDWARE_DATA_PIN, LED_ORDER>((CRGB *)m_LedBuffer, width * height);
 
 		inited = true;
 	}
@@ -134,12 +134,12 @@ void Controller::update(){
 	for(uint16_t y = 0; y < grid.nh; y++) {
 		for(uint16_t x = 0; x < grid.nw; x++) {
 			const auto& indexes = grid.getGridIndexes(x,y);
-			int dmxIndex = dmxAddrOffset + (x * lamp->numPxls) + (y * lamp->numPxls) * grid.nw;
+			int dmxIndex = m_Address + (x * m_Lamp->numPxls) + (y * m_Lamp->numPxls) * grid.nw;
 			// printf("dmxIndex = %d\n", dmxIndex);
 			for(auto index : indexes) {
-				for (uint16_t k = 0; k < lamp->numPxls; k++) {
+				for (uint16_t k = 0; k < m_Lamp->numPxls; k++) {
 					// LOGF("led[%d] = dmx [%d]\n", (index * lamp->numPxls + k), (dmxIndex + k));
-					ledBuffer[index * lamp->numPxls + k] = dmxBuffer[dmxIndex + k]; 
+					m_LedBuffer[index * m_Lamp->numPxls + k] = m_DmxBuffer[dmxIndex + k]; 
 				}
 			}
 		}
