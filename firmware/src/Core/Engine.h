@@ -32,6 +32,7 @@ class Engine : public Traits::Deserializable
 
     struct Settings
     {
+        bool to_factory_settings = false;
         bool print_task = true;
         bool wifi_animation = true;
         std::string ssid = "Ledique";
@@ -44,6 +45,7 @@ class Engine : public Traits::Deserializable
             doc["wifi_animation"] = wifi_animation;
             doc["ssid"] = ssid.c_str();
             doc["password"] = password.c_str();
+            doc["to_factory_settings"] = false;
             std::string s;
             serializeJson(doc, s);
             return s;
@@ -67,7 +69,7 @@ public:
         }
 
         std::string key = "fixture" + std::to_string(fix->id());
-        if(m_storage.isKey(key))
+        if(m_storage.isKey(key) && !factory)
         {
             fix->fromJson(m_storage.getString(key));
         }
@@ -103,5 +105,6 @@ private:
     Utils::Storage m_storage;
 
     const bool shouldPlayWifiAnimation = true;
+    bool factory = false;
 
 };

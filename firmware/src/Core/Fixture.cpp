@@ -71,6 +71,7 @@ void Fixture::updatePresets()
         }
     }
 
+    Utils::Logger::printf("[FIXTURE] Invalid preset index: %d\n", m_config.selectedPreset);
 }
 
 void Fixture::update()
@@ -79,6 +80,24 @@ void Fixture::update()
     {
         o->update();
     }
+}
+
+std::string Fixture::getSelectedPresetName()
+{
+    JsonArray arr1 = jsonPreset["groups"].as<JsonArray>();
+    uint8_t c = 0;
+
+    for(JsonDocument o : arr1)
+    {
+        if(c++ == m_config.selectedPreset)
+        {
+            const char* name;
+            name = o["name"];
+            return name;
+        }
+    }
+
+    return "Invalid name";
 }
 
 void Fixture::fromJson(std::string json) 
@@ -103,16 +122,7 @@ JsonDocument Fixture::toJson()
     doc["universe"] = m_config.universe;
     doc["address"] = m_config.address;
     doc["presetIndex"] = m_config.selectedPreset;
-
-    // doc["outputs"] = JsonDocument();
-	// JsonArray outputs = doc["outputs"].to<JsonArray>();
-
-    // for(Traits::OutputInterface* o : m_outputs)
-    // {
-    //     outputs.add(o->toJson());
-    // }
-
-    // doc["presets"] = jsonPreset;
+    doc["preset"] = getSelectedPresetName();
 
     return doc;
 }
@@ -126,6 +136,7 @@ JsonDocument Fixture::toJsonFull()
     doc["universe"] = m_config.universe;
     doc["address"] = m_config.address;
     doc["presetIndex"] = m_config.selectedPreset;
+    doc["preset"] = getSelectedPresetName();
 
     doc["outputs"] = JsonDocument();
 	JsonArray outputs = doc["outputs"].to<JsonArray>();

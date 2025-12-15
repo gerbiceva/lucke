@@ -6,6 +6,7 @@
 Engine::Engine ()
     : m_storage(Utils::Storage("engine"))
 {
+
     readSettings();
     Utils::Logger::enable();
 
@@ -42,6 +43,14 @@ void Engine::readSettings()
         std::string s = m_storage.getString("settings");
         JsonDocument doc;
         deserializeJson(doc, s);
+        factory = doc["to_factory_settings"];
+        if(factory)
+        {
+            settings.to_factory_settings = false;
+            m_storage.putString("settings", settings.toString());
+            return;
+        }
+
         settings.print_task = doc["print_task"];
         settings.wifi_animation = doc["wifi_animation"];
         const char* ssid = doc["ssid"];
@@ -97,6 +106,7 @@ void Engine::init()
         inited = true;
 
     }
+
 }
 
 void Engine::wifiStatus()
@@ -158,6 +168,23 @@ void Engine::parseConfig(const std::string& data)
     {
         serializeJson(m_inputHandler.toJson(), temp);
         Utils::Wifi::instance().sendUdpPacket(12345, temp);
+    }
+    else if(strcmp(req, "reboot") == 0)
+    {
+        status = "rebooting";
+        serializeJson(Utils::Wifi::instance().toJson(), temp);
+        Utils::Wifi::instance().sendUdpPacket(12345, temp);
+        ESP.restart();
+    }
+    else if(strcmp(req, "factory_reset") == 0)
+    {
+        std::string s = m_storage.getString("settings");
+        JsonDocument doc;
+        deserializeJson(doc, s);
+        settings.to_factory_settings = true;
+        m_storage.putString("settings", settings.toString());
+        ESP.restart();
+        return;
     }
 
     else if(strcmp(req, "wifi") == 0)
@@ -315,8 +342,8 @@ JsonDocument Engine::toJson()
 	// doc["heap_free"] = ESP.getFreeHeap();
     doc["settings"] = Engine::instance().settingsJson();
     doc["wifi"] = Utils::Wifi::instance().toJson();
-    doc["pin_handler"] = Handler::PinHandler::toJson();
-    doc["input_handler"] = m_inputHandler.toJson();
+    // doc["pin_handler"] = Handler::PinHandler::toJson();
+    // doc["input_handler"] = m_inputHandler.toJson();
     doc["fixture_handler"] = m_fixtureHandler.toJson();
     return doc;
 }

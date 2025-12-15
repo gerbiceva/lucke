@@ -55,6 +55,7 @@ public:
     virtual void update();
     virtual void wifiAnimation() {};
 
+    std::string getSelectedPresetName();
     void fromJson(std::string json) override;
     JsonDocument toJson() override;
     JsonDocument toJsonFull() override;
