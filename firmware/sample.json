@@ -1,0 +1,1 @@
+{"wifi":{"ssid":"Ledique","rssi":-57,"local_ip":"10.42.0.178","connected":true},"pin_handler":{"used_pins":[5]},"input_handler":{"inputs":[{"id":1,"universe":4,"type":"SACN"}]},"fixture_handler":{"num_fixtures":1,"fixtures":[{"name":"neki","type":"Kitajci200","universe":4,"address":0,"preset":0,"outputs":[{"type":"FastLED-1D","hardware_pin":5,"num_leds":170,"num_groups":170}]}]}}

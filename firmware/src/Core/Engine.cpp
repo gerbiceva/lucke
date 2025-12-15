@@ -79,24 +79,110 @@ void Engine::init()
         }, 
         3, 5000);
 
-        m_taskExecutor.spawnTask("Print Report", [this]()
-        {
-            this->printReport();
-        }, 
-        1, 3000);
+        // this->sendReport();
 
-        // m_taskExecutor.spawnTask("Send report", [this]()
+        // m_taskExecutor.spawnTask("Print Report", [this]()
         // {
-        //     this->sendReport();
+        //     this->printReport();
         // }, 
-        // 1, 2000);
+        // 1, 3000);
+
+        m_taskExecutor.spawnTask("Send report", [this]()
+        {
+            this->sendReport();
+        }, 
+        1, 4000);
         inited = true;
 
     }
 }
 
 void Engine::parseConfig(const std::string& data)
-{}
+{
+    JsonDocument doc;
+    deserializeJson(doc, data);
+
+    const char* req = doc["request"];
+    std::string temp;
+    std::string status = "success";
+    if(strcmp(req, "describe") == 0)
+    {
+        serializeJson(Engine::instance().toJson(), temp);
+        Utils::Wifi::instance().sendUdpPacket(12345, temp);
+    }
+    else if(strcmp(req, "wifi") == 0)
+    {
+        serializeJson(Utils::Wifi::instance().toJson(), temp);
+        Utils::Wifi::instance().sendUdpPacket(12345, temp);
+    }
+    else if(strcmp(req, "fixtures") == 0)
+    {
+        serializeJson(m_fixtureHandler.toJsonFull(), temp);
+        Utils::Wifi::instance().sendUdpPacket(12345, temp);
+    }
+    else if(strcmp(req, "inputs") == 0)
+    {
+        serializeJson(m_inputHandler.toJson(), temp);
+        Utils::Wifi::instance().sendUdpPacket(12345, temp);
+    }
+
+    else if(strcmp(req, "setfixture") == 0)
+    {
+        if(doc.containsKey("id"))
+        {
+            int id = doc["id"];
+            Fixture* fix = m_fixtureHandler.get(id);
+            if(fix)
+            {
+                bool set = false;
+                if (doc.containsKey("universe"))
+                {
+                    int universe = doc["universe"];
+                    fix->setUniverse(universe);
+                    set = true;
+                }
+                if (doc.containsKey("address"))
+                {
+                    int address = doc["address"];
+                    fix->setAddress(address);
+                    set = true;
+                }
+                if (doc.containsKey("presetIndex"))
+                {
+                    int presetIndex = doc["presetIndex"];
+                    fix->setPreset(presetIndex);
+                    set = true;
+                }
+                if (doc.containsKey("name"))
+                {
+                    const char* name = doc["name"];
+                    fix->setName(name);
+                    set = true;
+                }
+
+                if(set)
+                {
+                    std::string key = "fixture" + std::to_string(id);
+                    std::string store;
+                    serializeJson(fix->toJson(), store);
+                    this->m_storage.putString(key, store);
+                }
+            }
+            else
+            {
+                Utils::Logger::printf("[REQUEST] Could not find fixture with id %d\n", id);
+                status = "Could not find selected fixture";
+            }
+        }
+        else 
+        {
+            Utils::Logger::printf("[REQUEST] Set fixture json does not containd 'id' field!\n");
+            status = "Invalid json";
+        }
+    }
+
+    Utils::Wifi::instance().sendUdpPacket(23456, status);
+}
 
 void Engine::addButton(Input::Button&& button)
 {
@@ -182,43 +268,18 @@ void Engine::playIdleAnimation()
     }
 }
 
-void Engine::wirelessConfigTask() {
-    // WiFiServer server(8888);
-    // server.begin();
-    
-    // while(true) {
-    //     // Serial.println(WiFi.localIP());
-    //     WiFiClient client = server.available();
-    //     if (client) {
-    //         while (client.connected()) {
-    //             if (client.available()) {
-    //                 // String name = client.readStringUntil(',');
-    //                 String universe = client.readStringUntil(',');
-    //                 String offset = client.readStringUntil(',');
-    //                 String preset = client.readStringUntil('\n');
-    //                 Serial.println("Universe: " + universe);
-    //                 Serial.println("Offset: " + offset);
-    //                 Serial.println("Preset: " + preset);
-    //                 Controller::get().init(universe.toInt(), offset.toInt(), preset.toInt());
-    //             }
-    //         }
-    //         client.stop();
-    //     }
-    //     vTaskDelay(100);
-    // }
-}
-
 void Engine::sendReport()
 {
     Utils::Logger::println("[TASK] Created 'Send report' task");
 
     std::string temp;
+    // temp = "test";
     while(true)
     {
-        serializeJson(m_fixtureHandler.toJsonFull(), temp);
+        serializeJson(m_fixtureHandler.toJson(), temp);
         Utils::Wifi::instance().sendUdpPacket(12345, temp);
 
-        vTaskDelay(1000);
+        vTaskDelay(10000);
     }
 }
 

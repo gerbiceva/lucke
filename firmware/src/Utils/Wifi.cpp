@@ -42,26 +42,20 @@ namespace Utils
         server.begin();
         while (true) 
         {
-            if (!instance.isConnected()) 
+            if (instance.isConnected()) 
             {
                 WiFiClient client = server.available();
-                if (client) {
-                    while (client.connected()) {
-                        if (client.available()) {
+                if (client) 
+                {
+                    while (client.connected()) 
+                    {
+                        if (client.available()) 
+                        {
                             instance.m_receive_callback(client.readString().c_str());
-                            // String name = client.readStringUntil(',');
-                            // String universe = client.readStringUntil(',');
-                            // String offset = client.readStringUntil(',');
-                            // String preset = client.readStringUntil('\n');
-                            // Serial.println("Universe: " + universe);
-                            // Serial.println("Offset: " + offset);
-                            // Serial.println("Preset: " + preset);
-                            // Controller::get().init(universe.toInt(), offset.toInt(), preset.toInt());
                         }
                     }
                     client.stop();
                 }
-                // instance;
             }
 
             vTaskDelay(50);
@@ -85,7 +79,7 @@ namespace Utils
             WiFi.begin(m_ssid, m_password);
 
             xTaskCreate(Wifi::monitorConnection, "Check Wifi", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
-            xTaskCreate(Wifi::receiveData, "Receive Data", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
+            xTaskCreate(Wifi::receiveData, "Receive Data", 4000, NULL, 1 | portPRIVILEGE_BIT, NULL);
         }
 
     Wifi &Wifi::initialize(const char *ssid, const char *password, std::function<void(bool)> connection_status_callback, std::function<void(std::string)> receive_callback)

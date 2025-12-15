@@ -47,7 +47,6 @@ void Fixture::setName(const std::string& other)
 
 void Fixture::updatePresets()
 {
-    // JsonArray presets;
     JsonArray arr1 = jsonPreset["groups"].as<JsonArray>();
     uint8_t c = 0;
 
@@ -67,7 +66,6 @@ void Fixture::updatePresets()
                     o->setSrcBuffer(m_srcBuffer + m_config.address + offset);
                     offset += o->getSize();
                 }
-
             }
             break;
         }
@@ -88,11 +86,11 @@ void Fixture::fromJson(std::string json)
     JsonDocument doc;
     deserializeJson(doc, json);
 
-    // m_config.name = static_cast<char*>(doc["name"]);
+    const char* name = doc["name"];
+    setName(name);
     setUniverse(doc["universe"]);
     setAddress(doc["address"]);
-    setPreset(doc["selectedPreset"]);
-    
+    setPreset(doc["presetIndex"]);
 }
 
 
