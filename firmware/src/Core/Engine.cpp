@@ -6,51 +6,52 @@
 Engine::Engine ()
     : m_storage(Utils::Storage("engine"))
 {
-
+    readSettings();
     Utils::Logger::enable();
-    // sleep(3);
 
+    if(settings.print_task)
+    {
+        sleep(3);
+    }
 
-    Utils::Wifi::initialize("Ledique", "dasenebipovezau", [this](bool is_connected) {
-        Utils::Logger::println("[WIFI] Disconnected...");
-        this->suspendInputTask();
-
-        TaskHandle_t animation;
-        if(this->shouldPlayWifiAnimation)
+    Utils::Wifi::initialize(settings.ssid.c_str(), settings.password.c_str(), [this](bool is_connected) 
+    {
+        if(!is_connected)
         {
-            animation = this->m_taskExecutor.spawnTask("Wifi animation", [this]()
-            {
-                while(true)
-                {
-                    if(this->wifiAnimation != nullptr)
-                    {
-                        this->wifiAnimation();
-                    }
-                    vTaskDelay(40);
-                }
-            }, 1, 1000);
+            this->suspendInputTask();
+            this->wifiStatus();
+            
+            this->resumeInputTask();
+            this->clearSrcBuffers();
         }
-
-        while(!Utils::Wifi::instance().isConnected())
-        {
-            vTaskDelay(10);
-        }
-        
-        Utils::Logger::println("[WIFI] Connected...");
-        if(this->shouldPlayWifiAnimation)
-        {
-            vTaskDelete(animation);
-        }
-        this->resumeInputTask();
-        this->clearSrcBuffers();
     }, [this](std::string data)
     {
         this->parseConfig(data);
     });
 
-    if(m_storage.isKey("input_handler"))
+    // if(m_storage.isKey("input_handler"))
+    // {
+    //     m_inputHandler.fromJson(m_storage.getString("input_handler"));
+    // }
+}
+
+void Engine::readSettings()
+{
+    if(m_storage.isKey("settings"))
     {
-        m_inputHandler.fromJson(m_storage.getString("input_handler"));
+        std::string s = m_storage.getString("settings");
+        JsonDocument doc;
+        deserializeJson(doc, s);
+        settings.print_task = doc["print_task"];
+        settings.wifi_animation = doc["wifi_animation"];
+        const char* ssid = doc["ssid"];
+        settings.ssid = ssid;
+        const char* password = doc["password"];
+        settings.password = password;
+    }
+    else
+    {
+        m_storage.putString("settings", settings.toString());
     }
 }
 
@@ -79,13 +80,14 @@ void Engine::init()
         }, 
         3, 5000);
 
-        // this->sendReport();
-
-        // m_taskExecutor.spawnTask("Print Report", [this]()
-        // {
-        //     this->printReport();
-        // }, 
-        // 1, 3000);
+        if(settings.print_task)
+        {
+            m_taskExecutor.spawnTask("Print Report", [this]()
+            {
+                this->printReport();
+            }, 
+            1, 3000);
+        }
 
         m_taskExecutor.spawnTask("Send report", [this]()
         {
@@ -97,22 +99,54 @@ void Engine::init()
     }
 }
 
+void Engine::wifiStatus()
+{
+    Utils::Logger::println("[WIFI] Disconnected...");
+
+    TaskHandle_t animation;
+    if(this->settings.wifi_animation)
+    {
+        animation = this->m_taskExecutor.spawnTask("Wifi animation", [this]()
+        {
+            Utils::Logger::println("[TASK] Created 'Wifi animation' task");
+
+            while(true)
+            {
+                if(this->wifiAnimation != nullptr)
+                {
+                    this->wifiAnimation();
+                }
+                vTaskDelay(40);
+            }
+        }, 1, 1000);
+    }
+
+    while(!Utils::Wifi::instance().isConnected())
+    {
+        vTaskDelay(10);
+    }
+    
+    Utils::Logger::println("[WIFI] Connected...");
+    if(this->settings.wifi_animation)
+    {
+        vTaskDelete(animation);
+    }
+}
+
+
 void Engine::parseConfig(const std::string& data)
 {
+    std::string code = "OK";
+    std::string status = "success";
+    
     JsonDocument doc;
     deserializeJson(doc, data);
 
     const char* req = doc["request"];
     std::string temp;
-    std::string status = "success";
     if(strcmp(req, "describe") == 0)
     {
         serializeJson(Engine::instance().toJson(), temp);
-        Utils::Wifi::instance().sendUdpPacket(12345, temp);
-    }
-    else if(strcmp(req, "wifi") == 0)
-    {
-        serializeJson(Utils::Wifi::instance().toJson(), temp);
         Utils::Wifi::instance().sendUdpPacket(12345, temp);
     }
     else if(strcmp(req, "fixtures") == 0)
@@ -126,6 +160,31 @@ void Engine::parseConfig(const std::string& data)
         Utils::Wifi::instance().sendUdpPacket(12345, temp);
     }
 
+    else if(strcmp(req, "wifi") == 0)
+    {
+        bool dirty = false;
+        if(doc.containsKey("ssid"))
+        {
+            const char* ssid = doc["ssid"];
+            settings.ssid = ssid;
+            dirty = true;
+        }
+        if(doc.containsKey("password"))
+        {
+            const char* password = doc["password"];
+            settings.password = password;
+            dirty = true;
+        }
+
+        if(dirty)
+        {
+            m_storage.putString("settings", settings.toString());
+            Utils::Wifi::reinitialize(settings.ssid.c_str(), settings.password.c_str());
+        }
+        
+        serializeJson(Utils::Wifi::instance().toJson(), temp);
+        Utils::Wifi::instance().sendUdpPacket(12345, temp);
+    }
     else if(strcmp(req, "setfixture") == 0)
     {
         if(doc.containsKey("id"))
@@ -172,16 +231,24 @@ void Engine::parseConfig(const std::string& data)
             {
                 Utils::Logger::printf("[REQUEST] Could not find fixture with id %d\n", id);
                 status = "Could not find selected fixture";
+                code = "ERROR";
             }
         }
         else 
         {
             Utils::Logger::printf("[REQUEST] Set fixture json does not containd 'id' field!\n");
             status = "Invalid json";
+            code = "ERROR";
         }
     }
 
-    Utils::Wifi::instance().sendUdpPacket(23456, status);
+    JsonDocument response;
+    response["code"] = code.c_str();
+    response["status"] = status.c_str();
+
+    std::string s;
+    serializeJson(response, s);
+    Utils::Wifi::instance().sendUdpPacket(23456, s);
 }
 
 void Engine::addButton(Input::Button&& button)
@@ -209,14 +276,6 @@ void Engine::suspendInputTask()
     vTaskSuspend(m_inputHandle);
 }
 
-void Engine::syncToStorage()
-{
-    std::string temp;
-    serializeJson(m_inputHandler.toJson(), temp);
-    m_storage.putString("input_handler", temp);
-}
-
-
 Traits::InputInterface* Engine::getDMXInput(uint8_t universe)
 {
     return m_inputHandler.interface(universe);
@@ -236,12 +295,25 @@ JsonDocument Engine::fixtureJson()
     return doc;
 }
 
+JsonDocument Engine::settingsJson()
+{
+    JsonDocument doc;
+
+    if(m_storage.isKey("settings"))
+    {
+        std::string temp = m_storage.getString("settings");
+        deserializeJson(doc, temp);
+    }
+    return doc;
+}
+
 
 JsonDocument Engine::toJson()
 {
     JsonDocument doc;
     // doc["heap_size"] = ESP.getHeapSize();
 	// doc["heap_free"] = ESP.getFreeHeap();
+    doc["settings"] = Engine::instance().settingsJson();
     doc["wifi"] = Utils::Wifi::instance().toJson();
     doc["pin_handler"] = Handler::PinHandler::toJson();
     doc["input_handler"] = m_inputHandler.toJson();
@@ -254,18 +326,6 @@ std::string Engine::toString()
     std::string ret;
     serializeJson(toJson(), ret);
     return ret;
-}
-
-void Engine::playIdleAnimation()
-{
-    while(true)
-    {
-        if(wifiAnimation)
-        {
-            wifiAnimation();
-        }
-        vTaskDelay(30);
-    }
 }
 
 void Engine::sendReport()

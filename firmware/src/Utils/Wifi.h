@@ -12,6 +12,7 @@ class Wifi : public Traits::Deserializable
 
 public:
     static Wifi& initialize(const char* ssid, const char* password, std::function<void(bool)> connection_status_callback, std::function<void(std::string)> receive_callback);
+    static Wifi& reinitialize(const char* ssid, const char* password);
     static Wifi& instance();
     
     static void monitorConnection(void*);

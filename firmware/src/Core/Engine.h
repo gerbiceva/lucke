@@ -1,7 +1,6 @@
 #pragma once
 // #include "Fixtures.h"
 #include <string>
-#include <unordered_map>
 #include <functional>
 
 #include "Handlers/FixtureHandler.h"
@@ -16,40 +15,42 @@
 
 class Engine : public Traits::Deserializable
 {
-    // class Settings
-    // {
-    //     std::unordered_map<std::string, std::string> m_settings;
-
-    // public:
-    //     void setString(std::string key, std::string value)
-    //     {
-    //         m_settings[key] = value;
-    //     }
-
-    //     void setShort(std::string key, uint16_t number)
-    //     {
-    //         m_settings[key] = std::to_string(number);
-    //     }
-
-    //     uint16_t getShort(std::string key)
-    //     {
-    //         return std::atoi(m_settings[key].c_str());
-    //     }
-    // };
-
     Engine ();
+    void readSettings();
 
     void resumeInputTask();
     void suspendInputTask();
 
-    void syncToStorage();
-    void playIdleAnimation();
-    void wirelessConfigTask();
+    void wifiStatus();
+    void parseConfig(const std::string& data);
+
     void sendReport();
     void printReport();
+
+    JsonDocument fixtureJson();
+    JsonDocument settingsJson();
+
+    struct Settings
+    {
+        bool print_task = true;
+        bool wifi_animation = true;
+        std::string ssid = "Ledique";
+        std::string password = "dasenebipovezau";
+
+        std::string toString()
+        {
+            JsonDocument doc;
+            doc["print_task"] = print_task;
+            doc["wifi_animation"] = wifi_animation;
+            doc["ssid"] = ssid.c_str();
+            doc["password"] = password.c_str();
+            std::string s;
+            serializeJson(doc, s);
+            return s;
+        }
+    } settings;
     
 public:
-    // static Settings settings;
     static Engine& instance();
     void init();
 
@@ -84,10 +85,8 @@ public:
     void addButton(Input::Button&& button);
 
     Traits::InputInterface* getDMXInput(uint8_t universe);
-    void parseConfig(const std::string& data);
     void clearSrcBuffers();
     
-    JsonDocument fixtureJson();
     JsonDocument toJson() override;
     std::string toString();
 

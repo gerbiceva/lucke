@@ -22,11 +22,8 @@ namespace Utils
 
         while (true) 
         {
-            if (!instance.isConnected()) 
-            {
-                is_connected = instance.isConnected();
-                instance.m_connection_status_callback(is_connected);
-            }
+            is_connected = instance.isConnected();
+            instance.m_connection_status_callback(is_connected);
 
             vTaskDelay(50);
         }
@@ -81,6 +78,24 @@ namespace Utils
             xTaskCreate(Wifi::monitorConnection, "Check Wifi", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
             xTaskCreate(Wifi::receiveData, "Receive Data", 4000, NULL, 1 | portPRIVILEGE_BIT, NULL);
         }
+
+    Wifi& Wifi::reinitialize(const char* ssid, const char* password)
+    {
+        Logger::printf("[WIFI] Reinitializing WiFi\n");
+
+        WiFi.disconnect(true);   // true = erase old config
+        WiFi.mode(WIFI_OFF);
+        delay(100);
+
+        WiFi.mode(WIFI_STA);
+        WiFi.setSleep(false);
+        WiFi.begin(ssid, password);
+
+        // m_ssid = ssid;
+        // m_password = password;
+
+        return *m_instance;
+    }
 
     Wifi &Wifi::initialize(const char *ssid, const char *password, std::function<void(bool)> connection_status_callback, std::function<void(std::string)> receive_callback)
     {
