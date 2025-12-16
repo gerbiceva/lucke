@@ -9,11 +9,11 @@ Engine::Engine ()
 
     Utils::Logger::enable();
     readSettings();
+    sleep(5);
+    // if(settings.print_task)
+    // {
+    // }
 
-    if(settings.print_task)
-    {
-        // sleep(3);
-    }
 
     Utils::Wifi::initialize(settings.ssid.c_str(), settings.password.c_str(), [this](bool is_connected) 
     {
@@ -21,8 +21,7 @@ Engine::Engine ()
         {
             this->suspendInputTask();
             this->wifiStatus();
-            
-            this->resumeInputTask();
+            this->resumeInputTask();            
             this->clearSrcBuffers();
         }
     }, [this](std::string data)
@@ -54,10 +53,11 @@ void Engine::readSettings()
         settings.print_task = doc["print_task"];
         settings.report_task = doc["auto_report_task"];
         settings.wifi_animation = doc["wifi_animation"];
-        const char* ssid = doc["ssid"];
-        settings.ssid = ssid;
-        const char* password = doc["password"];
-        settings.password = password;
+        // if(doc["ssid"])
+        // const char* ssid = doc["ssid"];
+        // settings.ssid = ssid;
+        // const char* password = doc["password"];
+        // settings.password = password;
     }
     else
     {

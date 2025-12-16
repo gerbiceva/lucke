@@ -23,7 +23,10 @@ namespace Utils
         while (true) 
         {
             is_connected = instance.isConnected();
-            instance.m_connection_status_callback(is_connected);
+            if(!is_connected)
+            {
+                // instance.m_connection_status_callback(is_connected);
+            }
 
             vTaskDelay(50);
         }
@@ -62,7 +65,7 @@ namespace Utils
 
     Wifi::Wifi(const char *ssid, const char *password, const std::function<void(bool)>& connection_status_callback, const std::function<void(std::string)>& receive_callback) 
         : m_ssid(ssid), m_password(password), m_connection_status_callback(connection_status_callback), m_receive_callback(receive_callback) {
-            Logger::printf("[WIFI] Connecting to '%s'\n", ssid);
+            Logger::printf("[WIFI] Connecting to '%s'\n", m_ssid);
             // uint8_t mac[] = {0x90, 0xA2, 0xDA, 0x10, 0x10, 0xAF}; // MAC Adress of your device
             // esp_err_t err = esp_wifi_set_mac(WIFI_IF_STA, &mac[0]);
             // if (err != ESP_OK)
@@ -75,7 +78,7 @@ namespace Utils
             WiFi.setSleep(false);
             WiFi.begin(m_ssid, m_password);
 
-            xTaskCreate(Wifi::monitorConnection, "Check Wifi", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
+            // xTaskCreate(Wifi::monitorConnection, "Check Wifi", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
             xTaskCreate(Wifi::receiveData, "Receive Data", 4000, NULL, 1 | portPRIVILEGE_BIT, NULL);
         }
 

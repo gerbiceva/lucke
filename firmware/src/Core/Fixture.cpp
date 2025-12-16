@@ -50,6 +50,7 @@ void Fixture::updatePresets()
 {
     JsonArray arr1 = jsonPreset["groups"].as<JsonArray>();
     uint8_t c = 0;
+    bool valid = false;
 
     for(JsonDocument o : arr1)
     {
@@ -68,11 +69,16 @@ void Fixture::updatePresets()
                     offset += o->getSize();
                 }
             }
+            valid = true;
             break;
         }
     }
 
-    Utils::Logger::printf("[FIXTURE] Invalid preset index: %d\n", m_config.selectedPreset);
+    if(!valid)
+    {
+
+        Utils::Logger::printf("[FIXTURE] Invalid preset index: %d\n", m_config.selectedPreset);
+    }
 }
 
 void Fixture::update()

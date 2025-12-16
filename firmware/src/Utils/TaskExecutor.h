@@ -1,8 +1,10 @@
 #pragma once
 #include <Arduino.h>
 #include <cstdint>
-#include "Utils/Logger.h"
 #include <list>
+#include <string>
+#include "Utils/Logger.h"
+
 
 namespace Utils
 {
