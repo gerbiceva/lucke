@@ -19,14 +19,11 @@ namespace Input
         m_sacn.dmx(m_dmxBuffer);
     }
 
-    JsonDocument Sacn::toJson()
+    void Sacn::toJson(JsonObject& doc)
     {
-        JsonDocument doc;
         doc["id"] = m_ID;
         doc["type"] = "SACN";
         doc["seq_diff"] = m_sacn.getSeqDiff();
-
-        return doc;
     }
 
     // JsonDocument Sacn::toJsonFull()

@@ -17,17 +17,13 @@ namespace Handler
         }
     }
     
-    JsonDocument PinHandler::toJson()
+    void PinHandler::toJson(JsonObject& doc)
     {
-        JsonDocument doc;
-        doc["used_pins"] = JsonDocument();
-        JsonArray arr = doc["used_pins"].to<JsonArray>();
+        JsonArray arr = doc.createNestedArray("used_pins");
     
         for(uint8_t pin : m_usedPins)
         {
             arr.add(pin);
         }
-    
-        return doc;
     }
 }

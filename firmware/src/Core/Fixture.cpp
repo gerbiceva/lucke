@@ -120,24 +120,20 @@ void Fixture::fromJson(std::string json)
 }
 
 
-JsonDocument Fixture::toJson()
+void Fixture::toJson(JsonObject& doc)
 {
-    JsonDocument doc;
     doc["id"] = m_ID;
     doc["name"] = m_config.name;
     doc["type"] = m_config.type;
     doc["universe"] = m_config.universe;
     doc["address"] = m_config.address;
     doc["presetIndex"] = m_config.selectedPreset;
-    doc["preset"] = getSelectedPresetName();
-    doc["input"] = m_dmxIn->toJson();
-
-    return doc;
+    //doc["preset"] = getSelectedPresetName();
+    //doc["input"] = m_dmxIn->toJson();
 }
 
-JsonDocument Fixture::toJsonFull()
+void Fixture::toJsonFull(JsonObject& doc)
 {
-    JsonDocument doc;
     doc["id"] = m_ID;
     doc["name"] = m_config.name;
     doc["type"] = m_config.type;
@@ -146,16 +142,15 @@ JsonDocument Fixture::toJsonFull()
     doc["presetIndex"] = m_config.selectedPreset;
     doc["preset"] = getSelectedPresetName();
 
-    doc["input"] = m_dmxIn->toJson();
-    doc["outputs"] = JsonDocument();
-	JsonArray outputs = doc["outputs"].to<JsonArray>();
+    JsonObject inputDoc = doc.createNestedObject("input");
+    m_dmxIn->toJson(inputDoc);
+    JsonArray objectsArray = doc.createNestedArray("objects");
 
     for(Traits::OutputInterface* o : m_outputs)
     {
-        outputs.add(o->toJson());
+        JsonObject entry = objectsArray.createNestedObject();
+        o->toJson(entry);
     }
 
     doc["presets"] = jsonPreset;
-
-    return doc;
 }

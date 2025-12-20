@@ -27,8 +27,8 @@ class Engine : public Traits::Deserializable
     void sendReport();
     void printReport();
     
-    JsonDocument fixtureJson();
-    JsonDocument settingsJson();
+    void fixtureJson(JsonObject& doc);
+    void settingsJson(JsonObject& doc);
     
     struct Settings
     {
@@ -79,7 +79,9 @@ public:
         else
         {
             std::string temp;
-            serializeJson(fix->toJson(), temp);
+            JsonObject doc;
+            fix->toJson(doc);
+            serializeJson(doc, temp);
             fix->fromJson(temp);
             m_storage.putString(key, temp);
         }
@@ -92,7 +94,7 @@ public:
     Traits::InputInterface* getDMXInput(uint8_t universe);
     void clearSrcBuffers();
     
-    JsonDocument toJson() override;
+    void toJson(JsonObject& doc) override;
     std::string toString();
 
 private:

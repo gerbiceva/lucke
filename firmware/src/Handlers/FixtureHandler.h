@@ -32,7 +32,7 @@ namespace Handler
         void update();
 
         void fromJson(std::string json) override;
-        JsonDocument toJson() override;
-        JsonDocument toJsonFull() override;
+        void toJson(JsonObject& doc) override;
+        void toJsonFull(JsonObject& doc) override;
     };
 }

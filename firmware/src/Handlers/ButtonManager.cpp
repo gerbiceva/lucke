@@ -23,18 +23,15 @@ namespace Handler
         buttons.push_back(std::move(b));
     }
 
-    JsonDocument ButtonManager::toJson()
+    void ButtonManager::toJson(JsonObject& doc)
     {
-        JsonDocument doc;
-        doc["buttons"] = JsonDocument();
-        JsonArray arr = doc["buttons"].to<JsonArray>();
+        JsonArray arr = doc.createNestedArray("buttons");
 
         for(Input::Button& button : buttons)
         {
-            arr.add(button.toJson());
+            JsonObject entry = arr.createNestedObject();
+            button.toJson(entry);
         }
-
-        return doc;
     }
 }
 

@@ -33,7 +33,7 @@ public:
 	inline const uint8_t getPin() const;
 	inline const bool buttonStatus() const;
 
-    JsonDocument toJson() override;
+    void toJson(JsonObject& doc) override;
 };
 
 }

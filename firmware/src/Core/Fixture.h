@@ -34,6 +34,8 @@ public:
     Fixture();
     Fixture(std::string name, std::string type, std::string presets);
 
+    virtual ~Fixture() = default;
+
     template<typename TOutput, typename... Args>
     void addOutput(Args&&... args)
     {
@@ -58,6 +60,6 @@ public:
 
     std::string getSelectedPresetName();
     void fromJson(std::string json) override;
-    JsonDocument toJson() override;
-    JsonDocument toJsonFull() override;
+    void toJson(JsonObject& doc) override;
+    void toJsonFull(JsonObject& doc) override;
 };

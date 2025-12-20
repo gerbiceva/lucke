@@ -131,14 +131,11 @@ namespace Utils
         }
     }
     
-    JsonDocument Wifi::toJson()
+    void Wifi::toJson(JsonObject& doc)
     {
-        JsonDocument doc;
-        
         doc["ssid"] = WiFi.SSID();
         doc["rssi"] = WiFi.RSSI();
         doc["local_ip"] = WiFi.localIP();
         doc["connected"] = isConnected();
-        return doc;
     }
 }

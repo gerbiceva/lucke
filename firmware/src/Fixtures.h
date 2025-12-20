@@ -142,11 +142,12 @@ struct SGMQ1 : public Fixture
         }
         ]
     }
-    
     )")
     {
-        addOutput<Output::HardwareLED2D<WS2812, 5, RGB>> (24U, 16U);
+        // addOutput<Output::HardwareLED2D<WS2812, 5, RGB>> (24U, 8U);
     }
+
+    ~SGMQ1() override = default;
 
     void wifiAnimation() override
     {

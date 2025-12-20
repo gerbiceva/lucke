@@ -13,6 +13,6 @@ namespace Input
 
         void update() override;
 
-        JsonDocument toJson() override;
+        void toJson(JsonObject& doc) override;
     };
 }

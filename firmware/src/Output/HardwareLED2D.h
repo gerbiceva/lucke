@@ -76,9 +76,8 @@ namespace Output
             m_grid_hash.clear();
         }
 
-        JsonDocument toJson() override
+        void toJson(JsonObject& doc) override
         {
-            JsonDocument doc;
             doc["type"] = "FastLED-2D";
             doc["hardware_pin"] = TPin;
             doc["num_leds"] = this->m_numLeds;
@@ -88,7 +87,6 @@ namespace Output
             doc["row_height"] = m_row_height;
             doc["num_columns"] = m_num_columns;
             doc["num_rows"] = m_num_rows;
-            return doc;
         }
 
     };

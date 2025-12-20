@@ -21,7 +21,7 @@ public:
 
     void sendUdpPacket(uint16_t port, const std::string& data);
 
-    JsonDocument toJson() override;
+    void toJson(JsonObject& doc) override;
 
 private:
     static std::unique_ptr<Wifi> m_instance;

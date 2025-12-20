@@ -48,15 +48,12 @@ namespace Output
             return m_numGroups * this->m_numPxls;
         }
 
-        JsonDocument toJson() override
+        void toJson(JsonObject& doc) override
         {
-            JsonDocument doc;
             doc["type"] = "FastLED-1D";
             doc["hardware_pin"] = TPin;
             doc["num_leds"] = this->m_numLeds;
             doc["num_groups"] = m_numGroups;
-
-            return doc;
         }
     };
 }

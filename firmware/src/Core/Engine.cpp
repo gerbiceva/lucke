@@ -99,14 +99,14 @@ void Engine::init()
             1, 3000);
         }
 
-        if(settings.report_task)
-        {
-            m_taskExecutor.spawnTask("Send report", [this]()
-            {
-                this->sendReport();
-            }, 
-            1, 4000);
-        }
+        // if(settings.report_task)
+        // {
+        //     m_taskExecutor.spawnTask("Send report", [this]()
+        //     {
+        //         this->sendReport();
+        //     }, 
+        //     1, 4000);
+        // }
 
         inited = true;
 
@@ -161,23 +161,31 @@ void Engine::parseConfig(const std::string& data)
     std::string temp;
     if(strcmp(req, "describe") == 0)
     {
-        serializeJson(Engine::instance().toJson(), temp);
+        JsonObject doc;
+        Engine::instance().toJson(doc);
+        serializeJson(doc, temp);
         Utils::Wifi::instance().sendUdpPacket(12345, temp);
     }
     else if(strcmp(req, "fixtures") == 0)
     {
-        serializeJson(m_fixtureHandler.toJsonFull(), temp);
+        JsonObject doc;
+        m_fixtureHandler.toJsonFull(doc);
+        serializeJson(doc, temp);
         Utils::Wifi::instance().sendUdpPacket(12345, temp);
     }
     else if(strcmp(req, "inputs") == 0)
     {
-        serializeJson(m_inputHandler.toJson(), temp);
+        JsonObject doc;
+        m_inputHandler.toJson(doc);
+        serializeJson(doc, temp);
         Utils::Wifi::instance().sendUdpPacket(12345, temp);
     }
     else if(strcmp(req, "reboot") == 0)
     {
+        JsonObject doc;
         status = "rebooting";
-        serializeJson(Utils::Wifi::instance().toJson(), temp);
+        Utils::Wifi::instance().toJson(doc);
+        serializeJson(doc, temp);
         Utils::Wifi::instance().sendUdpPacket(12345, temp);
         ESP.restart();
     }
@@ -214,7 +222,9 @@ void Engine::parseConfig(const std::string& data)
             Utils::Wifi::reinitialize(settings.ssid.c_str(), settings.password.c_str());
         }
         
-        serializeJson(Utils::Wifi::instance().toJson(), temp);
+        JsonObject doc;
+        Utils::Wifi::instance().toJson(doc);
+        serializeJson(doc, temp);
         Utils::Wifi::instance().sendUdpPacket(12345, temp);
     }
     else if(strcmp(req, "setfixture") == 0)
@@ -255,7 +265,10 @@ void Engine::parseConfig(const std::string& data)
                 {
                     std::string key = "fixture" + std::to_string(id);
                     std::string store;
-                    serializeJson(fix->toJson(), store);
+
+                    JsonObject doc;
+                    fix->toJson(doc);
+                    serializeJson(doc, store);
                     this->m_storage.putString(key, store);
                 }
             }
@@ -320,41 +333,42 @@ void Engine::clearSrcBuffers()
 }
 
 
-JsonDocument Engine::fixtureJson()
+void Engine::fixtureJson(JsonObject& doc)
 {
-    JsonDocument doc;
-    doc["fixtures"] = m_fixtureHandler.toJsonFull();
-    return doc;
+    JsonObject fixturesDoc = doc.createNestedObject("fixtures");
+    m_fixtureHandler.toJsonFull(fixturesDoc);
 }
 
-JsonDocument Engine::settingsJson()
+void Engine::settingsJson(JsonObject& doc)
 {
-    JsonDocument doc;
     if(m_storage.isKey("settings"))
     {
         std::string temp = m_storage.getString("settings");
-        deserializeJson(doc, temp);
+        //TODO: Fix me
+        //deserializeJson(doc, temp);
     }
-    return doc;
 }
 
 
-JsonDocument Engine::toJson()
+void Engine::toJson(JsonObject& doc)
 {
-    JsonDocument doc;
     // doc["heap_size"] = ESP.getHeapSize();
 	// doc["heap_free"] = ESP.getFreeHeap();
     doc["version"] = version.c_str();
-    doc["settings"] = Engine::instance().settingsJson();
-    doc["wifi"] = Utils::Wifi::instance().toJson();
-    doc["fixture_handler"] = m_fixtureHandler.toJson();
-    return doc;
+    JsonObject settingsDoc = doc.createNestedObject("settings");
+    Engine::instance().settingsJson(settingsDoc);
+    JsonObject wifiDoc = doc.createNestedObject("wifi");
+    Utils::Wifi::instance().toJson(wifiDoc);
+    JsonObject fixtureDoc = doc.createNestedObject("fixture_handler");
+    m_fixtureHandler.toJson(fixtureDoc);
 }
 
 std::string Engine::toString()
 {
     std::string ret;
-    serializeJson(toJson(), ret);
+    JsonObject doc;
+    toJson(doc);
+    serializeJson(doc, ret);
     return ret;
 }
 
@@ -365,7 +379,9 @@ void Engine::sendReport()
     std::string temp;
     while(true)
     {
-        serializeJson(m_fixtureHandler.toJson(), temp);
+        JsonObject doc;
+        m_fixtureHandler.toJson(doc);
+        serializeJson(doc, temp);
         Utils::Wifi::instance().sendUdpPacket(12345, temp);
 
         vTaskDelay(10000);

@@ -27,6 +27,6 @@ namespace Handler
         void clearSrcBuffers();
         
         void fromJson(std::string json) override;
-        JsonDocument toJson() override;
+        void toJson(JsonObject& doc) override;
     };
 }

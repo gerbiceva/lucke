@@ -98,12 +98,10 @@ void Button::update()
 	}
 }
 
-JsonDocument Button::toJson() 
+void Button::toJson(JsonObject& doc) 
 {
-    JsonDocument doc;
     doc["name"] = buttonName;
     doc["pin"] = buttonPin;
-    return doc;
 }
 
 }

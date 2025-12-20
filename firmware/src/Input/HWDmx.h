@@ -16,9 +16,8 @@ namespace Input
         void update() override {}
         // virtual void setUniverse(uint8_t) override {}
 
-        JsonDocument toJson() override 
-        { 
-            JsonDocument doc;
+        void toJson(JsonObject& doc) override 
+        {
             doc["id"] = m_ID;
             doc["universe"] = m_universe;
             doc["type"] = "DMX";

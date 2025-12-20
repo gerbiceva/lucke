@@ -13,7 +13,7 @@ namespace Handler
         void update();
         void add(Input::Button&& b);
         
-        JsonDocument toJson() override;        
+        void toJson(JsonObject& doc) override;        
     };
 }
 

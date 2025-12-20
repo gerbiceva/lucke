@@ -17,7 +17,7 @@ struct Example {
 
 void setup() 
 {	
-	Engine::instance().addFixture<Astera60>(true);
+	Engine::instance().addFixture<SGMQ1>(true);
 	Engine::instance().init();
 	// Utils::Logger::enable();
 	// Example e;

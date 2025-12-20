@@ -100,17 +100,14 @@ namespace Handler
     }
 
     
-    JsonDocument InputHandler::toJson()
+    void InputHandler::toJson(JsonObject& doc)
     {
-        JsonDocument doc;
-        doc["inputs"] = JsonDocument();
-        JsonArray arr = doc["inputs"].to<JsonArray>();
+        JsonArray arr = doc.createNestedArray("inputs");
     
         for(InputInterface* p : m_inputs)
         {
-            arr.add(p->toJson());
+            JsonObject entry = arr.createNestedObject();
+            p->toJson(entry);
         }
-    
-        return doc;
     }
 }
