@@ -88,7 +88,7 @@ namespace Handler
 
     void InputHandler::fromJson(std::string json)
     {
-        DynamicJsonDocument doc(512);
+        JsonDocument doc;
         deserializeJson(doc, json);
 
         JsonArray arr = doc["inputs"].as<JsonArray>();
@@ -102,11 +102,11 @@ namespace Handler
     
     void InputHandler::toJson(JsonObject& doc)
     {
-        JsonArray arr = doc.createNestedArray("inputs");
+        JsonArray arr = doc["inputs"].as<JsonArray>();
     
         for(InputInterface* p : m_inputs)
         {
-            JsonObject entry = arr.createNestedObject();
+            JsonObject entry = arr.add<JsonObject>();
             p->toJson(entry);
         }
     }

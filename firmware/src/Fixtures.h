@@ -101,6 +101,7 @@ struct Astera144 : public Fixture
 
     void wifiAnimation() override
     {
+        // Traits::OutputInterface* o = m_outputs[0];
         static uint16_t off = 0;
         constexpr uint16_t N = (144U * 3U);
         getSrcBuffer()[off] = 255;
@@ -144,7 +145,7 @@ struct SGMQ1 : public Fixture
     }
     )")
     {
-        // addOutput<Output::HardwareLED2D<WS2812, 5, RGB>> (24U, 8U);
+        addOutput<Output::HardwareLED2D<WS2812, 5, RGB>> (24U, 8U);
     }
 
     ~SGMQ1() override = default;

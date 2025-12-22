@@ -14,6 +14,7 @@
 // #define ENGINE_VERSION "1.1"
 
 class Engine : public Traits::Deserializable
+// class Engine 
 {
     Engine ();
     void readSettings();
@@ -27,10 +28,28 @@ class Engine : public Traits::Deserializable
     void sendReport();
     void printReport();
     
-    void fixtureJson(JsonObject& doc);
-    void settingsJson(JsonObject& doc);
+
+    // template<typename T>
+    // T getElement(JsonDocument& doc, std::string name, T alternative)
+    // {
+    //     if(doc[name].is<T>())
+    //     {
+    //         return doc[name];
+    //     }
+
+    //     return alternative;
+    // }
+
+    // template<typename T>
+    // void updateElement(JsonDocument& doc, std::string name, T& element)
+    // {
+    //     if(doc[name].is<T>())
+    //     {
+    //         element = doc[name];
+    //     }
+    // }
     
-    struct Settings
+    struct Settings : public Traits::Deserializable
     {
         bool to_factory_settings = false;
         bool print_task = true;
@@ -39,18 +58,27 @@ class Engine : public Traits::Deserializable
         std::string ssid = "Ledique";
         std::string password = "dasenebipovezau";
         
+        void toJson(JsonObject& obj) override
+        {
+            obj["print_task"] = print_task;
+            obj["auto_report_task"] = report_task;
+            obj["wifi_animation"] = wifi_animation;
+            obj["ssid"] = ssid.c_str();
+            obj["password"] = password.c_str();
+        }
+
         std::string toString()
         {
-            JsonDocument doc;
-            doc["print_task"] = print_task;
-            doc["auto_report_task"] = report_task;
-            doc["wifi_animation"] = wifi_animation;
-            doc["ssid"] = ssid.c_str();
-            doc["password"] = password.c_str();
-            // doc["to_factory_settings"] = to_factory_settings;
-            std::string s;
-            serializeJson(doc, s);
-            return s;
+            JsonDocument obj;
+            obj["print_task"] = print_task;
+            obj["auto_report_task"] = report_task;
+            obj["wifi_animation"] = wifi_animation;
+            obj["ssid"] = ssid.c_str();
+            obj["password"] = password.c_str();
+
+            std::string ret;
+            serializeJson(obj, ret);
+            return ret;
         }
     } settings;
     
@@ -76,15 +104,23 @@ public:
         {
             fix->fromJson(m_storage.getString(key));
         }
-        else
-        {
-            std::string temp;
-            JsonObject doc;
-            fix->toJson(doc);
-            serializeJson(doc, temp);
-            fix->fromJson(temp);
-            m_storage.putString(key, temp);
-        }
+
+        JsonDocument doc = fix->toJsonDoc();
+        std::string serialized;
+        serializeJson(doc, serialized);
+        m_storage.putString(key, serialized);
+
+
+
+        // else
+        // {
+        //     std::string temp;
+        //     JsonObject doc;
+        //     fix->toJson(doc);
+        //     serializeJson(doc, temp);
+        //     fix->fromJson(temp);
+        //     m_storage.putString(key, temp);
+        // }
 
         return fix;
     }

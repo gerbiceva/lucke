@@ -25,11 +25,11 @@ namespace Handler
 
     void ButtonManager::toJson(JsonObject& doc)
     {
-        JsonArray arr = doc.createNestedArray("buttons");
+        JsonArray arr = doc["buttons"].as<JsonArray>();
 
         for(Input::Button& button : buttons)
         {
-            JsonObject entry = arr.createNestedObject();
+            JsonObject entry = arr.add<JsonObject>();
             button.toJson(entry);
         }
     }

@@ -5,6 +5,7 @@ namespace Traits
 {
     struct Deserializable
     {
+        virtual JsonDocument toJsonDoc() { return JsonDocument(); };
         virtual void toJson(JsonObject& doc) = 0;
         virtual void toJsonFull(JsonObject& doc) {  }
     };

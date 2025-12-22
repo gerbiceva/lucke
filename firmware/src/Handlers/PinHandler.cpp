@@ -19,7 +19,7 @@ namespace Handler
     
     void PinHandler::toJson(JsonObject& doc)
     {
-        JsonArray arr = doc.createNestedArray("used_pins");
+        JsonArray arr = doc["used_pins"].as<JsonArray>();
     
         for(uint8_t pin : m_usedPins)
         {

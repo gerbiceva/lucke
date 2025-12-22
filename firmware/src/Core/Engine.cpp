@@ -1,7 +1,9 @@
 #include "Engine.h"
 #include "Utils/Logger.h"
 #include "Utils/Wifi.h"
+#include "Utils/JsonUtils.h"
 
+using namespace Utils::Json;
 
 Engine::Engine ()
     : m_storage(Utils::Storage("engine"))
@@ -42,27 +44,26 @@ void Engine::readSettings()
         std::string s = m_storage.getString("settings");
         JsonDocument doc;
         deserializeJson(doc, s);
-        factory = doc["to_factory_settings"];
+        factory = getElement<bool>(doc, "to_factory_settings", false);
         if(factory)
         {
             settings.to_factory_settings = false;
             m_storage.putString("settings", settings.toString());
+            ESP.restart();
             return;
         }
 
-        settings.print_task = doc["print_task"];
-        settings.report_task = doc["auto_report_task"];
-        settings.wifi_animation = doc["wifi_animation"];
-        // if(doc["ssid"])
-        // const char* ssid = doc["ssid"];
-        // settings.ssid = ssid;
-        // const char* password = doc["password"];
-        // settings.password = password;
+        updateElement<bool>(doc, "print_task", settings.print_task);
+        updateElement<bool>(doc, "auto_report_task", settings.report_task);
+        updateElement<bool>(doc, "wifi_animation", settings.wifi_animation);
+
+        const char* ssid = getElement<const char*>(doc, "ssid", settings.ssid.c_str());
+        settings.ssid = ssid;
+        const char* password = getElement<const char*>(doc, "password", settings.password.c_str());
+        settings.password = password;
     }
-    else
-    {
-        m_storage.putString("settings", settings.toString());
-    }
+
+    m_storage.putString("settings", settings.toString());
 }
 
 Engine& Engine::instance()
@@ -332,42 +333,29 @@ void Engine::clearSrcBuffers()
     m_inputHandler.clearSrcBuffers();
 }
 
-
-void Engine::fixtureJson(JsonObject& doc)
-{
-    JsonObject fixturesDoc = doc.createNestedObject("fixtures");
-    m_fixtureHandler.toJsonFull(fixturesDoc);
-}
-
-void Engine::settingsJson(JsonObject& doc)
-{
-    if(m_storage.isKey("settings"))
-    {
-        std::string temp = m_storage.getString("settings");
-        //TODO: Fix me
-        //deserializeJson(doc, temp);
-    }
-}
-
-
 void Engine::toJson(JsonObject& doc)
 {
     // doc["heap_size"] = ESP.getHeapSize();
 	// doc["heap_free"] = ESP.getFreeHeap();
     doc["version"] = version.c_str();
-    JsonObject settingsDoc = doc.createNestedObject("settings");
-    Engine::instance().settingsJson(settingsDoc);
-    JsonObject wifiDoc = doc.createNestedObject("wifi");
+
+    JsonObject settingsDoc = doc["settings"].to<JsonObject>();
+    settings.toJson(settingsDoc);
+
+    JsonObject wifiDoc = doc["wifi"].to<JsonObject>();
     Utils::Wifi::instance().toJson(wifiDoc);
-    JsonObject fixtureDoc = doc.createNestedObject("fixture_handler");
+
+    JsonObject fixtureDoc = doc["fixture_handler"].to<JsonObject>();
     m_fixtureHandler.toJson(fixtureDoc);
 }
 
 std::string Engine::toString()
 {
+    JsonDocument doc;
+    JsonObject engineObj = doc["engine"].to<JsonObject>();
+    toJson(engineObj);
+
     std::string ret;
-    JsonObject doc;
-    toJson(doc);
     serializeJson(doc, ret);
     return ret;
 }

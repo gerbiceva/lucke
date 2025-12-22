@@ -1,23 +1,10 @@
 #include "Fixtures.h"
 #include "Core/Engine.h"
-#include "Utils/TaskExecutor.h"
-
-
-
-struct Example {
-	void run() {
-		while (true)
-		{
-			vTaskDelay(1000);
-			Utils::Logger::print("Success");
-		}
-	}
-};
 
 
 void setup() 
 {	
-	Engine::instance().addFixture<SGMQ1>(true);
+	Engine::instance().addFixture<Astera60>(true);
 	Engine::instance().init();
 	// Utils::Logger::enable();
 	// Example e;

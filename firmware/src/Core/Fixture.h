@@ -27,8 +27,8 @@ class Fixture : public Traits::Serializable, public Traits::Deserializable
     uint8_t* m_srcBuffer;
     uint16_t m_lastOffset = 0U;
     JsonDocument jsonPreset;
-
-    void updatePresets();
+    
+    void updatePresets();    
 public:
 
     Fixture();
@@ -56,10 +56,12 @@ public:
     void setName(const std::string& other);
 
     virtual void update();
-    virtual void wifiAnimation() {};
+    virtual void wifiAnimation() = 0;
 
     std::string getSelectedPresetName();
     void fromJson(std::string json) override;
+
+    JsonDocument toJsonDoc() override;
     void toJson(JsonObject& doc) override;
     void toJsonFull(JsonObject& doc) override;
 };

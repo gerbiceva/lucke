@@ -54,11 +54,11 @@ namespace Handler
     {
         doc["num_fixtures"] = fixtures.size();
         doc["fixtures"] = JsonDocument();
-        JsonArray arr = doc.createNestedArray("fixtures");
+        JsonArray arr = doc["fixtures"].to<JsonArray>();
     
         for(Fixture* f : fixtures)
         {
-            JsonObject entry = arr.createNestedObject();
+            JsonObject entry = arr.add<JsonObject>();
             f->toJson(entry);
         }
     
@@ -67,11 +67,11 @@ namespace Handler
     void FixtureHandler::toJsonFull(JsonObject& doc)
     {
         doc["num_fixtures"] = fixtures.size();
-        JsonArray arr = doc.createNestedArray("fixtures");
+        JsonArray arr = doc["fixtures"].to<JsonArray>();
     
         for(Fixture* f : fixtures)
         {
-            JsonObject entry = arr.createNestedObject();
+            JsonObject entry = arr.add<JsonObject>();
             f->toJsonFull(entry);
         }
     }

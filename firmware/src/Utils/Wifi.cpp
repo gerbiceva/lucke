@@ -25,7 +25,7 @@ namespace Utils
             is_connected = instance.isConnected();
             if(!is_connected)
             {
-                // instance.m_connection_status_callback(is_connected);
+                instance.m_connection_status_callback(is_connected);
             }
 
             vTaskDelay(50);
@@ -44,7 +44,7 @@ namespace Utils
         {
             if (instance.isConnected()) 
             {
-                WiFiClient client = server.available();
+                WiFiClient client = server.accept();
                 if (client) 
                 {
                     while (client.connected()) 
@@ -133,7 +133,7 @@ namespace Utils
     
     void Wifi::toJson(JsonObject& doc)
     {
-        doc["ssid"] = WiFi.SSID();
+        // doc["ssid"] = WiFi.SSID();
         doc["rssi"] = WiFi.RSSI();
         doc["local_ip"] = WiFi.localIP();
         doc["connected"] = isConnected();

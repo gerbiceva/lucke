@@ -1,8 +1,8 @@
 #include "Fixture.h"
-// #include "Handlers/InputHandler.h"
 #include <ArduinoJson.h>
 #include "Utils/Logger.h"
 #include "Engine.h"
+#include "Utils/JsonUtils.h"
 
 
 uint8_t Fixture::s_ID = 0;
@@ -112,11 +112,28 @@ void Fixture::fromJson(std::string json)
     JsonDocument doc;
     deserializeJson(doc, json);
 
-    const char* name = doc["name"];
+    const char* name = Utils::Json::getElement(doc, "name", m_config.name.c_str());
+    
+    Utils::Json::updateElement<uint8_t>(doc, "universe", m_config.universe);
+    Utils::Json::updateElement<uint16_t>(doc, "address", m_config.address);
+    Utils::Json::updateElement<uint8_t>(doc, "presetIndex", m_config.selectedPreset);
+    
     setName(name);
-    setUniverse(doc["universe"]);
-    setAddress(doc["address"]);
-    setPreset(doc["presetIndex"]);
+    setUniverse(m_config.universe);
+    setAddress(m_config.address);
+    setPreset(m_config.selectedPreset);
+}
+
+JsonDocument Fixture::toJsonDoc()
+{
+    JsonDocument doc;
+    doc["id"] = m_ID;
+    doc["name"] = m_config.name;
+    doc["type"] = m_config.type;
+    doc["universe"] = m_config.universe;
+    doc["address"] = m_config.address;
+    doc["presetIndex"] = m_config.selectedPreset;
+    return doc;
 }
 
 
@@ -142,13 +159,13 @@ void Fixture::toJsonFull(JsonObject& doc)
     doc["presetIndex"] = m_config.selectedPreset;
     doc["preset"] = getSelectedPresetName();
 
-    JsonObject inputDoc = doc.createNestedObject("input");
+    JsonObject inputDoc = doc["input"].to<JsonObject>();
     m_dmxIn->toJson(inputDoc);
-    JsonArray objectsArray = doc.createNestedArray("objects");
+    JsonArray objectsArray = doc["objects"].to<JsonArray>();
 
     for(Traits::OutputInterface* o : m_outputs)
     {
-        JsonObject entry = objectsArray.createNestedObject();
+        JsonObject entry = objectsArray.add<JsonObject>();
         o->toJson(entry);
     }
 
