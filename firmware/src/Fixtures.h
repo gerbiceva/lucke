@@ -146,6 +146,7 @@ struct SGMQ1 : public Fixture
     )")
     {
         addOutput<Output::HardwareLED2D<WS2812, 5, GRB>> (8U, 24U);
+        // addOutput<Output::VirtualGrid<WS2812, 5, GRB>> (8U, 24U);
     }
 
     ~SGMQ1() override = default;
@@ -218,7 +219,8 @@ struct Kitajci200 : public Fixture
         vTaskDelay(20);
     }
 };
-
+/*
+template<uint8_t TPin
 struct Strip : public Fixture
 {
     Strip()
@@ -275,3 +277,4 @@ struct Strip : public Fixture
     }
     // using Astera60 = Fixture;
 };
+*/

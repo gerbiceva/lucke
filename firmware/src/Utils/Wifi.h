@@ -1,6 +1,7 @@
 #pragma once
 // #include <atomic>
 #include <memory>
+#include <functional>
 #include "Traits/Deserializable.h"
 
 
@@ -14,9 +15,11 @@ public:
     static Wifi& initialize(const char* ssid, const char* password, std::function<void(bool)> connection_status_callback, std::function<void(std::string)> receive_callback);
     static Wifi& reinitialize(const char* ssid, const char* password);
     static Wifi& instance();
-    
+
     static void monitorConnection(void*);
     static void receiveData(void*);
+    static void startTasks();
+    
     bool isConnected();
 
     void sendUdpPacket(uint16_t port, const std::string& data);

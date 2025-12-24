@@ -22,11 +22,11 @@ namespace Utils
 
         while (true) 
         {
-            is_connected = instance.isConnected();
-            if(!is_connected)
-            {
-                instance.m_connection_status_callback(is_connected);
-            }
+            // is_connected = instance.isConnected();
+            // if(!is_connected)
+            // {
+                // instance.m_connection_status_callback(is_connected);
+            // }
 
             vTaskDelay(50);
         }
@@ -66,11 +66,12 @@ namespace Utils
     Wifi::Wifi(const char *ssid, const char *password, const std::function<void(bool)>& connection_status_callback, const std::function<void(std::string)>& receive_callback) 
         : m_ssid(ssid), m_password(password), m_connection_status_callback(connection_status_callback), m_receive_callback(receive_callback) {
             Logger::printf("[WIFI] Connecting to '%s'\n", m_ssid);
-            // uint8_t mac[] = {0x90, 0xA2, 0xDA, 0x10, 0x10, 0xAF}; // MAC Adress of your device
+            // uint8_t mac[] = {0x90, 0xA2, 0xDA, 0x10, 0x10, randomInt()}; // MAC Adress of your device
             // esp_err_t err = esp_wifi_set_mac(WIFI_IF_STA, &mac[0]);
             // if (err != ESP_OK)
             // {
-            //     return false;
+            //     Logger::printf("[WIFI] Unable to set mac address '%s'\n", m_ssid);
+            //     return;
             // }
 
             WiFi.setScanMethod(WIFI_FAST_SCAN);
@@ -79,7 +80,7 @@ namespace Utils
             WiFi.begin(m_ssid, m_password);
 
             // xTaskCreate(Wifi::monitorConnection, "Check Wifi", 3000, NULL, 1 | portPRIVILEGE_BIT, NULL);
-            xTaskCreate(Wifi::receiveData, "Receive Data", 4000, NULL, 1 | portPRIVILEGE_BIT, NULL);
+            // xTaskCreate(Wifi::receiveData, "Receive Data", 4000, NULL, 1 | portPRIVILEGE_BIT, NULL);
         }
 
     Wifi& Wifi::reinitialize(const char* ssid, const char* password)
@@ -94,18 +95,13 @@ namespace Utils
         WiFi.setSleep(false);
         WiFi.begin(ssid, password);
 
-        // m_ssid = ssid;
-        // m_password = password;
-
         return *m_instance;
     }
 
     Wifi &Wifi::initialize(const char *ssid, const char *password, std::function<void(bool)> connection_status_callback, std::function<void(std::string)> receive_callback)
     {
         assert(m_instance == nullptr);
-
         m_instance = std::unique_ptr<Wifi>(new Wifi(ssid, password, connection_status_callback, receive_callback));
-
         return *m_instance;
     }
 
@@ -113,6 +109,12 @@ namespace Utils
     {
         assert(m_instance != nullptr);
         return *m_instance;
+    }
+
+    void Wifi::startTasks()
+    {
+        xTaskCreate(Wifi::monitorConnection, "Check Wifi", 3000, NULL, 1 | portPRIVILEGE_BIT, NULL);
+            xTaskCreate(Wifi::receiveData, "Receive Data", 4000, NULL, 1 | portPRIVILEGE_BIT, NULL);
     }
 
     bool Wifi::isConnected()

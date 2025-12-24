@@ -20,7 +20,6 @@ namespace Handler
         template<typename TFixture>
         Fixture* addFixture()
         {
-            Utils::Logger::println("[FIXTURE HANDLER] Added new fixture");
             Fixture* fix = new TFixture();
 
             fixtures.push_back(fix);

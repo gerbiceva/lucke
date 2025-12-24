@@ -84,7 +84,6 @@ namespace Handler
     
     void FixtureHandler::update()
     {
-         Utils::Logger::println("[TASK] Created 'DMX update' task");
         while(true)
         {
             for(Fixture* fix : fixtures)

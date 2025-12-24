@@ -30,6 +30,8 @@ public:
             this->stopTask(id);
         };
 
+        Utils::Logger::printf("[TASK] Created new task '%s'\n", taskName.c_str());
+
         rec.status = RUNNING;
         m_tasks.push_back(rec);
 

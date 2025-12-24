@@ -21,6 +21,21 @@ Fixture::Fixture(std::string name, std::string type, std::string presets)
     deserializeJson(jsonPreset, presets);
 }
 
+uint8_t* Fixture::getSrcBuffer() 
+{ 
+    return m_srcBuffer; 
+}
+
+uint8_t Fixture::id() const 
+{ 
+    return m_ID; 
+}
+
+const std::string& Fixture::getName() const 
+{ 
+    return m_config.name; 
+}
+
 void Fixture::setUniverse(uint8_t new_universe)
 {
     m_config.universe = new_universe;

@@ -27,11 +27,12 @@ public:
 
 	void update();
 
-	inline void setRisingFunction(std::function<void()> risingFunction);
-	inline void setHoldFunction(std::function<void()> holdFunction);
+	void setRisingFunction(std::function<void()> risingFunction);
+	void setHoldFunction(std::function<void()> holdFunction);
 
-	inline const uint8_t getPin() const;
-	inline const bool buttonStatus() const;
+	const std::string& getName() const;
+	const uint8_t getPin() const;
+	const bool buttonStatus() const;
 
     void toJson(JsonObject& doc) override;
 };

@@ -70,6 +70,7 @@ public:
         serializeJson(doc, serialized);
         m_storage.putString(key, serialized);
 
+        Utils::Logger::dprintf("[ENGINE] Added new fixture %s", fix->getName().c_str());
         return fix;
     }
 

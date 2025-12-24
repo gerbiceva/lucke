@@ -7,6 +7,7 @@ using namespace Utils::Json;
 
 void Engine::Settings::toJson(JsonObject& obj)
 {
+    obj["to_factory_settings"] = to_factory_settings;
     obj["print_task"] = print_task;
     obj["auto_report_task"] = report_task;
     obj["wifi_animation"] = wifi_animation;
@@ -17,6 +18,7 @@ void Engine::Settings::toJson(JsonObject& obj)
 std::string Engine::Settings::toString()
 {
     JsonDocument obj;
+    obj["to_factory_settings"] = to_factory_settings;
     obj["print_task"] = print_task;
     obj["auto_report_task"] = report_task;
     obj["wifi_animation"] = wifi_animation;
@@ -33,8 +35,9 @@ Engine::Engine ()
 {
 
     Utils::Logger::enable();
+    Utils::Logger::setLevel(Utils::Logger::DEBUG);
+    sleep(5);
     readSettings();
-    // sleep(5);
 
     Utils::Wifi::initialize(settings.ssid.c_str(), settings.password.c_str(), [this](bool is_connected) 
     {
@@ -53,12 +56,14 @@ Engine::Engine ()
         this->clearSrcBuffers();
     }, [this](std::string data)
     {
+        Utils::Logger::dprintln("[ENGINE] New data received");
         this->parseConfig(data);
     });
 }
 
 void Engine::readSettings()
 {
+    Utils::Logger::dprint("[ENGINE] Read settings: ");
     if(m_storage.isKey("settings"))
     {
         std::string s = m_storage.getString("settings");
@@ -80,10 +85,13 @@ void Engine::readSettings()
         settings.ssid = ssid;
         const char* password = getElement<const char*>(doc, "password", settings.password.c_str());
         settings.password = password;
+        Utils::Logger::dprintln("existant");
+
     }
     else 
     {
         m_storage.putString("settings", settings.toString());
+        Utils::Logger::dprintln("nonexistant");
     }
 
 }
@@ -98,6 +106,8 @@ void Engine::init()
 {
     if(!inited)
     {        
+        Utils::Logger::dprintln("[ENGINE] Creating tasks");
+        Utils::Wifi::startTasks();
         m_inputTaskID = m_taskExecutor.spawnTask("DMX Input", [this]()
         {
             this->m_inputHandler.update();
@@ -142,8 +152,6 @@ void Engine::wifiStatus()
     {
         animationHandle = this->m_taskExecutor.spawnTask("Wifi animation", [this]()
         {
-            Utils::Logger::println("[TASK] Created 'Wifi animation' task");
-
             while(true)
             {
                 if(this->wifiAnimation != nullptr)
@@ -194,36 +202,72 @@ void Engine::parseConfig(const std::string& data)
     if(strcmp(req, "describe") == 0)
     {
         response = Engine::instance().toString();
+        Utils::Logger::dprintln("Describe engine request");
     }
     else if(strcmp(req, "fixtures") == 0)
     {
         JsonObject obj = jsonTemp["fixture_handler"].to<JsonObject>();
         m_fixtureHandler.toJsonFull(obj);
         serializeJson(jsonTemp, response);
+        Utils::Logger::dprintln("Describe fix handler request");
     }
     else if(strcmp(req, "inputs") == 0)
     {
         JsonObject obj = jsonTemp["input_handler"].to<JsonObject>();
         m_inputHandler.toJson(obj);
         serializeJson(jsonTemp, response);
+        Utils::Logger::dprintln("Describe input handler request");
     }
     else if(strcmp(req, "reboot") == 0)
     {
         response = "Rebooting in 1 second";
+        Utils::Logger::dprintln("Reboot request");
         sendResponse();
         sleep(1);
         ESP.restart();
     }
-    // else if(strcmp(req, "factory_reset") == 0)
-    // {
-    //     std::string s = m_storage.getString("settings");
-    //     JsonDocument doc;
-    //     deserializeJson(doc, s);
-    //     settings.to_factory_settings = true;
-    //     m_storage.putString("settings", settings.toString());
-    //     ESP.restart();
-    //     return;
-    // }
+    else if(strcmp(req, "factory_reset") == 0)
+    {
+        std::string s = m_storage.getString("settings");
+        JsonDocument doc;
+        deserializeJson(doc, s);
+        settings.to_factory_settings = true;
+        m_storage.putString("settings", settings.toString());
+        ESP.restart();
+        return;
+    }
+    else if(strcmp(req, "print_task") == 0)
+    {
+        if(doc["value"].is<const char*>())
+        {
+            bool value = doc["value"];
+            settings.print_task = value;
+            m_storage.putString("settings", settings.toString());
+            response = "Set print task value";
+        }
+        else 
+        {
+            Utils::Logger::println("[REQUEST] Invalid json, missing field value");
+            response = "Missing field value in print_task";
+            status = "ERROR";
+        }
+    }
+    else if(strcmp(req, "auto_report_task") == 0)
+    {
+        if(doc["value"].is<const char*>())
+        {
+            bool value = doc["value"];
+            settings.report_task = value;
+            m_storage.putString("settings", settings.toString());
+            response = "Set print task value";
+        }
+        else 
+        {
+            Utils::Logger::println("[REQUEST] Invalid json, missing field value");
+            response = "Missing field value in auto_report_task";
+            status = "ERROR";
+        }
+    }
 
     else if(strcmp(req, "wifi") == 0)
     {
@@ -232,13 +276,17 @@ void Engine::parseConfig(const std::string& data)
         {
             const char* ssid = doc["ssid"];
             settings.ssid = ssid;
+            response = "SSID set";
             dirty = true;
+            Utils::Logger::dprintln("Set ssid request");
         }
         if(doc["password"].is<const char*>())
         {
             const char* password = doc["password"];
             settings.password = password;
+            response = "Password set";
             dirty = true;
+            Utils::Logger::dprintln("Set password request");
         }
 
         if(dirty)
@@ -249,39 +297,72 @@ void Engine::parseConfig(const std::string& data)
             JsonObject obj = jsonTemp["wifi"].to<JsonObject>();
             Utils::Wifi::instance().toJson(obj);
             serializeJson(jsonTemp, response);
-            status = "Wifi credentials set!";
+        }
+    }
+    else if(strcmp(req, "getfixture") == 0)
+    {
+        if(doc["id"].is<uint8_t>())
+        {
+            uint8_t id = doc["id"];
+            Fixture* fix = m_fixtureHandler.get(id);
+            if(fix)
+            {
+                JsonObject o = jsonTemp["fixture"].as<JsonObject>();
+                fix->toJsonFull(o);
+                // JsonObject obj = jsonTemp["wifi"].to<JsonObject>();
+                // Utils::Wifi::instance().toJson(obj);
+                serializeJson(jsonTemp, response);
+            }
+            else
+            {
+                Utils::Logger::printf("[REQUEST] Could not find fixture with id %d\n", id);
+                response = "Could not find selected fixture";
+                status = "ERROR";
+            }
+        }
+        else 
+        {
+            Utils::Logger::printf("[REQUEST] Get fixture json does not containd 'id' field!\n");
+            response = "Invalid json";
+            status = "ERROR";
         }
     }
     else if(strcmp(req, "setfixture") == 0)
     {
         if(doc["id"].is<uint8_t>())
-        {
+        {    
             uint8_t id = doc["id"];
-            if(m_fixtureHandler.fixtureExists(id))
+            Fixture* fix = m_fixtureHandler.get(id);
+            if(fix)
             {
+                Utils::Logger::dprintf("Set fixture %d\n", id);
                 bool set = false;
                 if (doc["universe"].is<uint8_t>())
                 {
                     uint8_t universe = doc["universe"];
-                    m_fixtureHandler.setFixtureUniverse(id, universe);
+                    fix->setUniverse(universe);
+                    response = "Set universe";
                     set = true;
                 }
                 if (doc["address"].is<uint16_t>())
                 {
                     uint16_t address = doc["address"];
-                    m_fixtureHandler.setFixtureAddress(id, address);
+                    fix->setAddress(address);
+                    response = "Set address";
                     set = true;
                 }
                 if (doc["presetIndex"].is<uint8_t>())
                 {
                     uint8_t presetIndex = doc["presetIndex"];
-                    m_fixtureHandler.setFixturePreset(id, presetIndex);
+                    fix->setPreset(presetIndex);
+                    response = "Set preset index";
                     set = true;
                 }
                 if (doc["name"].is<const char*>())
                 {
                     const char* name = doc["name"];
-                    m_fixtureHandler.setFixtureName(id, name);
+                    fix->setName(name);
+                    response = "Set name";
                     set = true;
                 }
 
@@ -291,9 +372,8 @@ void Engine::parseConfig(const std::string& data)
                     std::string store;
 
                     // TODO: make with Optional
-                    serializeJson(m_fixtureHandler.get(id)->toJsonDoc(), store);
+                    serializeJson(fix->toJsonDoc(), store);
                     this->m_storage.putString(key, store);
-                    status = "Fixture " + std::to_string(id) + " set";
                 }
             }
             else
@@ -311,6 +391,8 @@ void Engine::parseConfig(const std::string& data)
         }
     }
 
+    // Utils::Logger::dprintf("[REQUEST] %s\n", response);
+    Utils::Logger::dprintln(response.c_str());
     sendResponse();
 }
 
@@ -326,6 +408,7 @@ void Engine::addButton(Input::Button&& button)
         enabled = true;
     }
 
+    Utils::Logger::dprintf("Added new button '%s' on pin %d\n", button.getName().c_str(), button.getPin());
     m_buttonManager.add(std::move(button));
 }
 
@@ -356,7 +439,7 @@ void Engine::toJson(JsonObject& doc)
     m_fixtureHandler.toJson(fixtureDoc);
 
     // JsonObject inputDoc = doc["input_handler"].to<JsonObject>();
-    // m_inputHandler.toJson(fixtureDoc);
+    // m_inputHandler.toJson(inputDoc);
 }
 
 std::string Engine::toString()
@@ -372,8 +455,6 @@ std::string Engine::toString()
 
 void Engine::sendReport()
 {
-    Utils::Logger::println("[TASK] Created 'Send report' task");
-
     while(true)
     {
         std::string temp = toString().c_str();
@@ -385,8 +466,6 @@ void Engine::sendReport()
 
 void Engine::printReport()
 {
-    Utils::Logger::println("[TASK] Created 'print report' task");
-
     while(true)
     {
         Utils::Logger::println(toString().c_str());

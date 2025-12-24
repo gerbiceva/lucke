@@ -66,7 +66,6 @@ namespace Handler
 
     void InputHandler::update()
     {
-        Utils::Logger::println("[TASK] Created 'DMX Input' task!");
 
         while(true)
         {
@@ -102,7 +101,7 @@ namespace Handler
     
     void InputHandler::toJson(JsonObject& doc)
     {
-        JsonArray arr = doc["inputs"].as<JsonArray>();
+        JsonArray arr = doc["inputs"].to<JsonArray>();
     
         for(InputInterface* p : m_inputs)
         {

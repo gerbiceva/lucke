@@ -1,5 +1,6 @@
 #pragma once
 #include <Arduino.h>
+#include "StringUtils.h"
 
 namespace Utils
 {
@@ -43,7 +44,7 @@ namespace Utils
         {
             if(m_level == DEBUG)
             {
-                print(str);
+                print(String::concat("[D]", str).c_str());
             }
         }
 
@@ -59,7 +60,7 @@ namespace Utils
         {
             if(m_level == DEBUG)
             {
-                println(str);
+                println(String::concat("[D]", str).c_str());
             }
         }
 
@@ -77,7 +78,7 @@ namespace Utils
         {
             if(m_level == DEBUG)
             {
-                printf(format, args...);
+                printf(String::concat("[D]", format).c_str(), args...);
             }
         }
 

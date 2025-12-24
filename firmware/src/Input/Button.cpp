@@ -52,6 +52,11 @@ void Button::setHoldFunction(std::function<void()> holdFunction)
 	holdCallback = holdFunction;
 }
 
+const std::string& Button::getName() const 
+{ 
+	return buttonName; 
+}
+
 const uint8_t Button::getPin() const 
 {
 	return buttonPin; 

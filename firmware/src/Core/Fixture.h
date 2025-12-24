@@ -47,13 +47,15 @@ public:
         updatePresets();
     }
 
-    uint8_t* getSrcBuffer() { return m_srcBuffer; }
-    uint8_t id() const { return m_ID; }
+    uint8_t* getSrcBuffer();
+    uint8_t id() const;
+    const std::string& getName() const;
 
     void setUniverse(uint8_t new_universe);
     void setAddress(uint16_t new_address);
     void setPreset(uint8_t new_preset);
     void setName(const std::string& other);
+
 
     virtual void update();
     virtual void wifiAnimation() = 0;
