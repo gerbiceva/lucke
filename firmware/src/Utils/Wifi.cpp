@@ -78,7 +78,7 @@ namespace Utils
             WiFi.setSleep(false);
             WiFi.begin(m_ssid, m_password);
 
-            // xTaskCreate(Wifi::monitorConnection, "Check Wifi", 2000, NULL, 1 | portPRIVILEGE_BIT, NULL);
+            // xTaskCreate(Wifi::monitorConnection, "Check Wifi", 3000, NULL, 1 | portPRIVILEGE_BIT, NULL);
             xTaskCreate(Wifi::receiveData, "Receive Data", 4000, NULL, 1 | portPRIVILEGE_BIT, NULL);
         }
 

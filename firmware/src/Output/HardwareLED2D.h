@@ -2,6 +2,7 @@
 #include "HardwareLED.h"
 #include <unordered_map>
 #include <vector>
+#include "Utils/JsonUtils.h"
 
 namespace Output
 {
@@ -48,6 +49,7 @@ namespace Output
 
         void update() override
         {
+            // memcpy(this->m_dstBuffer, this->m_srcBuffer, m_width * m_height);
             for(uint8_t y = 0; y < m_num_rows; y++) 
             {
                 for(uint8_t x = 0; x < m_num_columns; x++) 
@@ -58,7 +60,8 @@ namespace Output
                     {
                         for (uint16_t k = 0; k < this->m_numPxls; k++) 
                         {
-                            // LOGF("led[%d] = dmx [%d]\n", (index * lamp->numPxls + k), (dmxIndex + k));
+                            
+                            // Utils::Logger::printf("led[%d] = dmx [%d]\n", (index * this->m_numPxls + k), (dmxIndex + k));
                             this->m_dstBuffer[index * this->m_numPxls + k] = this->m_srcBuffer[dmxIndex + k]; 
                         }
                     }
@@ -68,8 +71,17 @@ namespace Output
 
         void setPreset(const JsonDocument& doc) override
         {
-            m_row_height = doc["row_height"];
-            m_column_width = doc["column_width"];
+            if(!Utils::Json::updateElement<uint8_t>(doc, "row_height", m_row_height))
+            {
+
+            }
+
+            if(!Utils::Json::updateElement<uint8_t>(doc, "column_width", m_column_width))
+            {
+                
+            }
+            // m_row_height = doc["row_height"];
+            // m_column_width = doc["column_width"];
 
             m_num_columns = (m_width / m_column_width);
             m_num_rows = (m_height / m_row_height);

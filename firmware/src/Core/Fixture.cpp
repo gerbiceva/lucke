@@ -130,6 +130,7 @@ JsonDocument Fixture::toJsonDoc()
     doc["id"] = m_ID;
     doc["name"] = m_config.name;
     doc["type"] = m_config.type;
+    doc["footprint"] = m_lastOffset;
     doc["universe"] = m_config.universe;
     doc["address"] = m_config.address;
     doc["presetIndex"] = m_config.selectedPreset;
@@ -142,6 +143,7 @@ void Fixture::toJson(JsonObject& doc)
     doc["id"] = m_ID;
     doc["name"] = m_config.name;
     doc["type"] = m_config.type;
+    doc["footprint"] = m_lastOffset;
     doc["universe"] = m_config.universe;
     doc["address"] = m_config.address;
     doc["presetIndex"] = m_config.selectedPreset;
@@ -154,6 +156,7 @@ void Fixture::toJsonFull(JsonObject& doc)
     doc["id"] = m_ID;
     doc["name"] = m_config.name;
     doc["type"] = m_config.type;
+    doc["footprint"] = m_lastOffset;
     doc["universe"] = m_config.universe;
     doc["address"] = m_config.address;
     doc["presetIndex"] = m_config.selectedPreset;

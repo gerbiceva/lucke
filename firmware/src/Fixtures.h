@@ -145,7 +145,7 @@ struct SGMQ1 : public Fixture
     }
     )")
     {
-        addOutput<Output::HardwareLED2D<WS2812, 5, RGB>> (24U, 8U);
+        addOutput<Output::HardwareLED2D<WS2812, 5, GRB>> (8U, 24U);
     }
 
     ~SGMQ1() override = default;
@@ -217,4 +217,61 @@ struct Kitajci200 : public Fixture
         off = (off + 1) % (170*3);
         vTaskDelay(20);
     }
+};
+
+struct Strip : public Fixture
+{
+    Strip()
+		: Fixture("miza", "Strip",  R"(
+    {
+        "groups": [
+        {
+            "name": "group by 1",
+            "settings": [
+            
+                { "num_groups": 96 }
+            
+            ]
+        },
+        {
+            "name": "group by 2",
+            "settings": [
+            
+                { "num_groups": 48 }
+            
+            ]
+        },
+        {
+            "name": "group by 4",
+            "settings": [
+            
+                { "num_groups": 24 }
+            
+            ]
+        },
+        {
+            "name": "group by 8",
+            "settings": [
+            
+                { "num_groups": 12 }
+            
+            ]
+        }
+        ]
+    }
+    
+    )")
+    {
+        addOutput<Output::HardwareLED1D<WS2815, 5, RGB>> (96);
+    }
+
+    void wifiAnimation() override
+    {
+        static uint16_t off = 0;
+        getSrcBuffer()[off] = 255;
+        getSrcBuffer()[off == 0 ? (60*3 - 1) : off - 1] = 0;
+        off = (off + 1) % 180;
+        vTaskDelay(20);
+    }
+    // using Astera60 = Fixture;
 };

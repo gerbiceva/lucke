@@ -1,5 +1,7 @@
 #pragma once
 #include <WiFi.h>
+#include <queue>
+#include <vector>
 
 namespace Utils 
 {
@@ -12,6 +14,8 @@ class SacnParser
 
     uint8_t m_seq;
 	uint8_t m_seq_prev = 0U;
+	std::queue<uint8_t> m_sequenceDiff;
+
 	uint8_t m_buffer[512];
 
     bool m_inited = false;
@@ -27,6 +31,8 @@ public:
 	void dmx(uint8_t* copyBuffer);
     uint8_t getSeq();
 	uint8_t getSeqDiff() const;
+
+	std::vector<uint8_t> getSeqDiffs();
 };
 
 }

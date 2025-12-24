@@ -4,14 +4,7 @@
 #include "Output/HardwareLED.h"
 
 namespace Handler
-{
-    // std::vector<Fixture*> FixtureHandler::fixtures;
-    
-    // void FixtureHandler::addFixture(Fixture* fixture)
-    // {
-    //     fixtures.push_back(fixture);
-    // }
-    
+{   
     Fixture* FixtureHandler::get(uint8_t index)
     {
         if(index > fixtures.size())
@@ -22,6 +15,67 @@ namespace Handler
     
         return fixtures[index];
     }
+
+    Utils::Optional<JsonDocument> FixtureHandler::fixtureJson(uint8_t id)
+    {
+        Fixture* fix = get(id);
+        if(fix)
+        {
+            return fix->toJsonDoc();
+        }
+
+        return Utils::Optional<JsonDocument>();
+    }
+
+
+    bool FixtureHandler::setFixtureUniverse(uint8_t id, uint8_t universe) 
+    {
+        Fixture* fix = get(id);
+        if(fix)
+        {
+            fix->setUniverse(universe);
+            return true;
+        }
+        
+        return false;
+    }
+
+    bool FixtureHandler::setFixtureAddress(uint8_t id, uint16_t address) 
+    {
+        Fixture* fix = get(id);
+        if(fix)
+        {
+            fix->setAddress(address);
+            return true;
+        }
+        
+        return false;
+    }
+
+    bool FixtureHandler::setFixturePreset(uint8_t id, uint8_t preset) 
+    {
+        Fixture* fix = get(id);
+        if(fix)
+        {
+            fix->setPreset(preset);
+            return true;
+        }
+        
+        return false;
+    }
+
+    bool FixtureHandler::setFixtureName(uint8_t id, std::string name) 
+    {
+        Fixture* fix = get(id);
+        if(fix)
+        {
+            fix->setName(name);
+            return true;
+        }
+        
+        return false;
+    }
+
     
     std::vector<Fixture*>& FixtureHandler::allFixtures()
     {

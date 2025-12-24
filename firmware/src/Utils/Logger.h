@@ -17,14 +17,18 @@ namespace Utils
 
     public:
         
-        static void enable(Level level = INFO)
+        static void enable(uint32_t baudrate = 9600)
         {
-            m_level = level;
             if(!m_enabled)
             {
-                Serial.begin(9600);
+                Serial.begin(baudrate);
                 m_enabled = true;
             }
+        }
+
+        static void setLevel(Level level)
+        {
+            m_level = level;
         }
         
         static void print(const char* str)

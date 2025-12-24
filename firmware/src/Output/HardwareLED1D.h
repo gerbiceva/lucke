@@ -1,5 +1,6 @@
 #pragma once
 #include "HardwareLED.h"
+#include "Utils/JsonUtils.h"
 
 namespace Output 
 {
@@ -33,14 +34,15 @@ namespace Output
 
         void setPreset(const JsonDocument& doc) override
         {
-            if(doc["num_groups"].is<uint16_t>())
+            if(!Utils::Json::updateElement<uint16_t>(doc, "num_groups", m_numGroups))
+            // if(doc["num_groups"].is<uint16_t>())
             {
-                m_numGroups = doc["num_groups"];
-            }
-            else
-            {
+                // m_numGroups = doc["num_groups"];
                 Utils::Logger::println("[HLED_1D] json does not contain 'num_groups'");
             }
+            // else
+            // {
+            // }
         }
 
         uint16_t getSize() const override

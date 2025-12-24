@@ -23,7 +23,12 @@ namespace Input
     {
         doc["id"] = m_ID;
         doc["type"] = "SACN";
-        doc["seq_diff"] = m_sacn.getSeqDiff();
+        JsonArray arr = doc["seq_diffs"].to<JsonArray>();
+        
+        for(auto& el : m_sacn.getSeqDiffs())
+        {
+            arr.add(el);
+        }
     }
 
     // JsonDocument Sacn::toJsonFull()

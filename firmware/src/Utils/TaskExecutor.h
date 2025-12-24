@@ -10,10 +10,16 @@ namespace Utils
 {
 class TaskExecutor {
 public:
+    enum TaskStatus
+    {
+        RUNNING,
+        SUSPENDED
+    };
+
     TaskExecutor() = default;
 
     template <typename TInvocable>
-    TaskHandle_t& spawnTask(std::string taskName, TInvocable invocable, uint8_t priority = 1, uint32_t stackSize = 2000) 
+    uint32_t spawnTask(std::string taskName, TInvocable invocable, uint8_t priority = 1, uint32_t stackSize = 2000) 
     {
         uint32_t id = id_generator++;
         TaskRecord rec;
@@ -21,11 +27,10 @@ public:
         rec.fn = [this, id, invocable]() 
         { 
             invocable();
-            // m_tasks.erase(it);
-            // vTaskDelete(nullptr);
             this->stopTask(id);
         };
 
+        rec.status = RUNNING;
         m_tasks.push_back(rec);
 
         TaskRecord& stored = m_tasks.back();
@@ -38,20 +43,11 @@ public:
             &stored.handle
         );
 
-        // m_tasks.insert({id, {nullptr, [this, id, invocable]() 
-        // { 
-        //     Utils::Logger::printf("Created task: %d\n", id);
-        //     invocable();
-        //     //m_tasks.erase(it);
-        //     Utils::Logger::printf("Destroyed task: %d\n", id);
-        //     vTaskDelete(nullptr);
-        // }}});
-
-        // xTaskCreate(TaskExecutor::trampoline, std::to_string(id).c_str(), 2000, &m_tasks[id].second, 1 | portPRIVILEGE_BIT, &m_tasks[id].first);
-
-        return stored.handle;
+        return stored.id;
     }
 
+    void suspendTask(uint32_t id);
+    void resumeTask(uint32_t id);
     void stopTask(uint32_t id);
 
 private:
@@ -59,6 +55,7 @@ private:
         uint32_t id;
         TaskHandle_t handle;
         std::function<void()> fn;
+        TaskStatus status;
     };
 
     std::list<TaskRecord>::iterator find(uint32_t id);

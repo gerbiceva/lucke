@@ -50,6 +50,7 @@ namespace Utils
         if(update())
         {
             memcpy(copyBuffer, m_buffer, 512);
+			m_sequenceDiff.push(getSeqDiff());
         }
 	}
 
@@ -63,5 +64,19 @@ namespace Utils
 		return static_cast<uint8_t>(m_seq - m_seq_prev);
 	}
 
+	std::vector<uint8_t> SacnParser::getSeqDiffs()
+	{
+		std::vector<uint8_t> vec;
+		// vec.resize(m_sequenceDiff.size());
+
+		// int i = 0;
+		for(; !m_sequenceDiff.empty(); m_sequenceDiff.pop())
+		{
+			// vec[i++]
+			vec.push_back(m_sequenceDiff.front());
+		}
+
+		return vec;
+	}
 
 }

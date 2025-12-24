@@ -41,6 +41,8 @@ namespace Utils
         uint8_t getUChar(std::string name);
         uint16_t getUShort(std::string name);
         std::string getString(std::string name);
+
+        // JsonDocument getJson(std::string name);
         
     };
 }

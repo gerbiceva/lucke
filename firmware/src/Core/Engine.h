@@ -11,7 +11,9 @@
 #include "Utils/Storage.h"
 #include "Traits/Serializable.h"
 
-// #define ENGINE_VERSION "1.1"
+#define ENGINE_VERSION "0.8"
+#define DEFAULT_WIFI_SSID "Ledique"
+#define DEFAULT_WIFI_PASSWORD "dasenebipovezau"
 
 class Engine : public Traits::Deserializable
 // class Engine 
@@ -19,35 +21,11 @@ class Engine : public Traits::Deserializable
     Engine ();
     void readSettings();
     
-    void resumeInputTask();
-    void suspendInputTask();
-    
     void wifiStatus();
     void parseConfig(const std::string& data);
     
     void sendReport();
     void printReport();
-    
-
-    // template<typename T>
-    // T getElement(JsonDocument& doc, std::string name, T alternative)
-    // {
-    //     if(doc[name].is<T>())
-    //     {
-    //         return doc[name];
-    //     }
-
-    //     return alternative;
-    // }
-
-    // template<typename T>
-    // void updateElement(JsonDocument& doc, std::string name, T& element)
-    // {
-    //     if(doc[name].is<T>())
-    //     {
-    //         element = doc[name];
-    //     }
-    // }
     
     struct Settings : public Traits::Deserializable
     {
@@ -55,34 +33,16 @@ class Engine : public Traits::Deserializable
         bool print_task = true;
         bool report_task = true;
         bool wifi_animation = true;
-        std::string ssid = "Ledique";
-        std::string password = "dasenebipovezau";
+
+        std::string ssid = DEFAULT_WIFI_SSID;
+        std::string password = DEFAULT_WIFI_PASSWORD;
         
-        void toJson(JsonObject& obj) override
-        {
-            obj["print_task"] = print_task;
-            obj["auto_report_task"] = report_task;
-            obj["wifi_animation"] = wifi_animation;
-            obj["ssid"] = ssid.c_str();
-            obj["password"] = password.c_str();
-        }
-
-        std::string toString()
-        {
-            JsonDocument obj;
-            obj["print_task"] = print_task;
-            obj["auto_report_task"] = report_task;
-            obj["wifi_animation"] = wifi_animation;
-            obj["ssid"] = ssid.c_str();
-            obj["password"] = password.c_str();
-
-            std::string ret;
-            serializeJson(obj, ret);
-            return ret;
-        }
+        void toJson(JsonObject& obj);
+        std::string toString();
     } settings;
+
+    bool factoryReset = false;
     
-    const std::string version = "0.8";
 public:
     static Engine& instance();
     void init();
@@ -100,7 +60,7 @@ public:
         }
 
         std::string key = "fixture" + std::to_string(fix->id());
-        if(m_storage.isKey(key) && !factory)
+        if(m_storage.isKey(key) && !factoryReset)
         {
             fix->fromJson(m_storage.getString(key));
         }
@@ -109,18 +69,6 @@ public:
         std::string serialized;
         serializeJson(doc, serialized);
         m_storage.putString(key, serialized);
-
-
-
-        // else
-        // {
-        //     std::string temp;
-        //     JsonObject doc;
-        //     fix->toJson(doc);
-        //     serializeJson(doc, temp);
-        //     fix->fromJson(temp);
-        //     m_storage.putString(key, temp);
-        // }
 
         return fix;
     }
@@ -134,18 +82,16 @@ public:
     std::string toString();
 
 private:
+    Utils::Storage m_storage;
     Utils::TaskExecutor m_taskExecutor;
+
     Handler::FixtureHandler m_fixtureHandler;
     Handler::InputHandler m_inputHandler;
     Handler::ButtonManager m_buttonManager;
     Handler::PinHandler m_pinManager;
     
-    TaskHandle_t m_inputHandle;
+    uint32_t m_inputTaskID;
     std::function<void()> wifiAnimation;
     
-    Utils::Storage m_storage;
-
-    const bool shouldPlayWifiAnimation = true;
-    bool factory = false;
-
+    bool inited = false;
 };

@@ -2,6 +2,33 @@
 
 namespace Utils
 {
+
+    void TaskExecutor::suspendTask(uint32_t id)
+    {
+        auto it = find(id);
+
+        if (it == m_tasks.end()) 
+        {
+            return;
+        }
+
+        it->status = SUSPENDED;
+        vTaskSuspend(it->handle);
+    }
+
+    void TaskExecutor::resumeTask(uint32_t id)
+    {
+        auto it = find(id);
+
+        if (it == m_tasks.end()) 
+        {
+            return;
+        } 
+
+        it->status = RUNNING;
+        vTaskResume(it->handle);
+    }
+
     void TaskExecutor::stopTask(uint32_t id) {
         auto it = find(id);
 
