@@ -32,7 +32,7 @@ class Engine : public Traits::Deserializable
         bool to_factory_settings = false;
         bool print_task = true;
         bool report_task = true;
-        bool wifi_animation = true;
+        bool wifi_animation = false;
 
         std::string ssid = DEFAULT_WIFI_SSID;
         std::string password = DEFAULT_WIFI_PASSWORD;

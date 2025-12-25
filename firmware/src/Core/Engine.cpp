@@ -36,34 +36,25 @@ Engine::Engine ()
 
     Utils::Logger::enable();
     Utils::Logger::setLevel(Utils::Logger::DEBUG);
-    sleep(5);
+    // sleep(5);
     readSettings();
 
     Utils::Wifi::initialize(settings.ssid.c_str(), settings.password.c_str(), [this](bool is_connected) 
     {
-        if(inited)
-        {
-            this->m_taskExecutor.suspendTask(this->m_inputTaskID);
-        }
-        
-        this->wifiStatus();
-        
-        if(inited)
-        {
-            this->m_taskExecutor.resumeTask(this->m_inputTaskID);
-        }
+        this->m_taskExecutor.suspendTask(this->m_inputTaskID);        
+        this->wifiStatus();        
+        this->m_taskExecutor.resumeTask(this->m_inputTaskID);
         
         this->clearSrcBuffers();
     }, [this](std::string data)
     {
-        Utils::Logger::dprintln("[ENGINE] New data received");
         this->parseConfig(data);
     });
 }
 
 void Engine::readSettings()
 {
-    Utils::Logger::dprint("[ENGINE] Read settings: ");
+    Utils::Logger::dprintln("[ENGINE] Reading settings");
     if(m_storage.isKey("settings"))
     {
         std::string s = m_storage.getString("settings");
@@ -85,13 +76,10 @@ void Engine::readSettings()
         settings.ssid = ssid;
         const char* password = getElement<const char*>(doc, "password", settings.password.c_str());
         settings.password = password;
-        Utils::Logger::dprintln("existant");
-
     }
     else 
     {
         m_storage.putString("settings", settings.toString());
-        Utils::Logger::dprintln("nonexistant");
     }
 
 }
@@ -145,22 +133,25 @@ void Engine::init()
 
 void Engine::wifiStatus()
 {
+    static bool firstTime = true;
     Utils::Logger::println("[WIFI] Disconnected...");
 
     uint32_t animationHandle;
-    if(this->settings.wifi_animation)
+    if(this->settings.wifi_animation || firstTime)
     {
         animationHandle = this->m_taskExecutor.spawnTask("Wifi animation", [this]()
         {
+            this->clearSrcBuffers();
             while(true)
             {
                 if(this->wifiAnimation != nullptr)
                 {
                     this->wifiAnimation();
                 }
-                vTaskDelay(40);
+                vTaskDelay(20);
             }
         }, 1, 1000);
+
     }
 
     while(!Utils::Wifi::instance().isConnected())
@@ -169,10 +160,12 @@ void Engine::wifiStatus()
     }
     
     Utils::Logger::println("[WIFI] Connected...");
-    if(this->settings.wifi_animation)
+    if(this->settings.wifi_animation || firstTime)
     {
         this->m_taskExecutor.stopTask(animationHandle);
     }
+
+    firstTime = false;
 }
 
 
@@ -238,12 +231,12 @@ void Engine::parseConfig(const std::string& data)
     }
     else if(strcmp(req, "print_task") == 0)
     {
-        if(doc["value"].is<const char*>())
+        if(doc["value"].is<bool>())
         {
             bool value = doc["value"];
             settings.print_task = value;
             m_storage.putString("settings", settings.toString());
-            response = "Set print task value";
+            response = Utils::String::concat("Set print task enabled to ", value);
         }
         else 
         {
@@ -254,17 +247,33 @@ void Engine::parseConfig(const std::string& data)
     }
     else if(strcmp(req, "auto_report_task") == 0)
     {
-        if(doc["value"].is<const char*>())
+        if(doc["value"].is<bool>())
         {
             bool value = doc["value"];
             settings.report_task = value;
             m_storage.putString("settings", settings.toString());
-            response = "Set print task value";
+            response = Utils::String::concat("Set auto report task enabled to ", value);
         }
         else 
         {
             Utils::Logger::println("[REQUEST] Invalid json, missing field value");
             response = "Missing field value in auto_report_task";
+            status = "ERROR";
+        }
+    }
+    else if(strcmp(req, "wifi_animation") == 0)
+    {
+        if(doc["value"].is<bool>())
+        {
+            bool value = doc["value"];
+            settings.wifi_animation = value;
+            m_storage.putString("settings", settings.toString());
+            response = Utils::String::concat("Set wifi animation enabled to ", value);
+        }
+        else 
+        {
+            Utils::Logger::println("[REQUEST] Invalid json, missing field value");
+            response = "Missing field value in wifi animation";
             status = "ERROR";
         }
     }
@@ -276,7 +285,7 @@ void Engine::parseConfig(const std::string& data)
         {
             const char* ssid = doc["ssid"];
             settings.ssid = ssid;
-            response = "SSID set";
+            response = Utils::String::concat("Set ssid to '", ssid, "'");
             dirty = true;
             Utils::Logger::dprintln("Set ssid request");
         }
@@ -284,7 +293,16 @@ void Engine::parseConfig(const std::string& data)
         {
             const char* password = doc["password"];
             settings.password = password;
-            response = "Password set";
+
+            if(response.size() != 0)
+            {
+                response = Utils::String::concat(response, " and set password to '", password, "'");
+            }
+            else
+            {
+                response = Utils::String::concat("Set wifi password to '", password, "'");
+            }
+
             dirty = true;
             Utils::Logger::dprintln("Set password request");
         }
@@ -298,7 +316,7 @@ void Engine::parseConfig(const std::string& data)
             Utils::Wifi::instance().toJson(obj);
             serializeJson(jsonTemp, response);
         }
-    }
+    }    
     else if(strcmp(req, "getfixture") == 0)
     {
         if(doc["id"].is<uint8_t>())
@@ -307,10 +325,9 @@ void Engine::parseConfig(const std::string& data)
             Fixture* fix = m_fixtureHandler.get(id);
             if(fix)
             {
-                JsonObject o = jsonTemp["fixture"].as<JsonObject>();
+                JsonObject o = jsonTemp["fixture"].to<JsonObject>();
                 fix->toJsonFull(o);
-                // JsonObject obj = jsonTemp["wifi"].to<JsonObject>();
-                // Utils::Wifi::instance().toJson(obj);
+                Utils::Logger::dprintln("Get fixture");
                 serializeJson(jsonTemp, response);
             }
             else
@@ -341,29 +358,35 @@ void Engine::parseConfig(const std::string& data)
                 {
                     uint8_t universe = doc["universe"];
                     fix->setUniverse(universe);
-                    response = "Set universe";
+                    response = Utils::String::concat("Set universe of fixture '", fix->getName(), "'[", fix->id(), "] to ", universe);
                     set = true;
                 }
                 if (doc["address"].is<uint16_t>())
                 {
                     uint16_t address = doc["address"];
                     fix->setAddress(address);
-                    response = "Set address";
+                    response = Utils::String::concat("Set address of fixture '", fix->getName(), "'[", fix->id(), "] to ", address);
                     set = true;
                 }
                 if (doc["presetIndex"].is<uint8_t>())
                 {
                     uint8_t presetIndex = doc["presetIndex"];
                     fix->setPreset(presetIndex);
-                    response = "Set preset index";
+                    response = Utils::String::concat("Set preset of fixture '", fix->getName(), "'[", fix->id(), "] to ", presetIndex);
                     set = true;
                 }
                 if (doc["name"].is<const char*>())
                 {
                     const char* name = doc["name"];
                     fix->setName(name);
-                    response = "Set name";
+                    response = Utils::String::concat("Set name of fixture '", fix->getName(), "'[", fix->id(), "] to ", name);
                     set = true;
+                }
+                if (doc["highlight"].is<bool>())
+                {
+                    bool highlight = doc["highlight"];
+                    m_fixtureHandler.highlightFixture(id);
+                    response = Utils::String::concat("Toggled highlight for fixture '", fix->getName(), "'[", fix->id(), "] to ", highlight);
                 }
 
                 if(set)
@@ -379,7 +402,7 @@ void Engine::parseConfig(const std::string& data)
             else
             {
                 Utils::Logger::printf("[REQUEST] Could not find fixture with id %d\n", id);
-                response = "Could not find selected fixture";
+                response = Utils::String::concat("Fixture with id '", id, "' does not exist");
                 status = "ERROR";
             }
         }

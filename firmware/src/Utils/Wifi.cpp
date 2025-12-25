@@ -22,11 +22,11 @@ namespace Utils
 
         while (true) 
         {
-            // is_connected = instance.isConnected();
-            // if(!is_connected)
-            // {
-                // instance.m_connection_status_callback(is_connected);
-            // }
+            is_connected = instance.isConnected();
+            if(!is_connected)
+            {
+                instance.m_connection_status_callback(is_connected);
+            }
 
             vTaskDelay(50);
         }
@@ -114,7 +114,7 @@ namespace Utils
     void Wifi::startTasks()
     {
         xTaskCreate(Wifi::monitorConnection, "Check Wifi", 3000, NULL, 1 | portPRIVILEGE_BIT, NULL);
-            xTaskCreate(Wifi::receiveData, "Receive Data", 4000, NULL, 1 | portPRIVILEGE_BIT, NULL);
+        xTaskCreate(Wifi::receiveData, "Receive Data", 4000, NULL, 1 | portPRIVILEGE_BIT, NULL);
     }
 
     bool Wifi::isConnected()

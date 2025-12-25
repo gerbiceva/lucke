@@ -52,10 +52,16 @@ struct Astera60 : public Fixture
     void wifiAnimation() override
     {
         static uint16_t off = 0;
-        getSrcBuffer()[off] = 255;
-        getSrcBuffer()[off == 0 ? (60*3 - 1) : off - 1] = 0;
+        getOffsetSrcBuffer()[off] = 255;
+        getOffsetSrcBuffer()[off == 0 ? (60*3 - 1) : off - 1] = 0;
         off = (off + 1) % 180;
         vTaskDelay(20);
+    }
+
+    void highlight() override
+    {
+        memset(getOffsetSrcBuffer(), 255, 60*3);
+        this->update();
     }
     // using Astera60 = Fixture;
 };

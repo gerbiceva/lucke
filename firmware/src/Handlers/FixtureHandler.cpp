@@ -76,6 +76,29 @@ namespace Handler
         return false;
     }
 
+    bool FixtureHandler::highlightFixture(uint8_t id)
+    {
+        Fixture* fix = get(id);
+        if(fix)
+        {
+            if(!fix->m_isHighlighted)
+            {
+                Utils::Logger::dprintf("[FIX_HANDLER] Highlighting fixture: %d\n", id);
+                fix->m_isHighlighted = true;
+                fix->highlight();
+            }
+            else
+            {
+                Utils::Logger::dprintf("[FIX_HANDLER] Un-Highlighting fixture: %d\n", id);
+                fix->m_isHighlighted = false;
+            }
+            return true;
+        }
+
+        return false;
+    }
+
+
     
     std::vector<Fixture*>& FixtureHandler::allFixtures()
     {
@@ -88,7 +111,10 @@ namespace Handler
         {
             for(Fixture* fix : fixtures)
             {
-                fix->update();
+                if(!fix->m_isHighlighted)
+                {
+                    fix->update();
+                }
             }
             Output::updateFastLED();
             vTaskDelay(20);

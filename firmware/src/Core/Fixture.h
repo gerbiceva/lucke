@@ -48,6 +48,7 @@ public:
     }
 
     uint8_t* getSrcBuffer();
+    uint8_t* getOffsetSrcBuffer();
     uint8_t id() const;
     const std::string& getName() const;
 
@@ -59,6 +60,7 @@ public:
 
     virtual void update();
     virtual void wifiAnimation() = 0;
+    virtual void highlight() {};
 
     std::string getSelectedPresetName();
     void fromJson(std::string json) override;
@@ -66,4 +68,6 @@ public:
     JsonDocument toJsonDoc() override;
     void toJson(JsonObject& doc) override;
     void toJsonFull(JsonObject& doc) override;
+
+    bool m_isHighlighted = false;
 };

@@ -101,12 +101,14 @@ namespace Handler
     
     void InputHandler::toJson(JsonObject& doc)
     {
+        doc["num_inputs"] = m_inputs.size();
+        doc["inputs"] = JsonDocument();
         JsonArray arr = doc["inputs"].to<JsonArray>();
     
-        for(InputInterface* p : m_inputs)
+        for(Traits::InputInterface* i : m_inputs)
         {
             JsonObject entry = arr.add<JsonObject>();
-            p->toJson(entry);
+            i->toJson(entry);
         }
     }
 }

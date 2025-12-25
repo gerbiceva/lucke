@@ -26,6 +26,11 @@ uint8_t* Fixture::getSrcBuffer()
     return m_srcBuffer; 
 }
 
+uint8_t* Fixture::getOffsetSrcBuffer() 
+{ 
+    return m_srcBuffer + m_config.address; 
+}
+
 uint8_t Fixture::id() const 
 { 
     return m_ID; 

@@ -35,6 +35,7 @@ namespace Handler
         bool setFixtureAddress(uint8_t id, uint16_t address);
         bool setFixturePreset(uint8_t id, uint8_t preset);
         bool setFixtureName(uint8_t id, std::string name);
+        bool highlightFixture(uint8_t id);
 
         void update();
 
