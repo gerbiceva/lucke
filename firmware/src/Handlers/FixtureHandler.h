@@ -31,11 +31,11 @@ namespace Handler
         Utils::Optional<JsonDocument> fixtureJson(uint8_t id);
 
         bool fixtureExists(uint8_t id) const { return fixtures.size() > id; }
-        bool setFixtureUniverse(uint8_t id, uint8_t universe);
-        bool setFixtureAddress(uint8_t id, uint16_t address);
-        bool setFixturePreset(uint8_t id, uint8_t preset);
-        bool setFixtureName(uint8_t id, std::string name);
-        bool highlightFixture(uint8_t id);
+        Utils::Optional<std::string> setFixtureUniverse(uint8_t id, uint8_t universe);
+        Utils::Optional<std::string> setFixtureAddress(uint8_t id, uint16_t address);
+        Utils::Optional<std::string> setFixturePreset(uint8_t id, uint8_t preset);
+        Utils::Optional<std::string> setFixtureName(uint8_t id, std::string name);
+        Utils::Optional<std::string> highlightFixture(uint8_t id);
 
         void update();
 

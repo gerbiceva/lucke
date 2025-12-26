@@ -26,3 +26,40 @@ namespace Utils
         }
     };
 }
+
+// #pragma once
+// #include <cstdarg>
+// #include <cstdio>
+// #include <string>
+
+// namespace Utils
+// {
+//     class String
+//     {
+//     public:
+//         static std::string concat(const char* format, ...)
+//         {
+//             va_list args;
+//             va_start(args, format);
+
+//             // First pass: determine required size
+//             va_list args_copy;
+//             va_copy(args_copy, args);
+//             int size = std::vsnprintf(nullptr, 0, format, args_copy);
+//             va_end(args_copy);
+
+//             if (size < 0)
+//             {
+//                 va_end(args);
+//                 return {};
+//             }
+
+//             // Allocate buffer (+1 for null terminator)
+//             std::string result(size, '\0');
+//             std::vsnprintf(result.data(), size + 1, format, args);
+
+//             va_end(args);
+//             return result;
+//         }
+//     };
+// }

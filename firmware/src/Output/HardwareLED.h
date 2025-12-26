@@ -22,10 +22,6 @@ namespace Output {
         HardwareLED(uint16_t num_leds)
             : Traits::OutputInterface(num_leds * m_numPxls), m_numLeds(num_leds)
         {
-        }
-
-		void bind() override
-		{
             if(!Handler::PinHandler::available(TPin))
             {
                 Utils::Logger::printf("Error adding fastled: pin %d already used\n", TPin);
@@ -35,7 +31,15 @@ namespace Output {
             m_cled = &FastLED.addLeds<TLedType, TPin, TOrder>((CRGB*) m_dstBuffer, m_numLeds);
             m_cled->clearLeds();
             updateFastLED();
-		};
+        }
+
+		void bind() override
+		{
+		}
+
+        void setPreset(const JsonDocument& doc) override {
+
+        }
 
         void applyDimmer(float percentage) override
         {

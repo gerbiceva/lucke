@@ -28,74 +28,72 @@ namespace Handler
     }
 
 
-    bool FixtureHandler::setFixtureUniverse(uint8_t id, uint8_t universe) 
+    Utils::Optional<std::string> FixtureHandler::setFixtureUniverse(uint8_t id, uint8_t universe) 
     {
         Fixture* fix = get(id);
         if(fix)
         {
             fix->setUniverse(universe);
-            return true;
+            return fix->getName();
         }
         
-        return false;
+        return Utils::Optional<std::string>();
     }
 
-    bool FixtureHandler::setFixtureAddress(uint8_t id, uint16_t address) 
+    Utils::Optional<std::string> FixtureHandler::setFixtureAddress(uint8_t id, uint16_t address) 
     {
         Fixture* fix = get(id);
         if(fix)
         {
             fix->setAddress(address);
-            return true;
+            return fix->getName();
         }
         
-        return false;
+        return Utils::Optional<std::string>();
     }
 
-    bool FixtureHandler::setFixturePreset(uint8_t id, uint8_t preset) 
+    Utils::Optional<std::string> FixtureHandler::setFixturePreset(uint8_t id, uint8_t preset) 
     {
         Fixture* fix = get(id);
         if(fix)
         {
             fix->setPreset(preset);
-            return true;
+            return fix->getName();
         }
-        
-        return false;
+        return Utils::Optional<std::string>();
     }
 
-    bool FixtureHandler::setFixtureName(uint8_t id, std::string name) 
+    Utils::Optional<std::string> FixtureHandler::setFixtureName(uint8_t id, std::string name) 
     {
         Fixture* fix = get(id);
         if(fix)
         {
             fix->setName(name);
-            return true;
+            return fix->getName();
         }
-        
-        return false;
+        return Utils::Optional<std::string>();        
     }
 
-    bool FixtureHandler::highlightFixture(uint8_t id)
+    Utils::Optional<std::string> FixtureHandler::highlightFixture(uint8_t id)
     {
         Fixture* fix = get(id);
         if(fix)
         {
             if(!fix->m_isHighlighted)
             {
-                Utils::Logger::dprintf("[FIX_HANDLER] Highlighting fixture: %d\n", id);
+                // Utils::Logger::dprintf("[FIX_HANDLER] Highlighting fixture: %d\n", id);
                 fix->m_isHighlighted = true;
                 fix->highlight();
+                fix->update();
             }
             else
             {
-                Utils::Logger::dprintf("[FIX_HANDLER] Un-Highlighting fixture: %d\n", id);
+                // Utils::Logger::dprintf("[FIX_HANDLER] Un-Highlighting fixture: %d\n", id);
                 fix->m_isHighlighted = false;
             }
-            return true;
+            return fix->getName();
         }
-
-        return false;
+        return Utils::Optional<std::string>();
     }
 
 

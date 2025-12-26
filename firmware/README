@@ -9,3 +9,29 @@ in the development cycle.
 
 More information about PlatformIO Unit Testing:
 - https://docs.platformio.org/en/latest/advanced/unit-testing/index.html
+
+
+request:
+ - describe
+ - fixtures
+ - inputs
+ - reboot
+ - factory_reset
+ - print_task
+   - value[bool]
+ - auto_report_task
+   - value[bool]
+ - wifi_animation
+   - value[bool]
+ - wifi
+   - ssid[string]
+   - password[string]
+ - getfixture
+   - id[number]
+ - setfixture
+   - id[number],
+     - universe[number]
+     - address[number]
+     - presetIndex[number]
+     - name[string]
+     - highlight, value[bool]

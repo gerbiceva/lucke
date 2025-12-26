@@ -46,6 +46,7 @@ struct Astera60 : public Fixture
     
     )")
     {
+	    // OutputV2::HardwareStrip(OutputV2::LEDManifest<WS2815, 5, RGB>{}, 60);
         addOutput<Output::HardwareLED1D<WS2815, 5, RGB>> (60);
     }
 
@@ -60,10 +61,21 @@ struct Astera60 : public Fixture
 
     void highlight() override
     {
+        // uint8_t* buff = getOffsetSrcBuffer();
         memset(getOffsetSrcBuffer(), 255, 60*3);
-        this->update();
+        
+        // constexpr uint8_t ledCount = 60;
+
+        // for(uint8_t i = 0; i < ledCount; i++)
+        // {
+        //     float t = (float)i / (ledCount - 1);
+        //     uint8_t value = (uint8_t)(255.0f * (1.0f - t));
+        //     uint16_t index = i * 3;
+        //     buff[index + 0] = value;
+        //     buff[index + 1] = value;
+        //     buff[index + 2] = value;
+        // }
     }
-    // using Astera60 = Fixture;
 };
 
 
@@ -152,6 +164,8 @@ struct SGMQ1 : public Fixture
     )")
     {
         addOutput<Output::HardwareLED2D<WS2812, 5, GRB>> (8U, 24U);
+        // addOutput<Output::HardwareLED2D<WS2812, 6, GRB>> (8U, 24U);
+        // addOutput<Output::HardwareLED1D<WS2812, 6, GRB>> (8U, 24U);
         // addOutput<Output::VirtualGrid<WS2812, 5, GRB>> (8U, 24U);
     }
 
@@ -168,119 +182,3 @@ struct SGMQ1 : public Fixture
     }
 };
 
-
-
-struct Kitajci200 : public Fixture
-{
-    Kitajci200()
-		: Fixture("neki", "Kitajci200",  R"(
-    {
-        "groups": [
-        {
-            "name": "group by 1",
-            "settings": [
-            [
-                { "num_groups": 60 }
-            ]
-            ]
-        },
-        {
-            "name": "group by 2",
-            "settings": [
-            [
-                { "num_groups": 30 }
-            ]
-            ]
-        },
-        {
-            "name": "group by 4",
-            "settings": [
-            [
-                { "num_groups": 15 }
-            ]
-            ]
-        },
-        {
-            "name": "group by 10",
-            "settings": [
-            [
-                { "num_groups": 6 }
-            ]
-            ]
-        }
-        ]
-    }
-    
-    )")
-    {
-        addOutput<Output::HardwareLED1D<WS2812, 5, RGB>> (170);
-    }
-
-    void wifiAnimation() override
-    {
-        static uint16_t off = 0;
-        getSrcBuffer()[off] = 255;
-        getSrcBuffer()[off == 0 ? (170*3 - 1) : off - 1] = 0;
-        off = (off + 1) % (170*3);
-        vTaskDelay(20);
-    }
-};
-/*
-template<uint8_t TPin
-struct Strip : public Fixture
-{
-    Strip()
-		: Fixture("miza", "Strip",  R"(
-    {
-        "groups": [
-        {
-            "name": "group by 1",
-            "settings": [
-            
-                { "num_groups": 96 }
-            
-            ]
-        },
-        {
-            "name": "group by 2",
-            "settings": [
-            
-                { "num_groups": 48 }
-            
-            ]
-        },
-        {
-            "name": "group by 4",
-            "settings": [
-            
-                { "num_groups": 24 }
-            
-            ]
-        },
-        {
-            "name": "group by 8",
-            "settings": [
-            
-                { "num_groups": 12 }
-            
-            ]
-        }
-        ]
-    }
-    
-    )")
-    {
-        addOutput<Output::HardwareLED1D<WS2815, 5, RGB>> (96);
-    }
-
-    void wifiAnimation() override
-    {
-        static uint16_t off = 0;
-        getSrcBuffer()[off] = 255;
-        getSrcBuffer()[off == 0 ? (60*3 - 1) : off - 1] = 0;
-        off = (off + 1) % 180;
-        vTaskDelay(20);
-    }
-    // using Astera60 = Fixture;
-};
-*/
