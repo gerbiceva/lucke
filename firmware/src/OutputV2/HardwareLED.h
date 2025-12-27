@@ -4,25 +4,12 @@
 #include "Traits/Outputs.h"
 #include "Handlers/PinHandler.h"
 #include "Utils/Logger.h"
+#include "OutputV2/LEDStrip.h"
 
 namespace OutputV2 {
 
 
-    template<template<uint8_t, EOrder> typename TLedType, uint8_t TPin, EOrder TOrder>
-    struct LEDManifest {
-        static constexpr uint8_t Pin = TPin;
-        static constexpr EOrder Order = TOrder;
 
-        static CLEDController& create(uint8_t *data, int nLedsOrOffset, int nLedsIfOffset) {
-            if(!Handler::PinHandler::available(TPin))
-            {
-                Utils::Logger::printf("Error adding fastled: pin %d already used\n", TPin);
-                assert(false);
-            }
-
-            return FastLED.addLeds<TLedType, TPin, TOrder>((CRGB*) data, nLedsOrOffset, nLedsIfOffset);
-        }
-    };
 
     void updateFastLED();
 
