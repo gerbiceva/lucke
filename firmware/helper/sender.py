@@ -2,6 +2,7 @@ import socket
 import json
 import sys
 import threading
+import argparse
 from contextlib import closing
 from queue import Queue, Empty
 
@@ -69,7 +70,7 @@ class ESPClient:
                         except json.JSONDecodeError:
                             return response["status"], response["response"]
                     else:
-                        return "ERROR", response
+                        return "OK", response
                 except Empty:
                     print(f"No response received within {timeout} seconds")
                     return None
@@ -109,32 +110,148 @@ class ESPClient:
         return self.send_request({"request": "wifi", "ssid": ssid, "password": password})
     
     
-    def get_fixture(self) -> None:
-        return self.send_request({"request": "getfixture", "id": 0})
+    def get_fixture(self, id:int = 0) -> None:
+        return self.send_request({"request": "getfixture", "id": id})
 
-    def set_universe(self, universe: int) -> None:
-        return self.send_request({"request": "setfixture", "id": 0, "universe": universe})
+    def set_universe(self, universe: int, id:int = 0) -> None:
+        return self.send_request({"request": "setfixture", "id": id, "universe": universe})
 
-    def set_address(self, address: int) -> None:
-        return self.send_request({"request": "setfixture", "id": 0, "address": address})
+    def set_address(self, address: int, id:int = 0) -> None:
+        return self.send_request({"request": "setfixture", "id": id, "address": address})
 
-    def set_preset(self, preset: int) -> None:
-        return self.send_request({"request": "setfixture", "id": 0, "presetIndex": preset})
+    def set_preset(self, preset: int, id:int = 0) -> None:
+        return self.send_request({"request": "setfixture", "id": id, "presetIndex": preset})
 
-    def set_name(self, name: str) -> None:
-        return self.send_request({"request": "setfixture", "id": 0, "name": name})
+    def set_name(self, name: str, id:int = 0) -> None:
+        return self.send_request({"request": "setfixture", "id": id, "name": name})
 
-    def highlight(self) -> None:
-        return self.send_request({"request": "setfixture", "id": 0, "highlight": True})
+    def highlight(self, id:int = 0) -> None:
+        return self.send_request({"request": "setfixture", "id": id, "highlight": True})
+
+def initArguments():
+    parser = argparse.ArgumentParser(description="ESPClient command-line tool")
+
+    parser.add_argument("--ip", type=str, default="192.168.0.55", help="IP address of the ESP device")
+
+    # Boolean flags
+    parser.add_argument("--describe", action="store_true", help="Request engine description")
+    parser.add_argument("--fixtures", "--fixs", action="store_true", help="Request all fixtures")
+    parser.add_argument("--inputs", action="store_true", help="Request all inputs")
+    parser.add_argument("--reboot", action="store_true", help="Reboot system")
+    parser.add_argument("--factory-reset", action="store_true", help="Do a factory reset")
+
+    parser.add_argument("--wifi-animation", action="store_true", help="Enable WiFi animation task")
+    parser.add_argument("--serial-print", action="store_true", help="Enable serial log task")
+    parser.add_argument("--wireless-print", action="store_true", help="Enable wireless log task")
+
+    # WiFi credentials
+    parser.add_argument("--wifi-conf", nargs=2, metavar=("SSID", "PASSWORD"), help="Set WiFi credentials (SSID and PASSWORD)")
+
+    # Fixture commands
+    parser.add_argument("--get-fixture", type=int, metavar="ID", help="Get fixture by ID")
+    parser.add_argument("--highlight", type=int, metavar="ID", help="Highlight fixture by ID")
+
+    parser.add_argument(
+        "--set-universe", nargs="*", metavar=("ID", "UNIVERSE"),
+        help="Set fixture universe. If ID is omitted, defaults to 0"
+    )
+    parser.add_argument(
+        "--set-address", nargs="*", metavar=("ID", "ADDRESS"),
+        help="Set fixture address. If ID is omitted, defaults to 0"
+    )
+    parser.add_argument(
+        "--set-preset", nargs="*", metavar=("ID", "PRESET"),
+        help="Set fixture preset. If ID is omitted, defaults to 0"
+    )
+    parser.add_argument(
+        "--set-name", nargs="*", metavar=("ID", "NAME"),
+        help="Set fixture name. If ID is omitted, defaults to 0"
+    )
+
+    return parser.parse_args()
 
 
 # ---------------- Example Usage ----------------
 if __name__ == "__main__":
-    ip = "192.168.0.8"
-    if len(sys.argv) > 1:
-        ip = sys.argv[1]
+    
+    args = initArguments()
+    client = ESPClient(args.ip)
 
-    client = ESPClient(ip)
-    status, response = client.fixtures()
+    # ---------------- Execute commands ----------------
+    def run_command(func, *fargs):
+        result = func(*fargs)
+        if result is not None:
+            if isinstance(result, tuple):
+                status, response = result
+                print("Status:", status)
+                print("Response:", response)
+            else:
+                print("Result:", result)
 
-    print("Status:", status, response)
+    if args.describe:
+        run_command(client.describe)
+
+    if args.fixtures:
+        run_command(client.fixtures)
+
+    if args.inputs:
+        run_command(client.inputs)
+
+    if args.reboot:
+        run_command(client.reboot)
+
+    if args.factory_reset:
+        run_command(client.factory_reset)
+
+    if args.wifi_animation:
+        run_command(client.enable_wifi_animation, True)
+
+    if args.serial_print:
+        run_command(client.enable_serial_print, True)
+
+    if args.wireless_print:
+        run_command(client.enable_wireless_logging, True)
+
+    if args.wifi_conf:
+        ssid, password = args.wifi_conf
+        run_command(client.set_wifi, ssid, password)
+
+    if args.get_fixture is not None:
+        run_command(client.get_fixture, args.get_fixture)
+
+    if args.highlight is not None:
+        run_command(client.highlight, args.highlight)
+
+    if args.set_universe:
+        if len(args.set_universe) == 1:
+            fid = 0
+            universe = int(args.set_universe[0])
+        else:
+            fid, universe = map(int, args.set_universe)
+        run_command(client.set_universe, universe, fid)
+
+    if args.set_address:
+        if len(args.set_address) == 1:
+            fid = 0
+            address = int(args.set_address[0])
+        else:
+            fid, address = map(int, args.set_address)
+        run_command(client.set_address, address, fid)
+
+    if args.set_preset:
+        if len(args.set_preset) == 1:
+            fid = 0
+            preset = int(args.set_preset[0])
+        else:
+            fid, preset = map(int, args.set_preset)
+        run_command(client.set_preset, preset, fid)
+
+    if args.set_name:
+        if len(args.set_name) == 1:
+            fid = 0
+            name = args.set_name[0]
+        else:
+            fid, name = args.set_name
+            fid = int(fid)
+        run_command(client.set_name, name, fid)
+        
