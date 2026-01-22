@@ -56,9 +56,8 @@ def packet_ingest(simple: bool = True):
 
 
 if __name__ == "__main__":
-    simple = True
+    parser = argparse.ArgumentParser(description="ESPClient command-line tool")
+    parser.add_argument("--verbose", action="store_false", help="Verbose")
+    args = parser.parse_args()
 
-    if len(sys.argv) > 1:
-        simple = sys.argv[1].lower() not in ["false", "0", "no", "f"]
-
-    packet_ingest(simple)
+    packet_ingest(args.verbose)

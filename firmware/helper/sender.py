@@ -148,8 +148,8 @@ def initArguments():
     parser.add_argument("--wifi-conf", nargs=2, metavar=("SSID", "PASSWORD"), help="Set WiFi credentials (SSID and PASSWORD)")
 
     # Fixture commands
-    parser.add_argument("--get-fixture", type=int, metavar="ID", help="Get fixture by ID")
-    parser.add_argument("--highlight", type=int, metavar="ID", help="Highlight fixture by ID")
+    parser.add_argument("--get-fixture", nargs="*", metavar="ID", help="Get fixture by ID")
+    parser.add_argument("--highlight", nargs="*", metavar="ID", help="Highlight fixture by ID")
 
     parser.add_argument(
         "--set-universe", nargs="*", metavar=("ID", "UNIVERSE"),
@@ -216,8 +216,22 @@ if __name__ == "__main__":
         ssid, password = args.wifi_conf
         run_command(client.set_wifi, ssid, password)
 
-    if args.get_fixture is not None:
-        run_command(client.get_fixture, args.get_fixture)
+    # if args.get_fixture is not None:
+        # run_command(client.get_fixture, args.get_fixture)
+
+    if args.get_fixture:
+        if len(args.get_fixture) == 0:
+            fid = 0
+        else:
+            fid = int(args.get_fixture[0])
+        run_command(client.get_fixture, fid)
+
+    # if args.highlight:
+    #     if len(args.highlight) == 0:
+    #         fid = 0
+    #     else:
+    #         fid = int(args.highlight[0])
+    #     run_command(client.highlight, fid)
 
     if args.highlight is not None:
         run_command(client.highlight, args.highlight)
