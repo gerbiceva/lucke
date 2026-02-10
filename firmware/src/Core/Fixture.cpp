@@ -44,7 +44,7 @@ const std::string& Fixture::getName() const
 void Fixture::setUniverse(uint8_t new_universe)
 {
     m_config.universe = new_universe;
-    m_dmxIn = Engine::instance().getDMXInput(m_config.universe);
+    m_dmxIn = Engine::instance().getDMXInput(new_universe);
     m_srcBuffer = m_dmxIn->getBuffer();
     updatePresets();
 }

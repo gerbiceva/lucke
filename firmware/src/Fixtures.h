@@ -6,7 +6,7 @@
 struct Astera60 : public Fixture
 {
     Astera60()
-		: Fixture("neki", "Astera60",  R"(
+		: Fixture("neki", "Strip",  R"(
     {
         "groups": [
         {
@@ -122,6 +122,56 @@ struct Astera144 : public Fixture
         // Traits::OutputInterface* o = m_outputs[0];
         static uint16_t off = 0;
         constexpr uint16_t N = (144U * 3U);
+        getSrcBuffer()[off] = 255;
+        getSrcBuffer()[off == 0 ? (N - 1) : off - 1] = 0;
+        off = (off + 1) % N;
+        vTaskDelay(20);
+    }
+};
+
+struct Polica : public Fixture
+{
+    Polica()
+		: Fixture("kasper-polica2", "Strip",  R"(
+    {
+        "groups": [
+        {
+            "name": "group by 1",
+            "settings": [
+                { "num_groups": 70 }
+            ]
+        },
+        {
+            "name": "group by 2",
+            "settings": [
+                { "num_groups": 35 }
+            ]
+        },
+        {
+            "name": "group by 5",
+            "settings": [
+                { "num_groups": 14 }
+            ]
+        },
+        {
+            "name": "group by 10",
+            "settings": [
+                { "num_groups": 7 }            
+            ]
+        }
+        ]
+    }
+    
+    )")
+    {
+        addOutput<Output::HardwareLED1D<WS2815, 5, RGB>> (70);
+    }
+
+    void wifiAnimation() override
+    {
+        // Traits::OutputInterface* o = m_outputs[0];
+        static uint16_t off = 0;
+        constexpr uint16_t N = (70U * 3U);
         getSrcBuffer()[off] = 255;
         getSrcBuffer()[off == 0 ? (N - 1) : off - 1] = 0;
         off = (off + 1) % N;

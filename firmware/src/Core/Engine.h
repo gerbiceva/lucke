@@ -14,6 +14,8 @@
 #define ENGINE_VERSION "0.8"
 #define DEFAULT_WIFI_SSID "Ledique"
 #define DEFAULT_WIFI_PASSWORD "dasenebipovezau"
+// #define DEFAULT_WIFI_SSID "lasportiva5"
+// #define DEFAULT_WIFI_PASSWORD "GregorJeCar!56"
 
 class Engine : public Traits::Deserializable
 // class Engine 

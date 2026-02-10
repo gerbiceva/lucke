@@ -51,6 +51,10 @@ namespace Utils
         {
             memcpy(copyBuffer, m_buffer, 512);
 			m_sequenceDiff.push(getSeqDiff());
+			if(m_sequenceDiff.size() > 500)
+			{
+				m_sequenceDiff.pop();
+			}
         }
 	}
 
