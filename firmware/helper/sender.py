@@ -131,7 +131,7 @@ class ESPClient:
 def initArguments():
     parser = argparse.ArgumentParser(description="ESPClient command-line tool")
 
-    parser.add_argument("--ip", type=str, default="192.168.0.55", help="IP address of the ESP device")
+    parser.add_argument("--ip", type=str, default="192.168.1.75", help="IP address of the ESP device")
 
     # Boolean flags
     parser.add_argument("--describe", action="store_true", help="Request engine description")

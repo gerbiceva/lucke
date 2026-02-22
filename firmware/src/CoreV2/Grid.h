@@ -24,6 +24,10 @@ struct LEDStripMapping {
   uint16_t stride_x = 1;
   Range range_y;
   uint16_t stride_y = 1;
+
+  LEDStripMapping(OutputV2::HardwareLEDStrip* stripPtr, const Range& xRange, uint16_t xStride, const Range& yRange, uint16_t yStride)
+    : strip(stripPtr), range_x(xRange), stride_x(xStride), range_y(yRange), stride_y(yStride)
+  {};
 };
 
 struct UniverseUpdate {
@@ -40,7 +44,7 @@ class Grid {
     uint16_t y;
   };
 
-  Grid(Config config);
+  // Grid(Config config);
   void addMapping(const LEDStripMapping& mapping) {
     // Calculate the total number of physical LEDs per grid cell
     uint16_t leds_per_cell_x = mapping.stride_x;

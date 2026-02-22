@@ -30,6 +30,13 @@ namespace Input
         {
             arr.add(el);
         }
+
+        JsonArray arr1 = doc["9_bytes"].to<JsonArray>();
+        for(uint8_t i = 0; i < 9; i++)
+        {
+            arr1.add(m_dmxBuffer[i]);
+        }
+
     }
 
     // JsonDocument Sacn::toJsonFull()

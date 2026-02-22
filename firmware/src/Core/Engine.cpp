@@ -461,8 +461,8 @@ void Engine::toJson(JsonObject& doc)
     JsonObject fixtureDoc = doc["fixture_handler"].to<JsonObject>();
     m_fixtureHandler.toJson(fixtureDoc);
 
-    // JsonObject inputDoc = doc["input_handler"].to<JsonObject>();
-    // m_inputHandler.toJson(inputDoc);
+    JsonObject inputDoc = doc["input_handler"].to<JsonObject>();
+    m_inputHandler.toJson(inputDoc);
 }
 
 std::string Engine::toString()
