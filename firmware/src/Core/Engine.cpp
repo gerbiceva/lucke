@@ -100,13 +100,13 @@ void Engine::init()
         {
             this->m_inputHandler.update();
         },
-        3, 4000);
+        3, 20000);
 
         m_taskExecutor.spawnTask("Output", [this]()
         {
             this->m_fixtureHandler.update();
         }, 
-        3, 5000);
+        3, 20000);
 
         if(settings.print_task)
         {
@@ -114,7 +114,7 @@ void Engine::init()
             {
                 this->printReport();
             }, 
-            1, 3000);
+            1, 10000);
         }
 
         // choose different port for this
@@ -124,7 +124,7 @@ void Engine::init()
             {
                 this->sendReport();
             }, 
-            1, 4000);
+            1, 10000);
         }
 
         inited = true;
@@ -461,8 +461,8 @@ void Engine::toJson(JsonObject& doc)
     JsonObject fixtureDoc = doc["fixture_handler"].to<JsonObject>();
     m_fixtureHandler.toJson(fixtureDoc);
 
-    // JsonObject inputDoc = doc["input_handler"].to<JsonObject>();
-    // m_inputHandler.toJson(inputDoc);
+    JsonObject inputDoc = doc["input_handler"].to<JsonObject>();
+    m_inputHandler.toJson(inputDoc);
 }
 
 std::string Engine::toString()

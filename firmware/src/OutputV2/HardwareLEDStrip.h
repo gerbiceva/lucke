@@ -32,6 +32,13 @@ namespace OutputV2
                 }
             }
         }
+   
+        void setColor(uint16_t idx, uint8_t r, uint8_t g, uint8_t b) {
+            uint16_t offset = idx * 3;
+            this->m_dstBuffer[offset] = r;
+            this->m_dstBuffer[offset + 1] = g;
+            this->m_dstBuffer[offset + 2] = b;
+        }
 
         void setPreset(const JsonDocument& doc) override
         {
