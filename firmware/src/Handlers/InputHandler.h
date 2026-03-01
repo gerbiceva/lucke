@@ -3,30 +3,45 @@
 #include "Traits/Serializable.h"
 #include "Traits/Deserializable.h"
 #include <unordered_map>
+#include <memory>
+#include <functional>
 #include <vector>
 #include <mutex>
+
+#include "Utils/Optional.h"
 
 
 namespace Handler
 {
     class InputHandler : public Traits::Serializable, public Traits::Deserializable
     {
-        std::vector<Traits::InputInterface*> m_inputs;
-        TaskHandle_t m_handle;
-        // std::unordered_map<uint8_t, Traits::InputInterface*> m_inputs;
-        // std::vector<std::pair<uint8_t, Traits::InputInterface*>> m_vecInputs;
+        struct Counter {
+            uint8_t count = 0;
+            std::shared_ptr<Traits::InputInterface> interface;
+        };
 
-        Traits::InputInterface* find(uint8_t universe);
+        Utils::Optional<Counter*> find(uint8_t universe);
+        void iterateInputs(std::function<void(std::shared_ptr<Traits::InputInterface>)> callback);
+
+        void unsubscribe(uint8_t universe);
+        std::shared_ptr<Traits::InputInterface> subscribe(uint8_t universe);
     public:
-    
-        Traits::InputInterface* interface(uint8_t universe, Traits::InputInterface::InputType type = Traits::InputInterface::InputType::SACN);
+
+        std::shared_ptr<Traits::InputInterface> interface(
+            uint8_t universe,
+            uint8_t old_universe,
+            Traits::InputInterface::InputType type= Traits::InputInterface::InputType::SACN);
+
         void update();
-        void updateTask(void*);
         void canUpdate(bool b);
         // void initInputs();
         void clearSrcBuffers();
         
         void fromJson(std::string json) override;
         void toJson(JsonObject& doc) override;
+
+    private:
+        std::unordered_map<uint8_t, Counter> m_inputs;
+        TaskHandle_t m_handle;
     };
 }

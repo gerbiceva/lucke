@@ -78,7 +78,7 @@ public:
 
     void addButton(Input::Button&& button);
 
-    Traits::InputInterface* getDMXInput(uint8_t universe);
+    std::shared_ptr<Traits::InputInterface> getDMXInput(uint8_t universe, uint8_t old_universe);
     void clearSrcBuffers();
     
     void toJson(JsonObject& doc) override;

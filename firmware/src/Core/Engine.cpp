@@ -435,10 +435,15 @@ void Engine::addButton(Input::Button&& button)
     m_buttonManager.add(std::move(button));
 }
 
-Traits::InputInterface* Engine::getDMXInput(uint8_t universe)
+std::shared_ptr<Traits::InputInterface> Engine::getDMXInput(uint8_t universe, uint8_t old_universe)
 {
-    return m_inputHandler.interface(universe);
+    return m_inputHandler.interface(universe, old_universe);
 }
+
+// Traits::InputInterface* Engine::getDMXInput(uint8_t universe)
+// {
+//     return m_inputHandler.interface(universe);
+// }
 
 
 void Engine::clearSrcBuffers()

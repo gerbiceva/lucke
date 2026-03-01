@@ -4,6 +4,7 @@
 #include "Traits/Inputs.h"
 #include "Traits/Serializable.h"
 #include "Traits/Deserializable.h"
+#include <memory>
 
 class Fixture : public Traits::Serializable, public Traits::Deserializable
 {
@@ -21,7 +22,7 @@ class Fixture : public Traits::Serializable, public Traits::Deserializable
     uint8_t m_ID;
 
     Config m_config;
-    Traits::InputInterface* m_dmxIn;
+    std::shared_ptr<Traits::InputInterface> m_dmxIn;
     std::vector<Traits::OutputInterface*> m_outputs;
     
     uint8_t* m_srcBuffer;
