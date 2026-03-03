@@ -45,7 +45,7 @@ namespace Utils
 		return false;
 	}
 
-	void SacnParser::dmx(uint8_t* copyBuffer)
+	bool SacnParser::dmx(uint8_t* copyBuffer)
 	{
         if(update())
         {
@@ -55,7 +55,11 @@ namespace Utils
 			{
 				m_sequenceDiff.pop();
 			}
+
+        	return true;
         }
+
+    	return false;
 	}
 
     uint8_t SacnParser::getSeq()

@@ -38,6 +38,7 @@ public:
     WS2815() = default;
     WS2815(uint16_t num_of_leds, int pin);
     void init(uint16_t num_of_leds, int pin);
+    void init(uint16_t num_of_leds, int pin, uint8_t* pixels);
 
     CRGB* getPixels();
     CRGB& operator[](int index);

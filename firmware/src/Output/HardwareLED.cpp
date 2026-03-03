@@ -2,10 +2,10 @@
 
 namespace Output
 {
-    void updateFastLED()
-    {
-        FastLED.show();
-    }
+    // void updateFastLED()
+    // {
+    //     FastLED.show();
+    // }
 
     // template<template<uint8_t, EOrder> typename TLedType, uint8_t TPin, EOrder TOrder>
     // void HardwareLED<TLedType, TPin, TOrder>::bind()

@@ -92,8 +92,9 @@ void setup()
 	// grid.update(update_1);
 	// grid.update(update_2);
 
-	Engine::instance().addFixture<Christmas<6>>(true);
-	Engine::instance().addFixture<Christmas<9>>(true);
+	// Engine::instance().addFixture<Christmas<6>>(true);
+	// Engine::instance().addFixture<Christmas<9>>(true);
+	Engine::instance().addFixture<Strip<60>>(true);
 	Engine::instance().init();
 }
 

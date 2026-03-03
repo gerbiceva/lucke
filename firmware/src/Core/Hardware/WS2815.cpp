@@ -30,6 +30,13 @@ void WS2815::init(uint16_t num_of_leds, int pin)
     ESP_ERROR_CHECK_WITHOUT_ABORT(initSPI(pin));
 }
 
+void WS2815::init(uint16_t num_of_leds, int pin, uint8_t* buffer)
+{
+    n_leds = num_of_leds;
+    pixels = reinterpret_cast<CRGB*>(buffer);
+    ESP_ERROR_CHECK_WITHOUT_ABORT(initSPI(pin));
+}
+
 esp_err_t WS2815::initSPI(int pin)
 {
     spi_settings = spi_settings_t{

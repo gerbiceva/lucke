@@ -106,6 +106,7 @@ void Fixture::update()
     for(Traits::OutputInterface* o : m_outputs)
     {
         o->update();
+        o->postupdate();
     }
 }
 

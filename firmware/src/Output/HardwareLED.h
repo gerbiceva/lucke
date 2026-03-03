@@ -4,10 +4,50 @@
 #include "Traits/Outputs.h"
 #include "Handlers/PinHandler.h"
 #include "Utils/Logger.h"
+#include "Core/Hardware/WS2815.h"
 
 namespace Output {
 
-    void updateFastLED();
+    // namespace Hardware {
+    //     struct Iface
+    //     {
+    //         virtual void init(uint16_t numLeds, uint8_t pin, uint8_t* dstBuffer) = 0;
+    //         virtual void show() = 0;
+    //     };
+    //
+    //     template<template<uint8_t, EOrder> typename TLedType, uint8_t TPin, EOrder TOrder>
+    //     struct FastLEDIface : Iface {
+    //         CLEDController* m_cled;
+    //
+    //         // static CLEDController* create() {
+    //         void init(uint16_t numLeds, uint8_t pin, uint8_t* dstBuffer) override {
+    //             m_cled = &FastLED.addLeds<TLedType, TPin, TOrder>((CRGB*) dstBuffer, numLeds);
+    //         }
+    //
+    //         void show() override {
+    //             FastLED.show();
+    //         }
+    //     };
+    //
+    //     struct CustomIface : Iface {
+    //         Core::WS2815 ws2815;
+    //
+    //         void init(uint16_t numLeds, uint8_t pin, uint8_t* dstBuffer) override {
+    //             ws2815.init(numLeds, pin, dstBuffer);
+    //             // dstBuffer
+    //         }
+    //
+    //         void show() override {
+    //             ws2815.show();
+    //         }
+    //     };
+    // }
+
+
+
+    // void updateFastLED();
+
+
 
     template<template<uint8_t, EOrder> typename TLedType, uint8_t TPin, EOrder TOrder>
     class HardwareLED : public Traits::OutputInterface
@@ -30,15 +70,14 @@ namespace Output {
 
             m_cled = &FastLED.addLeds<TLedType, TPin, TOrder>((CRGB*) m_dstBuffer, m_numLeds);
             m_cled->clearLeds();
-            updateFastLED();
+            // updateFastLED();
         }
 
-		void bind() override
-		{
-		}
+        void bind() override {}
+        void setPreset(const JsonDocument &doc) override {}
 
-        void setPreset(const JsonDocument& doc) override {
-
+        void postupdate() override {
+            FastLED.show();
         }
 
         void applyDimmer(float percentage) override

@@ -28,7 +28,7 @@ public:
 	void begin(uint8_t universe);
     void stop();
 
-	void dmx(uint8_t* copyBuffer);
+	bool dmx(uint8_t* copyBuffer);
     uint8_t getSeq();
 	uint8_t getSeqDiff() const;
 

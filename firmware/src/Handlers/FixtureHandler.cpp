@@ -114,7 +114,7 @@ namespace Handler
                     fix->update();
                 }
             }
-            Output::updateFastLED();
+            // Output::updateFastLED();
             vTaskDelay(20);
         }
     }
