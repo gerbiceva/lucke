@@ -28,14 +28,16 @@ class Fixture : public Traits::Serializable, public Traits::Deserializable
     uint8_t* m_srcBuffer;
     uint16_t m_lastOffset = 0U;
     JsonDocument jsonPreset;
-    
-    void updatePresets();    
-public:
 
+    void obtainSrcBuffer();
+    
+public:
     Fixture();
     Fixture(std::string name, std::string type, std::string presets);
 
     virtual ~Fixture() = default;
+
+    void updatePresets();
 
     template<typename TOutput, typename... Args>
     void addOutput(Args&&... args)

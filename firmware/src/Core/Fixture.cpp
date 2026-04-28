@@ -1,15 +1,18 @@
 #include "Fixture.h"
 #include <ArduinoJson.h>
 #include "Utils/Logger.h"
-#include "Engine.h"
+// #include "Engine.h"
 #include "Utils/JsonUtils.h"
+#include "Handlers/InputHandler.h"
 
 
 uint8_t Fixture::s_ID = 0;
 
 Fixture::Fixture()    
 {
-    m_ID = s_ID++;    
+    m_ID = s_ID++;
+    obtainSrcBuffer();
+
 }
 
 Fixture::Fixture(std::string name, std::string type, std::string presets)
@@ -19,7 +22,16 @@ Fixture::Fixture(std::string name, std::string type, std::string presets)
     m_config.type = type;
 
     deserializeJson(jsonPreset, presets);
+    // obtainSrcBuffer();
+
 }
+
+void Fixture::obtainSrcBuffer()
+{
+    m_dmxIn = Handler::InputHandler::instance().newInterface(m_config.universe);
+    m_srcBuffer = m_dmxIn->getBuffer();
+}
+
 
 uint8_t* Fixture::getSrcBuffer() 
 { 
@@ -43,22 +55,23 @@ const std::string& Fixture::getName() const
 
 void Fixture::setUniverse(uint8_t new_universe)
 {
-    m_dmxIn = Engine::instance().getDMXInput(new_universe, m_config.universe);
+    // m_dmxIn = Engine::instance().getDMXInput(new_universe, m_config.universe);
+    m_dmxIn = Handler::InputHandler::instance().interface(new_universe, m_config.universe);
     m_srcBuffer = m_dmxIn->getBuffer();
     m_config.universe = new_universe;
-    updatePresets();
+    // updatePresets();
 }
 
 void Fixture::setAddress(uint16_t new_address)
 {
     m_config.address = new_address;
-    updatePresets();
+    // updatePresets();
 }
 
 void Fixture::setPreset(uint8_t new_preset)
 {
     m_config.selectedPreset = new_preset;
-    updatePresets();
+    // updatePresets();
 }
 
 void Fixture::setName(const std::string& other) 
@@ -140,9 +153,11 @@ void Fixture::fromJson(std::string json)
     Utils::Json::updateElement<uint8_t>(doc, "presetIndex", m_config.selectedPreset);
     
     setName(name);
-    setUniverse(m_config.universe);
+    obtainSrcBuffer();
+    // setUniverse(m_config.universe);
     setAddress(m_config.address);
     setPreset(m_config.selectedPreset);
+    updatePresets();
 }
 
 JsonDocument Fixture::toJsonDoc()

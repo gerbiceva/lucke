@@ -31,7 +31,7 @@ std::string Engine::Settings::toString()
 }
 
 Engine::Engine ()
-    : m_storage(Utils::Storage("engine"))
+    : m_storage(Utils::Storage("engine")), m_inputHandler(Handler::InputHandler::instance())
 {
 
     Utils::Logger::enable();
@@ -105,7 +105,7 @@ void Engine::init()
         m_taskExecutor.spawnTask("Output", [this]()
         {
             this->m_fixtureHandler.update();
-        }, 
+        },
         3, 20000);
 
         if(settings.print_task)
@@ -310,11 +310,14 @@ void Engine::parseConfig(const std::string& data)
         if(dirty)
         {
             m_storage.putString("settings", settings.toString());
-            Utils::Wifi::reinitialize(settings.ssid.c_str(), settings.password.c_str());
+            sendResponse();
+            // Utils::Wifi::reinitialize(settings.ssid.c_str(), settings.password.c_str());
             
             JsonObject obj = jsonTemp["wifi"].to<JsonObject>();
             Utils::Wifi::instance().toJson(obj);
             serializeJson(jsonTemp, response);
+            // temp
+            ESP.restart();
         }
     }    
     else if(strcmp(req, "getfixture") == 0)
@@ -391,6 +394,8 @@ void Engine::parseConfig(const std::string& data)
 
                 if(set)
                 {
+                    fix->updatePresets();
+
                     std::string key = "fixture" + std::to_string(id);
                     std::string store;
 

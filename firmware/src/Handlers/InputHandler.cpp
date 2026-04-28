@@ -69,36 +69,41 @@ namespace Handler
         return m_inputs[universe].interface;
     }
 
+    std::shared_ptr<Traits::InputInterface> InputHandler::newInterface(uint8_t universe, Traits::InputInterface::InputType type) {
+        return subscribe(universe);
+    }
+
+
     std::shared_ptr<InputInterface> InputHandler::interface(uint8_t universe, uint8_t old_universe, InputInterface::InputType type)
     {
         unsubscribe(old_universe);
         return subscribe(universe);
     }
 
-    void InputHandler::canUpdate(bool b)
-    {
-        // static bool m_inited = false;
-
-        // if(!m_inited)
-        // {
-        //     if(b)
-        //     {
-        //         xTaskCreate(InputHandler::updateTask, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, &m_handle);
-        //         m_inited = true;
-        //     }
-
-        //     return;
-        // }
-
-        if(b)
-        {
-            vTaskResume(m_handle);
-        }
-        else
-        {
-            vTaskSuspend(m_handle);
-        }
-    }
+    // void InputHandler::canUpdate(bool b)
+    // {
+    //     // static bool m_inited = false;
+    //
+    //     // if(!m_inited)
+    //     // {
+    //     //     if(b)
+    //     //     {
+    //     //         xTaskCreate(InputHandler::updateTask, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, &m_handle);
+    //     //         m_inited = true;
+    //     //     }
+    //
+    //     //     return;
+    //     // }
+    //
+    //     if(b)
+    //     {
+    //         vTaskResume(m_handle);
+    //     }
+    //     else
+    //     {
+    //         vTaskSuspend(m_handle);
+    //     }
+    // }
 
 
     void InputHandler::update()

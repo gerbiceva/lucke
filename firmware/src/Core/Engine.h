@@ -67,6 +67,37 @@ public:
             fix->fromJson(m_storage.getString(key));
         }
 
+        fix->updatePresets();
+
+        JsonDocument doc = fix->toJsonDoc();
+        std::string serialized;
+        serializeJson(doc, serialized);
+        m_storage.putString(key, serialized);
+
+        // Utils::Logger::dprintf("[ENGINE] Added new fixture %s", fix->getName().c_str());
+        return fix;
+    }
+
+    template<typename TFixture>
+    Fixture* addFixture(std::string name, bool animateWifiConnecting = false)
+    {
+        Fixture* fix = m_fixtureHandler.addFixture<TFixture>();
+        if(animateWifiConnecting)
+        {
+            wifiAnimation = [fix]() 
+            {
+                fix->wifiAnimation();
+            };
+        }
+
+        std::string key = "fixture" + std::to_string(fix->id());
+        if(m_storage.isKey(key) && !factoryReset)
+        {
+            fix->fromJson(m_storage.getString(key));
+        }
+
+        fix->updatePresets();
+
         JsonDocument doc = fix->toJsonDoc();
         std::string serialized;
         serializeJson(doc, serialized);
@@ -89,7 +120,7 @@ private:
     Utils::TaskExecutor m_taskExecutor;
 
     Handler::FixtureHandler m_fixtureHandler;
-    Handler::InputHandler m_inputHandler;
+    Handler::InputHandler& m_inputHandler;
     Handler::ButtonManager m_buttonManager;
     Handler::PinHandler m_pinManager;
     

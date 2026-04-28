@@ -25,7 +25,15 @@ namespace Handler
 
         void unsubscribe(uint8_t universe);
         std::shared_ptr<Traits::InputInterface> subscribe(uint8_t universe);
+
+        InputHandler(){};
     public:
+        static InputHandler& instance() {
+            static InputHandler _instance;
+            return _instance;
+        }
+
+        std::shared_ptr<Traits::InputInterface> newInterface(uint8_t universe, Traits::InputInterface::InputType type= Traits::InputInterface::InputType::SACN);
 
         std::shared_ptr<Traits::InputInterface> interface(
             uint8_t universe,
@@ -33,7 +41,7 @@ namespace Handler
             Traits::InputInterface::InputType type= Traits::InputInterface::InputType::SACN);
 
         void update();
-        void canUpdate(bool b);
+        // void canUpdate(bool b);
         // void initInputs();
         void clearSrcBuffers();
         
@@ -42,6 +50,6 @@ namespace Handler
 
     private:
         std::unordered_map<uint8_t, Counter> m_inputs;
-        TaskHandle_t m_handle;
+        // TaskHandle_t m_handle;
     };
 }
