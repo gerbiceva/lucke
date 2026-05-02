@@ -13,14 +13,10 @@
 
 #include "EngineSettings.h"
 
-// #define ENGINE_VERSION "0.8"
-// #define DEFAULT_WIFI_SSID "Ledique"
-// #define DEFAULT_WIFI_PASSWORD "dasenebipovezau"
 // #define DEFAULT_WIFI_SSID "lasportiva5"
 // #define DEFAULT_WIFI_PASSWORD "GregorJeCar!56"
 
 class Engine : public Traits::Deserializable
-// class Engine 
 {
     Engine ();
     void readSettings();
@@ -31,22 +27,6 @@ class Engine : public Traits::Deserializable
     void sendReport();
     void printReport();
     void readSerial();
-    
-    // struct Settings : public Traits::Deserializable
-    // {
-    //     bool to_factory_settings = false;
-    //     bool print_task = true;
-    //     bool report_task = true;
-    //     bool wifi_animation = false;
-
-    //     std::string ssid = DEFAULT_WIFI_SSID;
-    //     std::string password = DEFAULT_WIFI_PASSWORD;
-        
-    //     void toJson(JsonObject& obj);
-    //     std::string toString();
-    // } settings;
-
-    EngineSettings settings;
 
     bool factoryReset = false;
     
@@ -121,6 +101,8 @@ public:
     std::string toString();
 
 private:
+    EngineSettings m_settings;
+
     Utils::Storage m_storage;
     Utils::TaskExecutor m_taskExecutor;
 

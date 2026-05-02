@@ -5,31 +5,6 @@
 
 using namespace Utils::Json;
 
-// void Engine::Settings::toJson(JsonObject& obj)
-// {
-//     obj["to_factory_settings"] = to_factory_settings;
-//     obj["print_task"] = print_task;
-//     obj["auto_report_task"] = report_task;
-//     obj["wifi_animation"] = wifi_animation;
-//     obj["ssid"] = ssid.c_str();
-//     obj["password"] = password.c_str();
-// }
-
-// std::string Engine::Settings::toString()
-// {
-//     JsonDocument obj;
-//     obj["to_factory_settings"] = to_factory_settings;
-//     obj["print_task"] = print_task;
-//     obj["auto_report_task"] = report_task;
-//     obj["wifi_animation"] = wifi_animation;
-//     obj["ssid"] = ssid.c_str();
-//     obj["password"] = password.c_str();
-
-//     std::string ret;
-//     serializeJson(obj, ret);
-//     return ret;
-// }
-
 Engine::Engine ()
     : m_storage(Utils::Storage("engine")), m_inputHandler(Handler::InputHandler::instance())
 {
@@ -39,7 +14,7 @@ Engine::Engine ()
     // sleep(5);
     readSettings();
 
-    Utils::Wifi::initialize(settings.ssid.c_str(), settings.password.c_str(), [this](bool is_connected) 
+    Utils::Wifi::initialize(m_settings.ssid.c_str(), m_settings.password.c_str(), [this](bool is_connected) 
     {
         this->m_taskExecutor.suspendTask(this->m_inputTaskID);        
         this->wifiStatus();        
@@ -63,23 +38,25 @@ void Engine::readSettings()
         factoryReset = getElement<bool>(doc, "to_factory_settings", false);
         if(factoryReset)
         {
-            settings.to_factory_settings = false;
-            m_storage.putString("settings", settings.toString());
-            return;
+            m_settings.to_factory_settings = false;
+            m_storage.putString("settings", m_settings.toString());
+            s = m_storage.getString("settings");
+            deserializeJson(doc, s);
+            // return;
         }
 
-        updateElement<bool>(doc, "print_task", settings.print_task);
-        updateElement<bool>(doc, "auto_report_task", settings.report_task);
-        updateElement<bool>(doc, "wifi_animation", settings.wifi_animation);
+        updateElement<bool>(doc, "print_task", m_settings.print_task);
+        updateElement<bool>(doc, "auto_report_task", m_settings.report_task);
+        updateElement<bool>(doc, "wifi_animation", m_settings.wifi_animation);
 
-        const char* ssid = getElement<const char*>(doc, "ssid", settings.ssid.c_str());
-        settings.ssid = ssid;
-        const char* password = getElement<const char*>(doc, "password", settings.password.c_str());
-        settings.password = password;
+        const char* ssid = getElement<const char*>(doc, "ssid", m_settings.ssid.c_str());
+        m_settings.ssid = ssid;
+        const char* password = getElement<const char*>(doc, "password", m_settings.password.c_str());
+        m_settings.password = password;
     }
     else 
     {
-        m_storage.putString("settings", settings.toString());
+        m_storage.putString("settings", m_settings.toString());
     }
 
 }
@@ -108,7 +85,7 @@ void Engine::init()
         },
         3, 20000);
 
-        if(settings.print_task)
+        if(m_settings.print_task)
         {
             m_taskExecutor.spawnTask("Print Report", [this]()
             {
@@ -118,7 +95,7 @@ void Engine::init()
         }
 
         // choose different port for this
-        if(settings.report_task)
+        if(m_settings.report_task)
         {
             m_taskExecutor.spawnTask("Send report", [this]()
             {
@@ -144,7 +121,7 @@ void Engine::wifiStatus()
     Utils::Logger::println("[WIFI] Disconnected...");
 
     uint32_t animationHandle;
-    if(this->settings.wifi_animation || firstTime)
+    if(this->m_settings.wifi_animation || firstTime)
     {
         animationHandle = this->m_taskExecutor.spawnTask("Wifi animation", [this]()
         {
@@ -167,7 +144,7 @@ void Engine::wifiStatus()
     }
     
     Utils::Logger::println("[WIFI] Connected...");
-    if(this->settings.wifi_animation || firstTime)
+    if(this->m_settings.wifi_animation || firstTime)
     {
         this->m_taskExecutor.stopTask(animationHandle);
     }
@@ -195,7 +172,7 @@ void Engine::parseConfig(const std::string& data, bool serial)
         if(serial)
         {
             // Serial.println(s.c_str());
-            Utils::Logger::print("Response: ");
+            Utils::Logger::print("\nResponse: ");
             Utils::Logger::println(s.c_str());
             return;
         }
@@ -238,8 +215,8 @@ void Engine::parseConfig(const std::string& data, bool serial)
         std::string s = m_storage.getString("settings");
         JsonDocument doc;
         deserializeJson(doc, s);
-        settings.to_factory_settings = true;
-        m_storage.putString("settings", settings.toString());
+        m_settings.to_factory_settings = true;
+        m_storage.putString("settings", m_settings.toString());
         ESP.restart();
         return;
     }
@@ -248,8 +225,8 @@ void Engine::parseConfig(const std::string& data, bool serial)
         if(doc["value"].is<bool>())
         {
             bool value = doc["value"];
-            settings.print_task = value;
-            m_storage.putString("settings", settings.toString());
+            m_settings.print_task = value;
+            m_storage.putString("settings", m_settings.toString());
             response = Utils::String::concat("Set print task enabled to ", value);
         }
         else 
@@ -264,8 +241,8 @@ void Engine::parseConfig(const std::string& data, bool serial)
         if(doc["value"].is<bool>())
         {
             bool value = doc["value"];
-            settings.report_task = value;
-            m_storage.putString("settings", settings.toString());
+            m_settings.report_task = value;
+            m_storage.putString("settings", m_settings.toString());
             response = Utils::String::concat("Set auto report task enabled to ", value);
         }
         else 
@@ -280,8 +257,8 @@ void Engine::parseConfig(const std::string& data, bool serial)
         if(doc["value"].is<bool>())
         {
             bool value = doc["value"];
-            settings.wifi_animation = value;
-            m_storage.putString("settings", settings.toString());
+            m_settings.wifi_animation = value;
+            m_storage.putString("settings", m_settings.toString());
             response = Utils::String::concat("Set wifi animation enabled to ", value);
         }
         else 
@@ -298,7 +275,7 @@ void Engine::parseConfig(const std::string& data, bool serial)
         if(doc["ssid"].is<const char*>())
         {
             const char* ssid = doc["ssid"];
-            settings.ssid = ssid;
+            m_settings.ssid = ssid;
             response = Utils::String::concat("Set ssid to '", ssid, "'");
             dirty = true;
             // Utils::Logger::dprintln("Set ssid request");
@@ -306,7 +283,7 @@ void Engine::parseConfig(const std::string& data, bool serial)
         if(doc["password"].is<const char*>())
         {
             const char* password = doc["password"];
-            settings.password = password;
+            m_settings.password = password;
 
             if(response.size() != 0)
             {
@@ -323,7 +300,7 @@ void Engine::parseConfig(const std::string& data, bool serial)
 
         if(dirty)
         {
-            m_storage.putString("settings", settings.toString());
+            m_storage.putString("settings", m_settings.toString());
             sendResponse();
             // Utils::Wifi::reinitialize(settings.ssid.c_str(), settings.password.c_str());
             
@@ -477,7 +454,7 @@ void Engine::toJson(JsonObject& doc)
     doc["version"] = ENGINE_VERSION;
 
     JsonObject settingsDoc = doc["settings"].to<JsonObject>();
-    settings.toJson(settingsDoc);
+    m_settings.toJson(settingsDoc);
 
     JsonObject wifiDoc = doc["wifi"].to<JsonObject>();
     Utils::Wifi::instance().toJson(wifiDoc);
@@ -529,8 +506,6 @@ void Engine::readSerial()
 {
     while(true)
     {
-        // Utils::Logger::println(toString().c_str());
-        // vTaskDelay(10000);
         if(Serial.available())
         {
             auto v = Serial.readStringUntil('\n');
