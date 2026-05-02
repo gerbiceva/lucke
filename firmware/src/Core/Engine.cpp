@@ -155,6 +155,8 @@ void Engine::wifiStatus()
 
 void Engine::parseConfig(const std::string& data, bool serial)
 {
+    if(data.length() == 1)
+    {return;}
     JsonDocument doc;
     deserializeJson(doc, data);
     
