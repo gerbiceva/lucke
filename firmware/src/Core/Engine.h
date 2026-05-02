@@ -11,9 +11,11 @@
 #include "Utils/Storage.h"
 #include "Traits/Serializable.h"
 
-#define ENGINE_VERSION "0.8"
-#define DEFAULT_WIFI_SSID "Ledique"
-#define DEFAULT_WIFI_PASSWORD "dasenebipovezau"
+#include "EngineSettings.h"
+
+// #define ENGINE_VERSION "0.8"
+// #define DEFAULT_WIFI_SSID "Ledique"
+// #define DEFAULT_WIFI_PASSWORD "dasenebipovezau"
 // #define DEFAULT_WIFI_SSID "lasportiva5"
 // #define DEFAULT_WIFI_PASSWORD "GregorJeCar!56"
 
@@ -24,24 +26,27 @@ class Engine : public Traits::Deserializable
     void readSettings();
     
     void wifiStatus();
-    void parseConfig(const std::string& data);
+    void parseConfig(const std::string& data, bool serial = false);
     
     void sendReport();
     void printReport();
+    void readSerial();
     
-    struct Settings : public Traits::Deserializable
-    {
-        bool to_factory_settings = false;
-        bool print_task = true;
-        bool report_task = true;
-        bool wifi_animation = false;
+    // struct Settings : public Traits::Deserializable
+    // {
+    //     bool to_factory_settings = false;
+    //     bool print_task = true;
+    //     bool report_task = true;
+    //     bool wifi_animation = false;
 
-        std::string ssid = DEFAULT_WIFI_SSID;
-        std::string password = DEFAULT_WIFI_PASSWORD;
+    //     std::string ssid = DEFAULT_WIFI_SSID;
+    //     std::string password = DEFAULT_WIFI_PASSWORD;
         
-        void toJson(JsonObject& obj);
-        std::string toString();
-    } settings;
+    //     void toJson(JsonObject& obj);
+    //     std::string toString();
+    // } settings;
+
+    EngineSettings settings;
 
     bool factoryReset = false;
     

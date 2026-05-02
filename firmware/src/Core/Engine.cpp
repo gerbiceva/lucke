@@ -5,30 +5,30 @@
 
 using namespace Utils::Json;
 
-void Engine::Settings::toJson(JsonObject& obj)
-{
-    obj["to_factory_settings"] = to_factory_settings;
-    obj["print_task"] = print_task;
-    obj["auto_report_task"] = report_task;
-    obj["wifi_animation"] = wifi_animation;
-    obj["ssid"] = ssid.c_str();
-    obj["password"] = password.c_str();
-}
+// void Engine::Settings::toJson(JsonObject& obj)
+// {
+//     obj["to_factory_settings"] = to_factory_settings;
+//     obj["print_task"] = print_task;
+//     obj["auto_report_task"] = report_task;
+//     obj["wifi_animation"] = wifi_animation;
+//     obj["ssid"] = ssid.c_str();
+//     obj["password"] = password.c_str();
+// }
 
-std::string Engine::Settings::toString()
-{
-    JsonDocument obj;
-    obj["to_factory_settings"] = to_factory_settings;
-    obj["print_task"] = print_task;
-    obj["auto_report_task"] = report_task;
-    obj["wifi_animation"] = wifi_animation;
-    obj["ssid"] = ssid.c_str();
-    obj["password"] = password.c_str();
+// std::string Engine::Settings::toString()
+// {
+//     JsonDocument obj;
+//     obj["to_factory_settings"] = to_factory_settings;
+//     obj["print_task"] = print_task;
+//     obj["auto_report_task"] = report_task;
+//     obj["wifi_animation"] = wifi_animation;
+//     obj["ssid"] = ssid.c_str();
+//     obj["password"] = password.c_str();
 
-    std::string ret;
-    serializeJson(obj, ret);
-    return ret;
-}
+//     std::string ret;
+//     serializeJson(obj, ret);
+//     return ret;
+// }
 
 Engine::Engine ()
     : m_storage(Utils::Storage("engine")), m_inputHandler(Handler::InputHandler::instance())
@@ -127,6 +127,13 @@ void Engine::init()
             1, 10000);
         }
 
+        m_taskExecutor.spawnTask("Read serial", [this]()
+        {
+            this->readSerial();
+        }, 
+        1, 10000);
+
+
         inited = true;
     }
 }
@@ -169,7 +176,7 @@ void Engine::wifiStatus()
 }
 
 
-void Engine::parseConfig(const std::string& data)
+void Engine::parseConfig(const std::string& data, bool serial)
 {
     JsonDocument doc;
     deserializeJson(doc, data);
@@ -177,7 +184,7 @@ void Engine::parseConfig(const std::string& data)
     std::string response;
     std::string status = "OK";
 
-    auto sendResponse = [&response, &status]() 
+    auto sendResponse = [&response, &status, serial]() 
     {
         JsonDocument json;
         json["status"] = status.c_str();
@@ -185,6 +192,13 @@ void Engine::parseConfig(const std::string& data)
 
         std::string s;
         serializeJson(json, s);
+        if(serial)
+        {
+            // Serial.println(s.c_str());
+            Utils::Logger::print("Response: ");
+            Utils::Logger::println(s.c_str());
+            return;
+        }
         Utils::Wifi::instance().sendUdpPacket(12345, s);
     };
     
@@ -508,5 +522,21 @@ void Engine::printReport()
     {
         Utils::Logger::println(toString().c_str());
         vTaskDelay(10000);
+    }
+}
+
+void Engine::readSerial()
+{
+    while(true)
+    {
+        // Utils::Logger::println(toString().c_str());
+        // vTaskDelay(10000);
+        if(Serial.available())
+        {
+            auto v = Serial.readStringUntil('\n');
+            parseConfig(std::string(v.c_str()), true);
+        }
+
+        vTaskDelay(100);
     }
 }
