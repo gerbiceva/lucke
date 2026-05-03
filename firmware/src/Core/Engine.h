@@ -24,6 +24,7 @@ class Engine : public Traits::Deserializable
     void wifiStatus();
     void parseConfig(const std::string& data, bool serial = false);
     
+    void ping();
     void sendReport();
     void printReport();
     void readSerial();
@@ -127,6 +128,7 @@ public:
     void clearSrcBuffers();
     
     void toJson(JsonObject& doc) override;
+    JsonDocument basicDesc();
     std::string toString();
 
 private:

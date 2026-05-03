@@ -88,6 +88,12 @@ void Engine::init()
         spawnSerialPrintTask(false, true);
         spawnWirelessPrintTask(false, true);
 
+        m_taskExecutor.spawnTask("Heartbeat", [this]()
+        {
+            this->ping();
+        },
+        1, 1000);
+
         m_taskExecutor.spawnTask("Read serial", [this]()
         {
             this->readSerial();
@@ -460,6 +466,22 @@ void Engine::clearSrcBuffers()
     m_inputHandler.clearSrcBuffers();
 }
 
+JsonDocument Engine::basicDesc()
+{
+    JsonDocument doc;
+    JsonArray arr = doc["fixtures"].to<JsonArray>();
+
+    const auto& fixtures = m_fixtureHandler.allFixtures();
+    for(Fixture* f : fixtures)
+    {
+        JsonObject entry = arr.add<JsonObject>();
+        entry["name"] = f->getName();
+        entry["type"] = f->getType();
+    }
+
+    return doc;
+}
+
 void Engine::toJson(JsonObject& doc)
 {
     // doc["heap_size"] = ESP.getHeapSize();
@@ -488,6 +510,17 @@ std::string Engine::toString()
     std::string ret;
     serializeJson(doc, ret);
     return ret;
+}
+
+void Engine::ping()
+{
+    std::string temp = "";
+    serializeJson(this->basicDesc(), temp);
+    while(true)
+    {
+        Utils::Wifi::instance().sendUdpPacket(12343, temp);
+        vTaskDelay(500);
+    }
 }
 
 void Engine::sendReport()

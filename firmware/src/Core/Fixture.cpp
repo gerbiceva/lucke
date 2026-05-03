@@ -60,6 +60,11 @@ const std::string& Fixture::getName() const
     return m_config.name; 
 }
 
+const std::string& Fixture::getType() const 
+{ 
+    return m_config.type; 
+}
+
 void Fixture::setUniverse(uint8_t new_universe)
 {
     // m_dmxIn = Engine::instance().getDMXInput(new_universe, m_config.universe);

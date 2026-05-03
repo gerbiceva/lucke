@@ -57,6 +57,7 @@ public:
     uint8_t* getOffsetSrcBuffer();
     uint8_t id() const;
     const std::string& getName() const;
+    const std::string& getType() const;
 
     void setUniverse(uint8_t new_universe);
     void setAddress(uint16_t new_address);
