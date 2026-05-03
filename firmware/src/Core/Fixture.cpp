@@ -15,6 +15,13 @@ Fixture::Fixture()
 
 }
 
+Fixture::Fixture(FixtureConfig config, std::string presets)
+{
+    m_ID = s_ID++;
+    deserializeJson(jsonPreset, presets);
+}
+
+
 Fixture::Fixture(std::string name, std::string type, std::string presets)
 {
     m_ID = s_ID++;

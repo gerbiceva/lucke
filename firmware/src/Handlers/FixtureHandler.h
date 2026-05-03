@@ -25,6 +25,15 @@ namespace Handler
             fixtures.push_back(fix);
             return fix;
         }
+
+        template<typename TFixture, typename... Args>
+        Fixture* addFixture(Args&&... args)
+        {
+            Fixture* fix = new TFixture(std::forward<Args>(args)...);
+
+            fixtures.push_back(fix);
+            return fix;
+        }
     
         Fixture* get(uint8_t index);
         std::vector<Fixture*>& allFixtures();

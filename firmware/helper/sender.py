@@ -269,3 +269,7 @@ if __name__ == "__main__":
             fid = int(fid)
         run_command(client.set_name, name, fid)
         
+        {"request": "reboot"}
+        {"request": "describe"}
+        {"request": "auto_report_task", "value": false}
+        {"request": "auto_report_task", "value": true}

@@ -63,6 +63,35 @@ public:
         return fix;
     }
 
+    template<typename TFixture, typename... Args>
+    Fixture* addFixture(bool animateWifiConnecting, Args&&... args)
+    {
+        Fixture* fix = m_fixtureHandler.addFixture<TFixture>(std::forward<Args>(args)...);
+        if(animateWifiConnecting)
+        {
+            wifiAnimation = [fix]() 
+            {
+                fix->wifiAnimation();
+            };
+        }
+
+        std::string key = "fixture" + std::to_string(fix->id());
+        if(m_storage.isKey(key) && !factoryReset)
+        {
+            fix->fromJson(m_storage.getString(key));
+        }
+
+        fix->updatePresets();
+
+        JsonDocument doc = fix->toJsonDoc();
+        std::string serialized;
+        serializeJson(doc, serialized);
+        m_storage.putString(key, serialized);
+
+        // Utils::Logger::dprintf("[ENGINE] Added new fixture %s", fix->getName().c_str());
+        return fix;
+    }
+
     template<typename TFixture>
     Fixture* addFixture(std::string name, bool animateWifiConnecting = false)
     {
@@ -112,7 +141,12 @@ private:
     Handler::PinHandler m_pinManager;
     
     uint32_t m_inputTaskID;
+    uint32_t m_sPrintTaskID = 0;
+    uint32_t m_wPrintTaskID = 0;
     std::function<void()> wifiAnimation;
     
     bool inited = false;
+
+    void spawnSerialPrintTask(bool value, bool init = false);
+    void spawnWirelessPrintTask(bool value, bool init = false);
 };

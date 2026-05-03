@@ -6,22 +6,23 @@
 #include "Traits/Deserializable.h"
 #include <memory>
 
+struct FixtureConfig
+{
+    uint8_t universe = 8U;
+    uint16_t address = 0U;
+    uint8_t selectedPreset = 0U;
+
+    std::string name = "name";
+    std::string type = "type";
+};
+
 class Fixture : public Traits::Serializable, public Traits::Deserializable
 {
-    struct Config
-    {
-        uint8_t universe = 8U;
-        uint16_t address = 0U;
-        uint8_t selectedPreset = 0U;
-
-        std::string name = "name";
-        std::string type = "type";
-    };
-
     static uint8_t s_ID;
     uint8_t m_ID;
 
-    Config m_config;
+    FixtureConfig m_config;
+
     std::shared_ptr<Traits::InputInterface> m_dmxIn;
     std::vector<Traits::OutputInterface*> m_outputs;
     
@@ -32,7 +33,9 @@ class Fixture : public Traits::Serializable, public Traits::Deserializable
     void obtainSrcBuffer();
     
 public:
+
     Fixture();
+    Fixture(FixtureConfig config, std::string presets);
     Fixture(std::string name, std::string type, std::string presets);
 
     virtual ~Fixture() = default;
@@ -60,17 +63,17 @@ public:
     void setPreset(uint8_t new_preset);
     void setName(const std::string& other);
 
-
     virtual void update();
     virtual void wifiAnimation() = 0;
     virtual void highlight() {};
 
     std::string getSelectedPresetName();
-    void fromJson(std::string json) override;
 
+    void fromJson(std::string json) override;
     JsonDocument toJsonDoc() override;
     void toJson(JsonObject& doc) override;
     void toJsonFull(JsonObject& doc) override;
 
     bool m_isHighlighted = false;
+private:
 };

@@ -85,24 +85,8 @@ void Engine::init()
         },
         3, 20000);
 
-        if(m_settings.print_task)
-        {
-            m_taskExecutor.spawnTask("Print Report", [this]()
-            {
-                this->printReport();
-            }, 
-            1, 10000);
-        }
-
-        // choose different port for this
-        if(m_settings.report_task)
-        {
-            m_taskExecutor.spawnTask("Send report", [this]()
-            {
-                this->sendReport();
-            }, 
-            1, 10000);
-        }
+        spawnSerialPrintTask(false, true);
+        spawnWirelessPrintTask(false, true);
 
         m_taskExecutor.spawnTask("Read serial", [this]()
         {
@@ -156,10 +140,10 @@ void Engine::wifiStatus()
 void Engine::parseConfig(const std::string& data, bool serial)
 {
     if(data.length() == 1)
-    {return;}
-    JsonDocument doc;
-    deserializeJson(doc, data);
-    
+    {
+        return;
+    }
+
     std::string response;
     std::string status = "OK";
 
@@ -180,6 +164,17 @@ void Engine::parseConfig(const std::string& data, bool serial)
         }
         Utils::Wifi::instance().sendUdpPacket(12345, s);
     };
+
+    JsonDocument doc;
+    DeserializationError jsonError = deserializeJson(doc, data);
+
+    if(jsonError)
+    {
+        response = Utils::String::concat("Invalid json:", "\n",  data);
+        status = "ERROR";
+        sendResponse();
+        return;
+    }
     
 
     JsonDocument jsonTemp;
@@ -227,6 +222,8 @@ void Engine::parseConfig(const std::string& data, bool serial)
         if(doc["value"].is<bool>())
         {
             bool value = doc["value"];
+            spawnSerialPrintTask(value);
+
             m_settings.print_task = value;
             m_storage.putString("settings", m_settings.toString());
             response = Utils::String::concat("Set print task enabled to ", value);
@@ -243,6 +240,8 @@ void Engine::parseConfig(const std::string& data, bool serial)
         if(doc["value"].is<bool>())
         {
             bool value = doc["value"];
+            spawnWirelessPrintTask(value);
+
             m_settings.report_task = value;
             m_storage.putString("settings", m_settings.toString());
             response = Utils::String::concat("Set auto report task enabled to ", value);
@@ -353,6 +352,12 @@ void Engine::parseConfig(const std::string& data, bool serial)
                 if (doc["universe"].is<uint8_t>())
                 {
                     uint8_t universe = doc["universe"];
+                    if(universe < 1)
+                    {
+                        response = Utils::String::concat("Cannot set universe of fixture '", fix->getName(), "'[", fix->id(), "] to ", universe);    
+                        status = "ERROR";
+                        return;
+                    }
                     fix->setUniverse(universe);
                     response = Utils::String::concat("Set universe of fixture '", fix->getName(), "'[", fix->id(), "] to ", universe);
                     set = true;
@@ -360,6 +365,12 @@ void Engine::parseConfig(const std::string& data, bool serial)
                 if (doc["address"].is<uint16_t>())
                 {
                     uint16_t address = doc["address"];
+                    if(address >= 512)
+                    {
+                        response = Utils::String::concat("Cannot set address of fixture '", fix->getName(), "'[", fix->id(), "] to ", address);    
+                        status = "ERROR";
+                        return;
+                    }
                     fix->setAddress(address);
                     response = Utils::String::concat("Set address of fixture '", fix->getName(), "'[", fix->id(), "] to ", address);
                     set = true;
@@ -515,5 +526,39 @@ void Engine::readSerial()
         }
 
         vTaskDelay(100);
+    }
+}
+
+void Engine::spawnSerialPrintTask(bool value , bool init)
+{
+    if((init && m_settings.print_task) || (value && !m_settings.print_task))
+    {
+        m_sPrintTaskID = m_taskExecutor.spawnTask("Print Report", [this]()
+        {
+            this->printReport();
+        }, 
+        1, 10000);
+        return;
+    }
+    else if(!value && m_settings.print_task)
+    {
+        m_taskExecutor.stopTask(m_sPrintTaskID);
+    }
+}
+
+void Engine::spawnWirelessPrintTask(bool value, bool init)
+{
+    if((init && m_settings.report_task) || (value && !m_settings.report_task))
+    {
+        m_wPrintTaskID = m_taskExecutor.spawnTask("Send report", [this]()
+        {
+            this->sendReport();
+        }, 
+        1, 10000);
+        return;
+    }
+    else if(!value && m_settings.report_task)
+    {
+        m_taskExecutor.stopTask(m_wPrintTaskID);
     }
 }
