@@ -100,7 +100,6 @@ public:
     
     void toJson(JsonObject& doc) override;
     JsonDocument basicDesc();
-    JsonDocument presetsJson();
     std::string toString();
 
 private:

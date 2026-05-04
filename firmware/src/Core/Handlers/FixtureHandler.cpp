@@ -152,5 +152,20 @@ namespace Handler
             f->toJsonFull(entry);
         }
     }
+
+    JsonDocument FixtureHandler::presetsJson()
+    {
+        JsonDocument doc;
+        JsonArray arr = doc["presets"].to<JsonArray>();
+
+        const auto& fixtures = allFixtures();
+        for(Fixture* f : fixtures)
+        {
+            JsonObject entry = arr.add<JsonObject>();
+            f->getPresets(entry);
+        }
+
+        return doc;
+    }
 }
 

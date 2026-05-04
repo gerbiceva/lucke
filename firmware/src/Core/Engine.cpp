@@ -204,8 +204,7 @@ void Engine::parseConfig(const std::string& data, bool serial)
     }
     else if(strcmp(req, "presets") == 0)
     {
-        auto obj = presetsJson();
-        // m_fixtureHandler.toJsonFull(obj);
+        auto obj = m_fixtureHandler.presetsJson();
         serializeJson(obj, response);
         // Utils::Logger::dprintln("Describe fix handler request");
     }
@@ -319,12 +318,12 @@ void Engine::parseConfig(const std::string& data, bool serial)
         if(dirty)
         {
             m_storage.putString("settings", m_settings.toString());
-            sendResponse();
             // Utils::Wifi::reinitialize(settings.ssid.c_str(), settings.password.c_str());
             
             JsonObject obj = jsonTemp["wifi"].to<JsonObject>();
             Utils::Wifi::instance().toJson(obj);
             serializeJson(jsonTemp, response);
+            sendResponse();
             // temp
             ESP.restart();
         }
@@ -492,22 +491,6 @@ JsonDocument Engine::basicDesc()
 
     return doc;
 }
-
-JsonDocument Engine::presetsJson()
-{
-    JsonDocument doc;
-    JsonArray arr = doc["presets"].to<JsonArray>();
-
-    const auto& fixtures = m_fixtureHandler.allFixtures();
-    for(Fixture* f : fixtures)
-    {
-        JsonObject entry = arr.add<JsonObject>();
-        f->getPresets(entry);
-    }
-
-    return doc;
-}
-
 
 void Engine::toJson(JsonObject& doc)
 {

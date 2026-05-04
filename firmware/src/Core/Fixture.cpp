@@ -7,21 +7,21 @@
 
 Fixture::Fixture()    
 {
-    m_config.m_ID = Config::Fixture::s_ID++;
-    obtainSrcBuffer();
+    m_config.obtainID();
+    // obtainSrcBuffer();
 }
 
 Fixture::Fixture(Config::Fixture config, std::string presets)
 {
     m_config = config;
-    m_config.m_ID = Config::Fixture::s_ID++;
+    m_config.obtainID();
     deserializeJson(jsonPreset, presets);
 }
 
 
 Fixture::Fixture(std::string name, std::string type, std::string presets)
 {
-    m_config.m_ID = Config::Fixture::s_ID++;
+    m_config.obtainID();
     m_config.name = name;
     m_config.type = type;
 
@@ -193,17 +193,10 @@ void Fixture::fromJson(std::string json)
 
 JsonDocument Fixture::toJsonDoc()
 {
-    JsonDocument doc;
-    doc["id"] = m_config.m_ID;
-    doc["name"] = m_config.name;
-    doc["type"] = m_config.type;
+    JsonDocument doc = m_config.toJsonDoc();
     doc["footprint"] = m_lastOffset;
-    doc["universe"] = m_config.universe;
-    doc["address"] = m_config.address;
-    doc["presetIndex"] = m_config.selectedPreset;
     return doc;
 }
-
 
 void Fixture::toJson(JsonObject& doc)
 {

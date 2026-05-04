@@ -5,6 +5,7 @@
 #include "Traits/Deserializable.h"
 #include "Utils/Optional.h"
 
+
 class Fixture;
 
 namespace Handler
@@ -13,8 +14,6 @@ namespace Handler
     {
         std::vector<Fixture*> fixtures;
     public:
-        // static void addFixture(Fixture* fixture);
-    
         template<typename TFixture>
         Fixture* addFixture()
         {
@@ -49,5 +48,7 @@ namespace Handler
         void fromJson(std::string json) override;
         void toJson(JsonObject& doc) override;
         void toJsonFull(JsonObject& doc) override;
+
+        JsonDocument presetsJson();
     };
 }

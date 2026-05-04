@@ -4,6 +4,11 @@ using namespace Config;
 
 uint8_t Fixture::s_ID = 0;
 
+void Fixture::obtainID()
+{
+    m_ID = s_ID++;
+}
+
 void Fixture::toJson(JsonObject& obj)
 {
     obj["id"] = m_ID;

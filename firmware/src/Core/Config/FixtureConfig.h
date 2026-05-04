@@ -22,6 +22,7 @@ struct Fixture : public Traits::Deserializable
 
     bool highlighted = false;
 
+    void obtainID();
     void toJson(JsonObject& obj) override;
     JsonDocument toJsonDoc() override;
 };
