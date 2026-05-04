@@ -1,11 +1,11 @@
-#include "ButtonManager.h"
 #include <Arduino.h>
+#include "ButtonHandler.h"
 #include "PinHandler.h"
 
 
 namespace Handler
 {
-    void ButtonManager::update() 
+    void Button::update() 
     {
         while(true) 
         {
@@ -18,12 +18,12 @@ namespace Handler
         }
     }
     
-    void ButtonManager::add(Input::Button&& b) 
+    void Button::add(Input::Button&& b) 
     {
         buttons.push_back(std::move(b));
     }
 
-    void ButtonManager::toJson(JsonObject& doc)
+    void Button::toJson(JsonObject& doc)
     {
         JsonArray arr = doc["buttons"].as<JsonArray>();
 

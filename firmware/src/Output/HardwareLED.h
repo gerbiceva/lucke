@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <FastLED.h>
 #include "Traits/Outputs.h"
-#include "Handlers/PinHandler.h"
+#include "Core/Handlers/PinHandler.h"
 #include "Utils/Logger.h"
 #include "Core/Hardware/WS2815.h"
 
@@ -62,7 +62,7 @@ namespace Output {
         HardwareLED(uint16_t num_leds)
             : Traits::OutputInterface(num_leds * m_numPxls), m_numLeds(num_leds)
         {
-            if(!Handler::PinHandler::available(TPin))
+            if(!Handler::Pin::available(TPin))
             {
                 Utils::Logger::printf("Error adding fastled: pin %d already used\n", TPin);
                 return;

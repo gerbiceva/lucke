@@ -24,12 +24,12 @@ namespace Input
         doc["id"] = m_ID;
         doc["type"] = "SACN";
         doc["universe"] = m_universe;
-        JsonArray arr = doc["seq_diffs"].to<JsonArray>();
+        // JsonArray arr = doc["seq_diffs"].to<JsonArray>();
         
-        for(auto& el : m_sacn.getSeqDiffs())
-        {
-            arr.add(el);
-        }
+        // for(auto& el : m_sacn.getSeqDiffs())
+        // {
+        //     arr.add(el);
+        // }
 
         JsonArray arr1 = doc["9_bytes"].to<JsonArray>();
         for(uint8_t i = 0; i < 9; i++)

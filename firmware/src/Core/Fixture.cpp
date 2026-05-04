@@ -5,8 +5,6 @@
 #include "Handlers/InputHandler.h"
 
 
-// uint8_t Fixture::s_ID = 0;
-
 Fixture::Fixture()    
 {
     m_config.m_ID = Config::Fixture::s_ID++;
@@ -108,6 +106,11 @@ void Fixture::setName(const std::string& other)
     m_config.name = other;
 }
 
+void Fixture::setType(const std::string& other) 
+{
+    m_config.type = other;
+}
+
 void Fixture::updatePresets()
 {
     JsonArray arr1 = jsonPreset["groups"].as<JsonArray>();
@@ -204,26 +207,14 @@ JsonDocument Fixture::toJsonDoc()
 
 void Fixture::toJson(JsonObject& doc)
 {
-    doc["id"] = m_config.m_ID;
-    doc["name"] = m_config.name;
-    doc["type"] = m_config.type;
+    m_config.toJson(doc);
     doc["footprint"] = m_lastOffset;
-    doc["universe"] = m_config.universe;
-    doc["address"] = m_config.address;
-    doc["presetIndex"] = m_config.selectedPreset;
-    //doc["preset"] = getSelectedPresetName();
-    //doc["input"] = m_dmxIn->toJson();
 }
 
 void Fixture::toJsonFull(JsonObject& doc)
 {
-    doc["id"] = m_config.m_ID;
-    doc["name"] = m_config.name;
-    doc["type"] = m_config.type;
+    m_config.toJson(doc);
     doc["footprint"] = m_lastOffset;
-    doc["universe"] = m_config.universe;
-    doc["address"] = m_config.address;
-    doc["presetIndex"] = m_config.selectedPreset;
     doc["preset"] = getSelectedPresetName();
 
     JsonObject inputDoc = doc["input"].to<JsonObject>();

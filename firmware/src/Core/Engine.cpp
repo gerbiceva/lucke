@@ -11,7 +11,6 @@ Engine::Engine ()
 
     Utils::Logger::enable();
     Utils::Logger::setLevel(Utils::Logger::DEBUG);
-    // sleep(5);
     readSettings();
 
     Utils::Wifi::initialize(m_settings.ssid.c_str(), m_settings.password.c_str(), [this](bool is_connected) 
@@ -34,7 +33,12 @@ void Engine::readSettings()
     {
         std::string s = m_storage.getString("settings");
         JsonDocument doc;
-        deserializeJson(doc, s);
+        DeserializationError err = deserializeJson(doc, s);
+        if(err)
+        {
+            Utils::Logger::println("[ERROR] Engine: read settings json");
+            return;
+        }
         factoryReset = getElement<bool>(doc, "to_factory_settings", false);
         if(factoryReset)
         {
@@ -449,7 +453,7 @@ void Engine::addButton(Input::Button&& button)
         m_taskExecutor.spawnTask("Button Input", [this]()
         {
             this->m_buttonManager.update();
-        }, 2);
+        }, 2, 1000);
         enabled = true;
     }
 
@@ -509,8 +513,7 @@ void Engine::toJson(JsonObject& doc)
 {
     // doc["heap_size"] = ESP.getHeapSize();
 	// doc["heap_free"] = ESP.getFreeHeap();
-    doc["version"] = ENGINE_VERSION;
-
+    // m_settings.toJson(doc);
     JsonObject settingsDoc = doc["settings"].to<JsonObject>();
     m_settings.toJson(settingsDoc);
 
@@ -551,10 +554,6 @@ void Engine::sendReport()
     std::string temp;
     while(true)
     {
-        // JsonDocument doc;
-        // JsonObject wifiDoc = doc["wifi"].to<JsonObject>();
-        // Utils::Wifi::instance().toJson(wifiDoc);
-        // serializeJson(doc, temp);
         std::string temp = toString().c_str();
         Utils::Wifi::instance().sendUdpPacket(REPORT_PORT, temp);
 
@@ -567,6 +566,7 @@ void Engine::printReport()
     while(true)
     {
         Utils::Logger::println(toString().c_str());
+
         vTaskDelay(10000);
     }
 }
@@ -581,7 +581,7 @@ void Engine::readSerial()
             parseConfig(std::string(v.c_str()), true);
         }
 
-        vTaskDelay(100);
+        vTaskDelay(1000);
     }
 }
 

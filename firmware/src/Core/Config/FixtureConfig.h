@@ -2,10 +2,13 @@
 #include <cstdint>
 #include <string>
 
+#include "Traits/Deserializable.h"
+
+
 namespace Config
 {
 
-struct Fixture
+struct Fixture : public Traits::Deserializable
 {
     static uint8_t s_ID;
     uint8_t m_ID = 0;
@@ -18,6 +21,9 @@ struct Fixture
     std::string type = "type";
 
     bool highlighted = false;
+
+    void toJson(JsonObject& obj) override;
+    JsonDocument toJsonDoc() override;
 };
 
 }

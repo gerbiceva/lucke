@@ -10,5 +10,3 @@ void loop()
 {
 	vTaskDelete(NULL);
 }
-
-

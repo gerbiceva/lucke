@@ -26,8 +26,6 @@ public:
         configureOutput(new TOutput(std::forward<Args>(args)...));
     }
 
-    void updatePresets();
-
     uint8_t id() const;
     uint8_t* getSrcBuffer();
     uint8_t* getOffsetSrcBuffer();
@@ -39,6 +37,8 @@ public:
     void setAddress(uint16_t new_address);
     void setPreset(uint8_t new_preset);
     void setName(const std::string& other);
+    void setType(const std::string& other);
+    void updatePresets();
 
     virtual void update();
     virtual void wifiAnimation() = 0;

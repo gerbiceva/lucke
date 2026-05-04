@@ -19,6 +19,8 @@ namespace Config
 
 struct Engine : public Traits::Deserializable
 {
+    const std::string version = ENGINE_VERSION;
+
     bool to_factory_settings = false;
     bool serial_report_task = true;
     bool wireless_report_task = true;
@@ -26,13 +28,13 @@ struct Engine : public Traits::Deserializable
 
     std::string ssid = DEFAULT_WIFI_SSID;
     std::string password = DEFAULT_WIFI_PASSWORD;
-    
-    void toJson(JsonObject& obj);
-    std::string toString();
 
-    // bool shouldPrint(bool v);
-    // bool shouldSendReport(bool v);
-    // bool shouldDisplayWifiAnimation(bool v);
+    // uint32_t serial_print_interval = 10000;
+    // uint32_t wireless_print_interval = 10000;
+    
+    void toJson(JsonObject& obj) override;
+    JsonDocument toJsonDoc() override;
+    std::string toString();
 };
 
 }

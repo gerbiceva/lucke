@@ -1,6 +1,6 @@
 #include "Button.h"
 #include <Arduino.h>
-#include "Handlers/PinHandler.h"
+#include "Core/Handlers/PinHandler.h"
 #include "Utils/Logger.h"
 
 namespace Input
@@ -9,7 +9,7 @@ namespace Input
 Button::Button(const std::string& name, const uint8_t pin, std::function<void()> risingFunction, std::function<void()> holdFunction, unsigned long holdTimeMillis) 
 	: buttonName(name), buttonPin(pin), risingCallback(risingFunction), holdCallback(holdFunction), holdTime(holdTimeMillis) 
 {
-    if(Handler::PinHandler::available(buttonPin))
+    if(Handler::Pin::available(buttonPin))
 	{
         pinMode(buttonPin, INPUT_PULLUP);
     }

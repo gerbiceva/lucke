@@ -8,7 +8,6 @@ namespace Traits
 
     class InputInterface : public Deserializable
     {
-        static uint8_t s_ID;
     public:
         enum class InputType
         {
@@ -25,15 +24,15 @@ namespace Traits
         std::string typeToString() const;
     public:
         InputInterface(uint8_t universe);
-
-        // virtual void init() {};
-        
         virtual ~InputInterface();
+
         uint8_t* getBuffer();
         uint8_t getUniverse() const;
 
         void clearSrcBuffer();
         virtual void setUniverse(uint8_t universe) { m_universe = universe; }
         virtual void update() = 0;
+    private:
+        static uint8_t s_ID;
     };
 }

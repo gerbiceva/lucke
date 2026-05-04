@@ -5,7 +5,7 @@
 
 namespace Handler
 {
-    class PinHandler
+    class Pin
     {
         static std::set<uint8_t> m_usedPins;
     public:

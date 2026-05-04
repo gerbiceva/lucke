@@ -15,11 +15,12 @@ request:
  - describe
  - fixtures
  - inputs
+ - presets
  - reboot
  - factory_reset
- - print_task
+ - serial_report_task
    - value[bool]
- - auto_report_task
+ - wireless_report_task
    - value[bool]
  - wifi_animation
    - value[bool]

@@ -6,7 +6,7 @@
 #include <cstdint>
 #include <FastLED.h>
 #include "Traits/Outputs.h"
-#include "Handlers/PinHandler.h"
+#include "Core/Handlers/PinHandler.h"
 #include "Utils/Logger.h"
 
 
@@ -18,7 +18,7 @@ struct LEDManifest {
   static constexpr EOrder Order = TOrder;
 
   static CLEDController& create(uint8_t *data, int nLedsOrOffset, int nLedsIfOffset) {
-    if(!Handler::PinHandler::available(TPin))
+    if(!Handler::Pin::available(TPin))
     {
       Utils::Logger::printf("Error adding fastled: pin %d already used\n", TPin);
       assert(false);

@@ -2,7 +2,7 @@
 #include <cstdint>
 #include <FastLED.h>
 #include "Traits/Outputs.h"
-#include "Handlers/PinHandler.h"
+#include "Core/Handlers/PinHandler.h"
 #include "Utils/Logger.h"
 #include "OutputV2/LEDStrip.h"
 

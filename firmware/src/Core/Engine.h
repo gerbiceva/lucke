@@ -1,16 +1,15 @@
 #pragma once
-// #include "Fixtures.h"
 #include <string>
 #include <functional>
 
 #include "Handlers/FixtureHandler.h"
 #include "Handlers/InputHandler.h"
-#include "Handlers/ButtonManager.h"
+#include "Handlers/ButtonHandler.h"
 #include "Handlers/PinHandler.h"
+
 #include "Utils/TaskExecutor.h"
 #include "Utils/Storage.h"
 #include "Traits/Serializable.h"
-
 #include "Config/EngineConfig.h"
 #include "Fixtures/All.h"
 
@@ -26,6 +25,9 @@ class Engine : public Traits::Deserializable
     void sendReport();
     void printReport();
     void readSerial();
+
+    void spawnSerialPrintTask(bool value, bool init = false);
+    void spawnWirelessPrintTask(bool value, bool init = false);
 
     bool factoryReset = false;
     
@@ -91,35 +93,6 @@ public:
         return fix;
     }
 
-    template<typename TFixture>
-    Fixture* addFixture(std::string name, bool animateWifiConnecting = false)
-    {
-        Fixture* fix = m_fixtureHandler.addFixture<TFixture>();
-        if(animateWifiConnecting)
-        {
-            wifiAnimation = [fix]() 
-            {
-                fix->wifiAnimation();
-            };
-        }
-
-        std::string key = "fixture" + std::to_string(fix->id());
-        if(m_storage.isKey(key) && !factoryReset)
-        {
-            fix->fromJson(m_storage.getString(key));
-        }
-
-        fix->updatePresets();
-
-        JsonDocument doc = fix->toJsonDoc();
-        std::string serialized;
-        serializeJson(doc, serialized);
-        m_storage.putString(key, serialized);
-
-        // Utils::Logger::dprintf("[ENGINE] Added new fixture %s", fix->getName().c_str());
-        return fix;
-    }
-
     void addButton(Input::Button&& button);
 
     std::shared_ptr<Traits::InputInterface> getDMXInput(uint8_t universe, uint8_t old_universe);
@@ -132,14 +105,13 @@ public:
 
 private:
     Config::Engine m_settings;
-
     Utils::Storage m_storage;
     Utils::TaskExecutor m_taskExecutor;
 
     Handler::FixtureHandler m_fixtureHandler;
     Handler::InputHandler& m_inputHandler;
-    Handler::ButtonManager m_buttonManager;
-    Handler::PinHandler m_pinManager;
+    Handler::Button m_buttonManager;
+    Handler::Pin m_pinManager;
     
     uint32_t m_inputTaskID;
     uint32_t m_sPrintTaskID = 0;
@@ -147,7 +119,4 @@ private:
     std::function<void()> wifiAnimation;
     
     bool inited = false;
-
-    void spawnSerialPrintTask(bool value, bool init = false);
-    void spawnWirelessPrintTask(bool value, bool init = false);
 };
