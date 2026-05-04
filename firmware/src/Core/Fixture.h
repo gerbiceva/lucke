@@ -6,15 +6,7 @@
 #include "Traits/Deserializable.h"
 #include <memory>
 
-struct FixtureConfig
-{
-    uint8_t universe = 8U;
-    uint16_t address = 0U;
-    uint8_t selectedPreset = 0U;
-
-    std::string name = "name";
-    std::string type = "type";
-};
+#include "Config/FixtureConfig.h"
 
 class Fixture : public Traits::Serializable, public Traits::Deserializable
 {

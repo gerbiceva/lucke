@@ -11,7 +11,7 @@
 #include "Utils/Storage.h"
 #include "Traits/Serializable.h"
 
-#include "EngineSettings.h"
+#include "Config/EngineConfig.h"
 
 // #define DEFAULT_WIFI_SSID "lasportiva5"
 // #define DEFAULT_WIFI_PASSWORD "GregorJeCar!56"
@@ -133,7 +133,7 @@ public:
     std::string toString();
 
 private:
-    EngineSettings m_settings;
+    EngineConfig m_settings;
 
     Utils::Storage m_storage;
     Utils::TaskExecutor m_taskExecutor;
