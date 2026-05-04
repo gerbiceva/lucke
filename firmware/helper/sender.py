@@ -89,6 +89,9 @@ class ESPClient:
     def inputs(self) -> None:
         return self.send_request({"request": "inputs"})
 
+    def presets(self) -> None:
+        return self.send_request({"request": "presets"})
+
     def reboot(self) -> None:
         return self.send_request({"request": "reboot"})
 
@@ -137,6 +140,7 @@ def initArguments():
     parser.add_argument("--describe", action="store_true", help="Request engine description")
     parser.add_argument("--fixtures", "--fixs", action="store_true", help="Request all fixtures")
     parser.add_argument("--inputs", action="store_true", help="Request all inputs")
+    parser.add_argument("--presets", action="store_true", help="Request all presets")
     parser.add_argument("--reboot", action="store_true", help="Reboot system")
     parser.add_argument("--factory-reset", action="store_true", help="Do a factory reset")
 
@@ -196,6 +200,9 @@ if __name__ == "__main__":
 
     if args.inputs:
         run_command(client.inputs)
+
+    if args.presets:
+        run_command(client.presets)
 
     if args.reboot:
         run_command(client.reboot)
@@ -269,7 +276,7 @@ if __name__ == "__main__":
             fid = int(fid)
         run_command(client.set_name, name, fid)
         
-        {"request": "reboot"}
-        {"request": "describe"}
-        {"request": "auto_report_task", "value": false}
-        {"request": "auto_report_task", "value": true}
+        # {"request": "reboot"}
+        # {"request": "describe"}
+        # {"request": "auto_report_task", "value": false}
+        # {"request": "auto_report_task", "value": true}

@@ -65,6 +65,11 @@ const std::string& Fixture::getType() const
     return m_config.type; 
 }
 
+void Fixture::getPresets(JsonObject& obj)
+{
+    obj[this->m_config.name] = jsonPreset;
+}
+
 void Fixture::setUniverse(uint8_t new_universe)
 {
     // m_dmxIn = Engine::instance().getDMXInput(new_universe, m_config.universe);
@@ -220,5 +225,5 @@ void Fixture::toJsonFull(JsonObject& doc)
         o->toJson(entry);
     }
 
-    doc["presets"] = jsonPreset;
+    // doc["presets"] = jsonPreset;
 }

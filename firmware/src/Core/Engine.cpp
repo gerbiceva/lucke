@@ -198,6 +198,13 @@ void Engine::parseConfig(const std::string& data, bool serial)
         serializeJson(jsonTemp, response);
         // Utils::Logger::dprintln("Describe fix handler request");
     }
+    else if(strcmp(req, "presets") == 0)
+    {
+        auto obj = presetsJson();
+        // m_fixtureHandler.toJsonFull(obj);
+        serializeJson(obj, response);
+        // Utils::Logger::dprintln("Describe fix handler request");
+    }
     else if(strcmp(req, "inputs") == 0)
     {
         JsonObject obj = jsonTemp["input_handler"].to<JsonObject>();
@@ -481,6 +488,22 @@ JsonDocument Engine::basicDesc()
 
     return doc;
 }
+
+JsonDocument Engine::presetsJson()
+{
+    JsonDocument doc;
+    JsonArray arr = doc["presets"].to<JsonArray>();
+
+    const auto& fixtures = m_fixtureHandler.allFixtures();
+    for(Fixture* f : fixtures)
+    {
+        JsonObject entry = arr.add<JsonObject>();
+        f->getPresets(entry);
+    }
+
+    return doc;
+}
+
 
 void Engine::toJson(JsonObject& doc)
 {
