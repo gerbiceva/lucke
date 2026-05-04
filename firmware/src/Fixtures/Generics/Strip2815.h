@@ -3,7 +3,8 @@
 #include "Utils/PresetMaker.h"
 #include "Output/HardwareLED1D.h"
 
-namespace Fixtures {
+namespace Fixtures
+{
 
 template<uint16_t N, uint8_t TPin = 5>
 struct Strip2815 : public Fixture
@@ -14,15 +15,18 @@ struct Strip2815 : public Fixture
 		: Fixture("neki", "Strip",  MakeJSON<N>::make().data())
     {
         addOutput<Output::HardwareLED1D<WS2815, TPin, RGB>> (N);
-
     }
-
 
     Strip2815(std::string name, std::string type, std::string presetJson)
 		: Fixture(name, type, presetJson)
     {
         addOutput<Output::HardwareLED1D<WS2815, TPin, RGB>> (N);
+    }
 
+    Strip2815(Config::Fixture config, std::string presetJson)
+		: Fixture(config, presetJson)
+    {
+        addOutput<Output::HardwareLED1D<WS2815, TPin, RGB>> (N);
     }
 
     void wifiAnimation() override

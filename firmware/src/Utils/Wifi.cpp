@@ -78,9 +78,6 @@ namespace Utils
             WiFi.mode(WIFI_STA);
             WiFi.setSleep(false);
             WiFi.begin(m_ssid, m_password);
-
-            // xTaskCreate(Wifi::monitorConnection, "Check Wifi", 3000, NULL, 1 | portPRIVILEGE_BIT, NULL);
-            // xTaskCreate(Wifi::receiveData, "Receive Data", 4000, NULL, 1 | portPRIVILEGE_BIT, NULL);
         }
 
     Wifi& Wifi::reinitialize(const char* ssid, const char* password)
@@ -94,6 +91,8 @@ namespace Utils
         WiFi.mode(WIFI_STA);
         WiFi.setSleep(false);
         WiFi.begin(ssid, password);
+
+        // initialize(ssid, password, instance().m_connection_status_callback, instance().m_receive_callback);
 
         return *m_instance;
     }
@@ -114,7 +113,7 @@ namespace Utils
     void Wifi::startTasks()
     {
         xTaskCreate(Wifi::monitorConnection, "Check Wifi", 3000, NULL, 2 | portPRIVILEGE_BIT, NULL);
-        xTaskCreate(Wifi::receiveData, "Receive Data", 12000, NULL, 2 | portPRIVILEGE_BIT, NULL);
+        xTaskCreate(Wifi::receiveData, "Receive Data", 12000, NULL, 3 | portPRIVILEGE_BIT, NULL);
     }
 
     bool Wifi::isConnected()

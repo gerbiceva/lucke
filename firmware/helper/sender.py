@@ -275,4 +275,4 @@ if __name__ == "__main__":
             fid, name = args.set_name
             fid = int(fid)
         run_command(client.set_name, name, fid)
-        
+    

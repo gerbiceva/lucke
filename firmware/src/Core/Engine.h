@@ -12,9 +12,7 @@
 #include "Traits/Serializable.h"
 
 #include "Config/EngineConfig.h"
-
-// #define DEFAULT_WIFI_SSID "lasportiva5"
-// #define DEFAULT_WIFI_PASSWORD "GregorJeCar!56"
+#include "Fixtures/All.h"
 
 class Engine : public Traits::Deserializable
 {
@@ -133,7 +131,7 @@ public:
     std::string toString();
 
 private:
-    EngineConfig m_settings;
+    Config::Engine m_settings;
 
     Utils::Storage m_storage;
     Utils::TaskExecutor m_taskExecutor;

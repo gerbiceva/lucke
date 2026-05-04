@@ -79,17 +79,17 @@ namespace Handler
         Fixture* fix = get(id);
         if(fix)
         {
-            if(!fix->m_isHighlighted)
+            if(!fix->getHighlighted())
             {
                 // Utils::Logger::dprintf("[FIX_HANDLER] Highlighting fixture: %d\n", id);
-                fix->m_isHighlighted = true;
+                fix->getHighlighted() = true;
                 fix->highlight();
                 fix->update();
             }
             else
             {
                 // Utils::Logger::dprintf("[FIX_HANDLER] Un-Highlighting fixture: %d\n", id);
-                fix->m_isHighlighted = false;
+                fix->getHighlighted() = false;
             }
             return fix->getName();
         }
@@ -109,7 +109,7 @@ namespace Handler
         {
             for(Fixture* fix : fixtures)
             {
-                if(!fix->m_isHighlighted)
+                if(!fix->getHighlighted())
                 {
                     fix->update();
                 }

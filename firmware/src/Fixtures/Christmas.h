@@ -1,15 +1,11 @@
 #pragma once
-#include "Core/Fixture.h"
-#include "Output/HardwareLED1D.h"
+#include "Generics/Strip2812.h"
 
-template<uint8_t TPin>
-struct Christmas : public Fixture
+template<uint8_t TPin = 5U>
+struct Christmas : public Fixtures::Strip2812<80, TPin>
 {
-    static constexpr uint16_t N = 80U;
-    static constexpr uint16_t BYTES = N * 3;
-
     Christmas()
-		: Fixture("neki", "Christmas",  R"(
+		: Strip2812("neki", "Christmas",  R"(
     {
         "groups": [
         {
@@ -41,20 +37,5 @@ struct Christmas : public Fixture
     
     )")
     {
-        addOutput<Output::HardwareLED1D<WS2812B, TPin, GRB>> (N);
-    }
-
-    void wifiAnimation() override
-    {
-        static uint16_t off = 0;
-        getSrcBuffer()[off] = 255;
-        getSrcBuffer()[off == 0 ? (BYTES - 1) : off - 1] = 0;
-        off = (off + 1) % BYTES;
-        vTaskDelay(20);
-    }
-
-    void highlight() override
-    {
-        memset(getOffsetSrcBuffer(), 255, BYTES);
     }
 };

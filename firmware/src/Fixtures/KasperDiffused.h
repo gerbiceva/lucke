@@ -1,5 +1,5 @@
 #pragma once
-#include "Strip2815.h"
+#include "Generics/Strip2815.h"
 
 namespace Fixtures {
 

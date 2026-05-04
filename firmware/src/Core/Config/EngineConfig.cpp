@@ -1,6 +1,9 @@
 #include "EngineConfig.h"
 
-void EngineConfig::toJson(JsonObject& obj)
+using namespace Config;
+
+
+void Engine::toJson(JsonObject& obj)
 {
     // obj["to_factory_settings"] = to_factory_settings;
     obj["serial_report_task"] = serial_report_task;
@@ -10,7 +13,7 @@ void EngineConfig::toJson(JsonObject& obj)
     obj["password"] = password.c_str();
 }
 
-std::string EngineConfig::toString()
+std::string Engine::toString()
 {
     JsonDocument obj;
     // obj["to_factory_settings"] = to_factory_settings;

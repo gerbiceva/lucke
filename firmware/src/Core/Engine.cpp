@@ -92,7 +92,7 @@ void Engine::init()
         {
             this->ping();
         },
-        2, 1000);
+        1, 1000);
 
         m_taskExecutor.spawnTask("Read serial", [this]()
         {
@@ -168,7 +168,7 @@ void Engine::parseConfig(const std::string& data, bool serial)
             Utils::Logger::println(s.c_str());
             return;
         }
-        Utils::Wifi::instance().sendUdpPacket(12345, s);
+        Utils::Wifi::instance().sendUdpPacket(RESPONSE_PORT, s);
     };
 
     JsonDocument doc;
@@ -541,7 +541,7 @@ void Engine::ping()
     serializeJson(this->basicDesc(), temp);
     while(true)
     {
-        Utils::Wifi::instance().sendUdpPacket(12343, temp);
+        Utils::Wifi::instance().sendUdpPacket(HEARTBEAT_PORT, temp);
         vTaskDelay(500);
     }
 }
@@ -556,7 +556,7 @@ void Engine::sendReport()
         // Utils::Wifi::instance().toJson(wifiDoc);
         // serializeJson(doc, temp);
         std::string temp = toString().c_str();
-        Utils::Wifi::instance().sendUdpPacket(12344, temp);
+        Utils::Wifi::instance().sendUdpPacket(REPORT_PORT, temp);
 
         vTaskDelay(10000);
     }

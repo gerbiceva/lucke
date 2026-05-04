@@ -1,14 +1,13 @@
 #pragma once
-#include "Core/Fixture.h"
-#include "Output/HardwareLED1D.h"
+#include "Generics/Strip2815.h"
 
-struct Astera144 : public Fixture
+namespace Fixtures
 {
-    static constexpr uint16_t N = 144U;
-    static constexpr uint16_t BYTES = N * 3;
 
+struct Astera144 : public Strip2815<144>
+{
     Astera144()
-		: Fixture("name", "Astera144",  R"(
+		: Strip2815("name", "Astera144",  R"(
     {
         "groups": [
         {
@@ -40,21 +39,7 @@ struct Astera144 : public Fixture
     
     )")
     {
-        addOutput<Output::HardwareLED1D<WS2815, 5, RGB>> (N);
-    }
-
-    void wifiAnimation() override
-    {
-        // Traits::OutputInterface* o = m_outputs[0];
-        static uint16_t off = 0;
-        getSrcBuffer()[off] = 255;
-        getSrcBuffer()[off == 0 ? (BYTES - 1) : off - 1] = 0;
-        off = (off + 1) % BYTES;
-        vTaskDelay(20);
-    }
-
-    void highlight() override
-    {
-        memset(getOffsetSrcBuffer(), 255, BYTES);
     }
 };
+
+}
