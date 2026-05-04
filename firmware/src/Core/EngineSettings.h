@@ -7,12 +7,11 @@
 #define DEFAULT_WIFI_SSID "Ledique"
 #define DEFAULT_WIFI_PASSWORD "dasenebipovezau"
 
-
 struct EngineSettings : public Traits::Deserializable
 {
     bool to_factory_settings = false;
-    bool print_task = true;
-    bool report_task = true;
+    bool serial_report_task = true;
+    bool wireless_report_task = true;
     bool wifi_animation = false;
 
     std::string ssid = DEFAULT_WIFI_SSID;

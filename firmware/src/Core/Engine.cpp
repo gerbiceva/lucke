@@ -45,8 +45,8 @@ void Engine::readSettings()
             // return;
         }
 
-        updateElement<bool>(doc, "print_task", m_settings.print_task);
-        updateElement<bool>(doc, "auto_report_task", m_settings.report_task);
+        updateElement<bool>(doc, "serial_report_task", m_settings.serial_report_task);
+        updateElement<bool>(doc, "wireless_report_task", m_settings.wireless_report_task);
         updateElement<bool>(doc, "wifi_animation", m_settings.wifi_animation);
 
         const char* ssid = getElement<const char*>(doc, "ssid", m_settings.ssid.c_str());
@@ -230,39 +230,39 @@ void Engine::parseConfig(const std::string& data, bool serial)
         ESP.restart();
         return;
     }
-    else if(strcmp(req, "print_task") == 0)
+    else if(strcmp(req, "serial_report_task") == 0)
     {
         if(doc["value"].is<bool>())
         {
             bool value = doc["value"];
             spawnSerialPrintTask(value);
 
-            m_settings.print_task = value;
+            m_settings.serial_report_task = value;
             m_storage.putString("settings", m_settings.toString());
-            response = Utils::String::concat("Set print task enabled to ", value);
+            response = Utils::String::concat("Set serial report enabled to ", value);
         }
         else 
         {
             Utils::Logger::println("[REQUEST] Invalid json, missing field value");
-            response = "Missing field value in print_task";
+            response = "Missing field value in serial_report_task";
             status = "ERROR";
         }
     }
-    else if(strcmp(req, "auto_report_task") == 0)
+    else if(strcmp(req, "wireless_report_task") == 0)
     {
         if(doc["value"].is<bool>())
         {
             bool value = doc["value"];
             spawnWirelessPrintTask(value);
 
-            m_settings.report_task = value;
+            m_settings.wireless_report_task = value;
             m_storage.putString("settings", m_settings.toString());
-            response = Utils::String::concat("Set auto report task enabled to ", value);
+            response = Utils::String::concat("Set wireless report enabled to ", value);
         }
         else 
         {
             Utils::Logger::println("[REQUEST] Invalid json, missing field value");
-            response = "Missing field value in auto_report_task";
+            response = "Missing field value in wireless_report_task";
             status = "ERROR";
         }
     }
@@ -587,7 +587,7 @@ void Engine::readSerial()
 
 void Engine::spawnSerialPrintTask(bool value , bool init)
 {
-    if((init && m_settings.print_task) || (value && !m_settings.print_task))
+    if((init && m_settings.serial_report_task) || (value && !m_settings.serial_report_task))
     {
         m_sPrintTaskID = m_taskExecutor.spawnTask("Print Report", [this]()
         {
@@ -596,7 +596,7 @@ void Engine::spawnSerialPrintTask(bool value , bool init)
         1, 10000);
         return;
     }
-    else if(!value && m_settings.print_task)
+    else if(!value && m_settings.serial_report_task)
     {
         m_taskExecutor.stopTask(m_sPrintTaskID);
     }
@@ -604,7 +604,7 @@ void Engine::spawnSerialPrintTask(bool value , bool init)
 
 void Engine::spawnWirelessPrintTask(bool value, bool init)
 {
-    if((init && m_settings.report_task) || (value && !m_settings.report_task))
+    if((init && m_settings.wireless_report_task) || (value && !m_settings.wireless_report_task))
     {
         m_wPrintTaskID = m_taskExecutor.spawnTask("Send report", [this]()
         {
@@ -613,7 +613,7 @@ void Engine::spawnWirelessPrintTask(bool value, bool init)
         1, 10000);
         return;
     }
-    else if(!value && m_settings.report_task)
+    else if(!value && m_settings.wireless_report_task)
     {
         m_taskExecutor.stopTask(m_wPrintTaskID);
     }

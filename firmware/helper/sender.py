@@ -103,10 +103,10 @@ class ESPClient:
         return self.send_request({"request": "wifi_animation", "value": value})
 
     def enable_serial_print(self, value: bool) -> None:
-        return self.send_request({"request": "print_task", "value": value})
+        return self.send_request({"request": "serial_report_task", "value": value})
 
     def enable_wireless_logging(self, value: bool) -> None:
-        return self.send_request({"request": "auto_report_task", "value": value})
+        return self.send_request({"request": "wireless_report_task", "value": value})
         
 
     def set_wifi(self, ssid: str, password: str) -> None:
@@ -276,7 +276,3 @@ if __name__ == "__main__":
             fid = int(fid)
         run_command(client.set_name, name, fid)
         
-        # {"request": "reboot"}
-        # {"request": "describe"}
-        # {"request": "auto_report_task", "value": false}
-        # {"request": "auto_report_task", "value": true}
