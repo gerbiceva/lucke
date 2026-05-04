@@ -113,8 +113,8 @@ namespace Utils
 
     void Wifi::startTasks()
     {
-        xTaskCreate(Wifi::monitorConnection, "Check Wifi", 3000, NULL, 1 | portPRIVILEGE_BIT, NULL);
-        xTaskCreate(Wifi::receiveData, "Receive Data", 12000, NULL, 1 | portPRIVILEGE_BIT, NULL);
+        xTaskCreate(Wifi::monitorConnection, "Check Wifi", 3000, NULL, 2 | portPRIVILEGE_BIT, NULL);
+        xTaskCreate(Wifi::receiveData, "Receive Data", 12000, NULL, 2 | portPRIVILEGE_BIT, NULL);
     }
 
     bool Wifi::isConnected()

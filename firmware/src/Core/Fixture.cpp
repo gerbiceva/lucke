@@ -39,6 +39,17 @@ void Fixture::obtainSrcBuffer()
     m_srcBuffer = m_dmxIn->getBuffer();
 }
 
+void Fixture::configureOutput(Traits::OutputInterface* output)
+{
+    m_outputs.push_back(output);
+    m_outputs.back()->bind();
+
+    m_outputs.back()->setSrcBuffer(m_srcBuffer + m_config.address + m_lastOffset);
+    m_lastOffset += m_outputs.back()->getSize();
+    updatePresets();
+}
+
+
 
 uint8_t* Fixture::getSrcBuffer() 
 { 

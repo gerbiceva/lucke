@@ -18,19 +18,9 @@ struct FixtureConfig
 
 class Fixture : public Traits::Serializable, public Traits::Deserializable
 {
-    static uint8_t s_ID;
-    uint8_t m_ID;
-
-    FixtureConfig m_config;
-
-    std::shared_ptr<Traits::InputInterface> m_dmxIn;
-    std::vector<Traits::OutputInterface*> m_outputs;
-    
-    uint8_t* m_srcBuffer;
-    uint16_t m_lastOffset = 0U;
-    JsonDocument jsonPreset;
 
     void obtainSrcBuffer();
+    void configureOutput(Traits::OutputInterface* output);
     
 public:
 
@@ -40,25 +30,25 @@ public:
 
     virtual ~Fixture() = default;
 
-    void updatePresets();
-
     template<typename TOutput, typename... Args>
     void addOutput(Args&&... args)
     {
-        m_outputs.push_back(new TOutput(args...));
-        m_outputs.back()->bind();
+        configureOutput(new TOutput(args...));
+        // m_outputs.push_back(new TOutput(args...));
+        // m_outputs.back()->bind();
 
-        m_outputs.back()->setSrcBuffer(m_srcBuffer + m_config.address + m_lastOffset);
-        m_lastOffset += m_outputs.back()->getSize();
-        updatePresets();
+        // m_outputs.back()->setSrcBuffer(m_srcBuffer + m_config.address + m_lastOffset);
+        // m_lastOffset += m_outputs.back()->getSize();
+        // updatePresets();
     }
+
+    void updatePresets();
 
     uint8_t* getSrcBuffer();
     uint8_t* getOffsetSrcBuffer();
     uint8_t id() const;
     const std::string& getName() const;
     const std::string& getType() const;
-    void getPresets(JsonObject& obj);
 
     void setUniverse(uint8_t new_universe);
     void setAddress(uint16_t new_address);
@@ -71,6 +61,7 @@ public:
 
     std::string getSelectedPresetName();
 
+    void getPresets(JsonObject& obj);
     void fromJson(std::string json) override;
     JsonDocument toJsonDoc() override;
     void toJson(JsonObject& doc) override;
@@ -78,4 +69,15 @@ public:
 
     bool m_isHighlighted = false;
 private:
+    static uint8_t s_ID;
+    uint8_t m_ID;
+
+    FixtureConfig m_config;
+
+    std::shared_ptr<Traits::InputInterface> m_dmxIn;
+    std::vector<Traits::OutputInterface*> m_outputs;
+    
+    uint8_t* m_srcBuffer;
+    uint16_t m_lastOffset = 0U;
+    JsonDocument jsonPreset;
 };

@@ -7,6 +7,7 @@
 #define DEFAULT_WIFI_SSID "Ledique"
 #define DEFAULT_WIFI_PASSWORD "dasenebipovezau"
 
+
 struct EngineSettings : public Traits::Deserializable
 {
     bool to_factory_settings = false;

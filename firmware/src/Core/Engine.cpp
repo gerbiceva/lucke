@@ -92,13 +92,13 @@ void Engine::init()
         {
             this->ping();
         },
-        1, 1000);
+        2, 1000);
 
         m_taskExecutor.spawnTask("Read serial", [this]()
         {
             this->readSerial();
         }, 
-        1, 10000);
+        2, 10000);
 
 
         inited = true;
