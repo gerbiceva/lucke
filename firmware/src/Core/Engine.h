@@ -1,6 +1,7 @@
 #pragma once
 #include <string>
 #include <functional>
+#include <atomic>
 
 #include "Handlers/FixtureHandler.h"
 #include "Handlers/InputHandler.h"
@@ -32,6 +33,7 @@ class Engine : public Traits::Deserializable
     bool factoryReset = false;
     
 public:
+    std::atomic_bool should_reserialize;
     static Engine& instance();
     void init();
 

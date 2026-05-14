@@ -174,6 +174,10 @@ def initArguments():
 
     return parser.parse_args()
 
+{"request": "wifi", "ssid": "HP LaserJet 3600x Series", "password": "aaaaaaaaa"}
+{"request": "describe"}
+
+
 
 # ---------------- Example Usage ----------------
 if __name__ == "__main__":
@@ -274,5 +278,4 @@ if __name__ == "__main__":
         else:
             fid, name = args.set_name
             fid = int(fid)
-        run_command(client.set_name, name, fid)
-    
+        run_command(client.set_name, name, fid)    

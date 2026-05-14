@@ -58,9 +58,52 @@ namespace Utils
                 }
             }
 
-            vTaskDelay(50);
+            vTaskDelay(10);
         }
     }
+    // void Wifi::receiveData(void*)
+    // {
+    //     Utils::Logger::println("[TASK] Created 'WIFI receive data' task");
+
+    //     Wifi& instance = Wifi::instance();
+
+    //     WiFiServer server(8888);
+    //     server.begin();
+
+    //     while (true)
+    //     {
+    //         if (instance.isConnected())
+    //         {
+    //             WiFiClient client = server.available();  // TCP accept
+
+    //             if (client)
+    //             {
+    //                 Utils::Logger::println("[TCP] Client connected");
+
+    //                 while (client.connected())
+    //                 {
+    //                     while (client.available())
+    //                     {
+    //                         // Read raw TCP bytes
+    //                         std::string data = client.readStringUntil('\n').c_str(); 
+                            
+    //                         if (data.length() > 0)
+    //                         {
+    //                             instance.m_receive_callback(data.c_str());
+    //                         }
+    //                     }
+
+    //                     vTaskDelay(10);
+    //                 }
+
+    //                 // client.stop();
+    //                 // Utils::Logger::println("[TCP] Client disconnected");
+    //             }
+    //         }
+
+    //         vTaskDelay(10);
+    //     }
+    // }
 
 
     Wifi::Wifi(const char *ssid, const char *password, const std::function<void(bool)>& connection_status_callback, const std::function<void(std::string)>& receive_callback) 
@@ -121,15 +164,31 @@ namespace Utils
         return WiFi.status() == WL_CONNECTED;
     }
     
-    void Wifi::sendUdpPacket(uint16_t port, const std::string& data)
+    void Wifi::sendUdpPacket(uint16_t port, std::string data)
     {
+        // Utils::Logger::println("Sending data on port");
         if(isConnected())
         {
             WiFiUDP udp;
-            udp.beginPacket(WiFi.broadcastIP(), port);
+            IPAddress ip = WiFi.localIP();
+            IPAddress broadcast = IPAddress(ip[0], ip[1], ip[2], 255);
+
+            udp.beginPacket(broadcast, port);
             udp.print(data.c_str());
             udp.endPacket();
+            // Utils::Logger::printf("%d\n", data.length());
+            // Serial.printf("=====Packet sent: %s\n", data.c_str());
         }
+    }
+
+    // Utils::Optional<std::string>
+    Utils::Optional<std::string> Wifi::getIP()
+    {
+        if(isConnected())
+        {
+            return std::string(WiFi.localIP().toString().c_str());
+        }
+        return Utils::Optional<std::string>();
     }
     
     void Wifi::toJson(JsonObject& doc)

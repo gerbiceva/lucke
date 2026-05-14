@@ -60,6 +60,22 @@ uint8_t Fixture::id() const
     return m_config.m_ID; 
 }
 
+uint8_t Fixture::getUniverse() const
+{
+    return m_config.universe;
+}
+
+uint16_t Fixture::getAddress() const
+{
+    return m_config.address;
+}
+
+uint8_t Fixture::getSelectedPreset() const
+{
+    return m_config.selectedPreset;
+}
+
+
 const std::string& Fixture::getName() const 
 { 
     return m_config.name; 

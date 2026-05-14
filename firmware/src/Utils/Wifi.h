@@ -2,6 +2,7 @@
 // #include <atomic>
 #include <memory>
 #include <functional>
+#include "Utils/Optional.h"
 #include "Traits/Deserializable.h"
 
 
@@ -21,8 +22,9 @@ public:
     static void startTasks();
     
     bool isConnected();
+    Utils::Optional<std::string> getIP();
 
-    void sendUdpPacket(uint16_t port, const std::string& data);
+    void sendUdpPacket(uint16_t port, std::string data);
 
     void toJson(JsonObject& doc) override;
 

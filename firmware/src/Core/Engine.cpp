@@ -77,6 +77,8 @@ void Engine::init()
     {        
         // Utils::Logger::dprintln("[ENGINE] Creating tasks");
         Utils::Wifi::startTasks();
+        should_reserialize = true;
+
         m_inputTaskID = m_taskExecutor.spawnTask("DMX Input", [this]()
         {
             this->m_inputHandler.update();
@@ -165,9 +167,9 @@ void Engine::parseConfig(const std::string& data, bool serial)
 
         std::string s;
         serializeJson(json, s);
+
         if(serial)
         {
-            // Serial.println(s.c_str());
             Utils::Logger::print("\nResponse: ");
             Utils::Logger::println(s.c_str());
             return;
@@ -193,32 +195,39 @@ void Engine::parseConfig(const std::string& data, bool serial)
     if(strcmp(req, "describe") == 0)
     {
         response = Engine::instance().toString();
-        // Utils::Logger::dprintln("Describe engine request");
     }
     else if(strcmp(req, "fixtures") == 0)
     {
         JsonObject obj = jsonTemp["fixture_handler"].to<JsonObject>();
         m_fixtureHandler.toJsonFull(obj);
         serializeJson(jsonTemp, response);
-        // Utils::Logger::dprintln("Describe fix handler request");
     }
     else if(strcmp(req, "presets") == 0)
     {
         auto obj = m_fixtureHandler.presetsJson();
         serializeJson(obj, response);
-        // Utils::Logger::dprintln("Describe fix handler request");
     }
     else if(strcmp(req, "inputs") == 0)
     {
         JsonObject obj = jsonTemp["input_handler"].to<JsonObject>();
         m_inputHandler.toJson(obj);
         serializeJson(jsonTemp, response);
-        // Utils::Logger::dprintln("Describe input handler request");
+    }
+    else if(strcmp(req, "ip") == 0)
+    {
+        auto v = Utils::Wifi::instance().getIP();
+        if(v.has_value())
+        {
+            response = v.value();
+        }
+        else 
+        {
+            response = "No IP?";
+        }
     }
     else if(strcmp(req, "reboot") == 0)
     {
         response = "Rebooting in 1 second";
-        // Utils::Logger::dprintln("Reboot request");
         sendResponse();
         sleep(1);
         ESP.restart();
@@ -247,8 +256,7 @@ void Engine::parseConfig(const std::string& data, bool serial)
         else 
         {
             Utils::Logger::println("[REQUEST] Invalid json, missing field value");
-            response = "Missing field value in serial_report_task";
-            status = "ERROR";
+            response = "Serial report is set to: " + std::to_string(m_settings.serial_report_task);
         }
     }
     else if(strcmp(req, "wireless_report_task") == 0)
@@ -265,8 +273,7 @@ void Engine::parseConfig(const std::string& data, bool serial)
         else 
         {
             Utils::Logger::println("[REQUEST] Invalid json, missing field value");
-            response = "Missing field value in wireless_report_task";
-            status = "ERROR";
+            response = "Wireless report is set to: " + std::to_string(m_settings.wireless_report_task);
         }
     }
     else if(strcmp(req, "wifi_animation") == 0)
@@ -281,8 +288,7 @@ void Engine::parseConfig(const std::string& data, bool serial)
         else 
         {
             Utils::Logger::println("[REQUEST] Invalid json, missing field value");
-            response = "Missing field value in wifi animation";
-            status = "ERROR";
+            response = "Wifi animation is set to: " + std::to_string(m_settings.wifi_animation);
         }
     }
 
@@ -295,7 +301,6 @@ void Engine::parseConfig(const std::string& data, bool serial)
             m_settings.ssid = ssid;
             response = Utils::String::concat("Set ssid to '", ssid, "'");
             dirty = true;
-            // Utils::Logger::dprintln("Set ssid request");
         }
         if(doc["password"].is<const char*>())
         {
@@ -312,13 +317,11 @@ void Engine::parseConfig(const std::string& data, bool serial)
             }
 
             dirty = true;
-            // Utils::Logger::dprintln("Set password request");
         }
 
         if(dirty)
         {
             m_storage.putString("settings", m_settings.toString());
-            // Utils::Wifi::reinitialize(settings.ssid.c_str(), settings.password.c_str());
             
             JsonObject obj = jsonTemp["wifi"].to<JsonObject>();
             Utils::Wifi::instance().toJson(obj);
@@ -336,10 +339,45 @@ void Engine::parseConfig(const std::string& data, bool serial)
             Fixture* fix = m_fixtureHandler.get(id);
             if(fix)
             {
-                JsonObject o = jsonTemp["fixture"].to<JsonObject>();
-                fix->toJsonFull(o);
-                // Utils::Logger::dprintln("Get fixture");
-                serializeJson(jsonTemp, response);
+                auto v = doc["value"].is<const char*>();
+                if(v)
+                {
+                    std::string request = doc["value"];
+                    JsonDocument doc;
+                    if(request == "universe")
+                    {
+                        doc["request"] = "universe";
+                        doc["value"] = fix->getUniverse();
+                        serializeJson(doc, response);
+                    }
+                    else if(request == "address")
+                    {
+                        doc["request"] = "address";
+                        doc["value"] = fix->getAddress();
+                        serializeJson(doc, response);
+                    }
+                    else if(request == "preset")
+                    {
+                        doc["request"] = "preset";
+                        doc["value"] = fix->getSelectedPreset();
+                        serializeJson(doc, response);
+                    }
+                    else if(request == "name")
+                    {
+                        doc["request"] = "name";
+                        doc["value"] = fix->getName();
+                        serializeJson(doc, response);
+                    }
+                    else if(request == "type")
+                    {
+                        doc["request"] = "type";
+                        doc["value"] = fix->getType();
+                        serializeJson(doc, response);
+                    }
+                }
+                // JsonObject o = jsonTemp["fixture"].to<JsonObject>();
+                // fix->toJsonFull(o);
+                // serializeJson(jsonTemp, response);
             }
             else
             {
@@ -363,19 +401,17 @@ void Engine::parseConfig(const std::string& data, bool serial)
             Fixture* fix = m_fixtureHandler.get(id);
             if(fix)
             {
-                //Utils::Logger::dprintf("Set fixture %d\n", id);
                 bool set = false;
                 if (doc["universe"].is<uint8_t>())
                 {
                     uint8_t universe = doc["universe"];
                     if(universe < 1)
                     {
-                        response = Utils::String::concat("Cannot set universe of fixture '", fix->getName(), "'[", fix->id(), "] to ", universe);    
+                        response = Utils::String::concat("Cannot set universe of fixture '", fix->getName(), "'[", std::to_string(fix->id()), "] to ", universe);    
                         status = "ERROR";
                         return;
                     }
                     fix->setUniverse(universe);
-                    response = Utils::String::concat("Set universe of fixture '", fix->getName(), "'[", fix->id(), "] to ", universe);
                     set = true;
                 }
                 if (doc["address"].is<uint16_t>())
@@ -383,33 +419,31 @@ void Engine::parseConfig(const std::string& data, bool serial)
                     uint16_t address = doc["address"];
                     if(address >= 512)
                     {
-                        response = Utils::String::concat("Cannot set address of fixture '", fix->getName(), "'[", fix->id(), "] to ", address);    
+                        response = Utils::String::concat("Cannot set address of fixture '", fix->getName(), "'[", std::to_string(fix->id()), "] to ", address);    
                         status = "ERROR";
                         return;
                     }
                     fix->setAddress(address);
-                    response = Utils::String::concat("Set address of fixture '", fix->getName(), "'[", fix->id(), "] to ", address);
                     set = true;
                 }
                 if (doc["presetIndex"].is<uint8_t>())
                 {
                     uint8_t presetIndex = doc["presetIndex"];
                     fix->setPreset(presetIndex);
-                    response = Utils::String::concat("Set preset of fixture '", fix->getName(), "'[", fix->id(), "] to ", presetIndex);
                     set = true;
                 }
                 if (doc["name"].is<const char*>())
                 {
                     const char* name = doc["name"];
                     fix->setName(name);
-                    response = Utils::String::concat("Set name of fixture '", fix->getName(), "'[", fix->id(), "] to ", name);
                     set = true;
+                    should_reserialize = true;
                 }
                 if (doc["highlight"].is<bool>())
                 {
                     bool highlight = doc["highlight"];
                     m_fixtureHandler.highlightFixture(id);
-                    response = Utils::String::concat("Toggled highlight for fixture '", fix->getName(), "'[", fix->id(), "] to ", highlight);
+                    response = Utils::String::concat("Toggled highlight for fixture '", fix->getName(), "'[", std::to_string(fix->id()), "] to ", highlight);
                 }
 
                 if(set)
@@ -439,8 +473,6 @@ void Engine::parseConfig(const std::string& data, bool serial)
         }
     }
 
-    // Utils::Logger::dprintf("[REQUEST] %s\n", response);
-    //Utils::Logger::dprintln(response.c_str());
     sendResponse();
 }
 
@@ -523,10 +555,14 @@ std::string Engine::toString()
 
 void Engine::ping()
 {
-    std::string temp = "";
-    serializeJson(this->basicDesc(), temp);
+    std::string temp;
     while(true)
     {
+        if(should_reserialize)
+        {
+            serializeJson(basicDesc(), temp);
+            should_reserialize = false;
+        }
         Utils::Wifi::instance().sendUdpPacket(HEARTBEAT_PORT, temp);
         vTaskDelay(500);
     }

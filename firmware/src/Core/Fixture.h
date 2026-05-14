@@ -29,6 +29,10 @@ public:
     uint8_t id() const;
     uint8_t* getSrcBuffer();
     uint8_t* getOffsetSrcBuffer();
+
+    uint8_t getUniverse() const;
+    uint16_t getAddress() const;
+    uint8_t getSelectedPreset() const;
     const std::string& getName() const;
     const std::string& getType() const;
     bool& getHighlighted();
