@@ -31,6 +31,59 @@ namespace Utils
             vTaskDelay(50);
         }
     }
+    // void Wifi::receiveData(void*)
+    // {
+    //     Utils::Logger::println("[TASK] Created 'WIFI receive data' task");
+
+    //     Wifi& instance = Wifi::instance();
+
+    //     WiFiServer server(8888);
+    //     server.begin();
+
+    //     while (true)
+    //     {
+    //         if (instance.isConnected())
+    //         {
+    //             WiFiClient client = server.accept();
+
+    //             if (client)
+    //             {
+    //                 IPAddress ip = client.remoteIP();
+    //                 std::string buffer;
+
+    //                 unsigned long lastData = millis();
+
+    //                 while (client.connected())
+    //                 {
+    //                     while (client.available())
+    //                     {
+    //                         char c = client.read();
+    //                         buffer += c;
+    //                         lastData = millis();
+    //                     }
+
+    //                     // timeout (important for broken clients)
+    //                     if (millis() - lastData > 2000)
+    //                         break;
+
+    //                     vTaskDelay(1);
+    //                 }
+
+    //                 if (!buffer.empty())
+    //                 {
+    //                     instance.m_receive_callback(
+    //                         ip.toString().c_str(),
+    //                         buffer.c_str()
+    //                     );
+    //                 }
+
+    //                 client.stop();
+    //             }
+    //         }
+
+    //         vTaskDelay(10);
+    //     }
+    // }
 
     void Wifi::receiveData(void*) 
     {
@@ -51,7 +104,7 @@ namespace Utils
                     {
                         if (client.available()) 
                         {
-                            instance.m_receive_callback(client.readString().c_str());
+                            instance.m_receive_callback(client.remoteIP().toString().c_str(), client.readString().c_str());
                         }
                     }
                     client.stop();
@@ -106,7 +159,7 @@ namespace Utils
     // }
 
 
-    Wifi::Wifi(const char *ssid, const char *password, const std::function<void(bool)>& connection_status_callback, const std::function<void(std::string)>& receive_callback) 
+    Wifi::Wifi(const char *ssid, const char *password, const std::function<void(bool)>& connection_status_callback, const std::function<void(std::string, std::string)>& receive_callback) 
         : m_ssid(ssid), m_password(password), m_connection_status_callback(connection_status_callback), m_receive_callback(receive_callback) {
             Logger::printf("[WIFI] Connecting to '%s'\n", m_ssid);
             // uint8_t mac[] = {0x90, 0xA2, 0xDA, 0x10, 0x10, randomInt()}; // MAC Adress of your device
@@ -140,7 +193,7 @@ namespace Utils
         return *m_instance;
     }
 
-    Wifi &Wifi::initialize(const char *ssid, const char *password, std::function<void(bool)> connection_status_callback, std::function<void(std::string)> receive_callback)
+    Wifi &Wifi::initialize(const char *ssid, const char *password, std::function<void(bool)> connection_status_callback, std::function<void(std::string, std::string)> receive_callback)
     {
         assert(m_instance == nullptr);
         m_instance = std::unique_ptr<Wifi>(new Wifi(ssid, password, connection_status_callback, receive_callback));
@@ -180,6 +233,36 @@ namespace Utils
             // Serial.printf("=====Packet sent: %s\n", data.c_str());
         }
     }
+
+    void Wifi::sendTcpPacket(const std::string& host, uint16_t port, std::string data)
+    {
+        if (!isConnected())
+        {
+            Utils::Logger::println("WiFi not connected");
+            return;
+        }
+
+        Utils::Logger::println(("Connecting to: " + host + ":" + std::to_string(port)).c_str());
+
+        WiFiClient client;
+
+        if (!client.connect(host.c_str(), port))
+        {
+            Utils::Logger::println("TCP connect FAILED");
+            Utils::Logger::println(("Error: " + std::to_string(client.getWriteError())).c_str());
+            return;
+        }
+
+        Utils::Logger::println("TCP connected");
+
+        size_t sent = client.print(data.c_str());
+
+        Utils::Logger::println(("Bytes sent: " + std::to_string(sent)).c_str());
+
+        client.stop();
+        Utils::Logger::println("TCP closed");
+    }
+
 
     // Utils::Optional<std::string>
     Utils::Optional<std::string> Wifi::getIP()

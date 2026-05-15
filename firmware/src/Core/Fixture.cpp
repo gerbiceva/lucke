@@ -94,7 +94,10 @@ bool& Fixture::getHighlighted()
 
 void Fixture::getPresets(JsonObject& obj)
 {
-    obj[this->m_config.name] = jsonPreset;
+    JsonDocument temp;
+    temp["selected"] = m_config.selectedPreset;
+    temp["presets"] = jsonPreset;
+    obj[this->m_config.name] = temp;
 }
 
 void Fixture::setUniverse(uint8_t new_universe)
@@ -212,6 +215,11 @@ JsonDocument Fixture::toJsonDoc()
     JsonDocument doc = m_config.toJsonDoc();
     doc["footprint"] = m_lastOffset;
     return doc;
+}
+
+JsonDocument Fixture::configJson()
+{
+    return m_config.toJsonDoc();
 }
 
 void Fixture::toJson(JsonObject& doc)

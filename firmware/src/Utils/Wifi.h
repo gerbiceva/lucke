@@ -10,10 +10,10 @@ namespace Utils
 {
 class Wifi : public Traits::Deserializable
 {
-    Wifi(const char *ssid, const char *password, const std::function<void(bool)>& connection_status_callback, const std::function<void(std::string)>& receive_callback);
+    Wifi(const char *ssid, const char *password, const std::function<void(bool)>& connection_status_callback, const std::function<void(std::string, std::string)>& receive_callback);
 
 public:
-    static Wifi& initialize(const char* ssid, const char* password, std::function<void(bool)> connection_status_callback, std::function<void(std::string)> receive_callback);
+    static Wifi& initialize(const char* ssid, const char* password, std::function<void(bool)> connection_status_callback, std::function<void(std::string, std::string)> receive_callback);
     static Wifi& reinitialize(const char* ssid, const char* password);
     static Wifi& instance();
 
@@ -25,6 +25,7 @@ public:
     Utils::Optional<std::string> getIP();
 
     void sendUdpPacket(uint16_t port, std::string data);
+    void sendTcpPacket(const std::string& hostip, uint16_t port, std::string data);
 
     void toJson(JsonObject& doc) override;
 
@@ -34,6 +35,6 @@ private:
     const char* m_password;
 
     std::function<void(bool)> m_connection_status_callback;
-    std::function<void(std::string)> m_receive_callback;
+    std::function<void(std::string, std::string)> m_receive_callback;
 };
 }

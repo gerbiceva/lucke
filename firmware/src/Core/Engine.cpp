@@ -20,9 +20,9 @@ Engine::Engine ()
         this->m_taskExecutor.resumeTask(this->m_inputTaskID);
         
         this->clearSrcBuffers();
-    }, [this](std::string data)
+    }, [this](std::string ip, std::string data)
     {
-        this->parseConfig(data);
+        this->parseConfig(ip, data);
     });
 }
 
@@ -149,7 +149,7 @@ void Engine::wifiStatus()
 }
 
 
-void Engine::parseConfig(const std::string& data, bool serial)
+void Engine::parseConfig(const std::string& host, const std::string& data, bool serial)
 {
     if(data.length() == 1)
     {
@@ -159,7 +159,7 @@ void Engine::parseConfig(const std::string& data, bool serial)
     std::string response;
     std::string status = "OK";
 
-    auto sendResponse = [&response, &status, serial]() 
+    auto sendResponse = [&host, &response, &status, serial]() 
     {
         JsonDocument json;
         json["status"] = status.c_str();
@@ -174,7 +174,10 @@ void Engine::parseConfig(const std::string& data, bool serial)
             Utils::Logger::println(s.c_str());
             return;
         }
-        Utils::Wifi::instance().sendUdpPacket(RESPONSE_PORT, s);
+        // Utils::Logger::printf("Sending packet to: %s\n", host.c_str());
+        // Utils::Wifi::instance().sendUdpPacket(RESPONSE_PORT, s);
+        // s += "TCP";
+        Utils::Wifi::instance().sendTcpPacket(host, RESPONSE_PORT, s);
     };
 
     JsonDocument doc;
@@ -372,6 +375,12 @@ void Engine::parseConfig(const std::string& data, bool serial)
                     {
                         doc["request"] = "type";
                         doc["value"] = fix->getType();
+                        serializeJson(doc, response);
+                    }
+                    else if(request == "config")
+                    {
+                        doc["request"] = "config";
+                        doc["value"] = fix->configJson();
                         serializeJson(doc, response);
                     }
                 }
@@ -597,7 +606,7 @@ void Engine::readSerial()
         if(Serial.available())
         {
             auto v = Serial.readStringUntil('\n');
-            parseConfig(std::string(v.c_str()), true);
+            parseConfig("Serial0", std::string(v.c_str()), true);
         }
 
         vTaskDelay(1000);

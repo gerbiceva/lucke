@@ -53,6 +53,7 @@ public:
     void getPresets(JsonObject& obj);
     void fromJson(std::string json) override;
     JsonDocument toJsonDoc() override;
+    JsonDocument configJson();
     void toJson(JsonObject& doc) override;
     void toJsonFull(JsonObject& doc) override;
 

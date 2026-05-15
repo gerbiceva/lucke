@@ -20,7 +20,7 @@ class Engine : public Traits::Deserializable
     void readSettings();
     
     void wifiStatus();
-    void parseConfig(const std::string& data, bool serial = false);
+    void parseConfig(const std::string& host, const std::string& data, bool serial = false);
     
     void ping();
     void sendReport();

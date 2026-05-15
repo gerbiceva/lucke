@@ -3,7 +3,7 @@
 #include <string>
 #include <ArduinoJson.h>
 
-#define ENGINE_VERSION "0.9"
+#define ENGINE_VERSION "0.93"
 
 #define DEFAULT_WIFI_SSID "Ledique"
 #define DEFAULT_WIFI_PASSWORD "dasenebipovezau"
