@@ -520,6 +520,7 @@ void Engine::clearSrcBuffers()
 JsonDocument Engine::basicDesc()
 {
     JsonDocument doc;
+    doc["version"] = m_settings.version;
     JsonArray arr = doc["fixtures"].to<JsonArray>();
 
     const auto& fixtures = m_fixtureHandler.allFixtures();
