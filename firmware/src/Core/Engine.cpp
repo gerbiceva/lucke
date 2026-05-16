@@ -15,11 +15,12 @@ Engine::Engine ()
 
     Utils::Wifi::initialize(m_settings.ssid.c_str(), m_settings.password.c_str(), [this](bool is_connected) 
     {
-        this->m_taskExecutor.suspendTask(this->m_inputTaskID);        
-        this->wifiStatus();        
-        this->m_taskExecutor.resumeTask(this->m_inputTaskID);
-        
-        this->clearSrcBuffers();
+        if(this->wifiAnimation == nullptr)
+        {
+            return;
+        }
+
+        this->wifiStatus(is_connected);        
     }, [this](std::string ip, std::string data)
     {
         this->parseConfig(ip, data);
@@ -111,43 +112,51 @@ void Engine::init()
     }
 }
 
-void Engine::wifiStatus()
+
+void Engine::wifiStatus(bool is_connected)
 {
     static bool firstTime = true;
-    Utils::Logger::println("[WIFI] Disconnected...");
+    static bool prev = is_connected;
 
-    uint32_t animationHandle;
-    if(this->m_settings.wifi_animation || firstTime)
+    if(!is_connected && this->m_taskExecutor.isTaskRunning(this->m_inputTaskID))
     {
-        animationHandle = this->m_taskExecutor.spawnTask("Wifi animation", [this]()
+        this->m_taskExecutor.suspendTask(this->m_inputTaskID);
+    }
+
+    if(firstTime)
+    {
+        this->m_animationTaskID = this->m_taskExecutor.spawnTask("Wifi animation", [this]()
         {
-            this->clearSrcBuffers();
-            while(true)
-            {
-                if(this->wifiAnimation != nullptr)
-                {
-                    this->wifiAnimation();
-                }
-                vTaskDelay(20);
-            }
+            this->animateConnecting();
         }, 1, 1000);
-
     }
 
-    while(!Utils::Wifi::instance().isConnected())
-    {
-        vTaskDelay(10);
-    }
-    
-    Utils::Logger::println("[WIFI] Connected...");
-    if(this->m_settings.wifi_animation || firstTime)
-    {
-        this->m_taskExecutor.stopTask(animationHandle);
+    // prev = is_connected;
+    else if(prev != is_connected)
+    {   
+        // Utils::Logger::printf("Change: %d\n", is_connected);
+        if(is_connected)
+        {
+            this->m_taskExecutor.suspendTask(this->m_animationTaskID);
+            this->m_taskExecutor.resumeTask(this->m_inputTaskID);
+            this->clearSrcBuffers();
+            // Utils::Logger::printf("Conneected: %d\n", is_connected);
+        }
+        else
+        {
+            this->m_taskExecutor.suspendTask(this->m_inputTaskID);
+            
+            if(this->m_settings.wifi_animation)
+            {
+                this->m_taskExecutor.resumeTask(this->m_animationTaskID);
+                // Utils::Logger::printf("Disconnected: %d\n", is_connected);
+            }
+        }
     }
 
+    prev = is_connected;
     firstTime = false;
 }
-
 
 void Engine::parseConfig(const std::string& host, const std::string& data, bool serial)
 {
@@ -575,6 +584,16 @@ void Engine::ping()
         }
         Utils::Wifi::instance().sendUdpPacket(HEARTBEAT_PORT, temp);
         vTaskDelay(500);
+    }
+}
+
+void Engine::animateConnecting()
+{
+    this->clearSrcBuffers();
+    while(true)
+    {
+        this->wifiAnimation();
+        vTaskDelay(20);
     }
 }
 

@@ -19,10 +19,11 @@ class Engine : public Traits::Deserializable
     Engine ();
     void readSettings();
     
-    void wifiStatus();
+    void wifiStatus(bool connected);
     void parseConfig(const std::string& host, const std::string& data, bool serial = false);
     
     void ping();
+    void animateConnecting();
     void sendReport();
     void printReport();
     void readSerial();
@@ -114,6 +115,7 @@ private:
     Handler::Button m_buttonManager;
     Handler::Pin m_pinManager;
     
+    uint32_t m_animationTaskID;
     uint32_t m_inputTaskID;
     uint32_t m_sPrintTaskID = 0;
     uint32_t m_wPrintTaskID = 0;

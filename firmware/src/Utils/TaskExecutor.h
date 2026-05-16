@@ -24,6 +24,7 @@ public:
         uint32_t id = id_generator++;
         TaskRecord rec;
         rec.id = id;
+        rec.name = taskName;
         rec.fn = [this, id, invocable]() 
         { 
             invocable();
@@ -52,15 +53,19 @@ public:
     void resumeTask(uint32_t id);
     void stopTask(uint32_t id);
 
+    bool isTaskRunning(uint32_t id);
+
 private:
     struct TaskRecord {
         uint32_t id;
+        std::string name;
         TaskHandle_t handle;
         std::function<void()> fn;
         TaskStatus status;
     };
 
     std::list<TaskRecord>::iterator find(uint32_t id);
+    std::list<TaskRecord>::iterator find(std::string nmae);
 
     static void trampoline(void* fn) 
     {

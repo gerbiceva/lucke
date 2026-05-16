@@ -18,16 +18,10 @@ namespace Utils
     {
         Utils::Logger::println("[TASK] Created 'WIFI check network' task");
         Wifi& instance = Wifi::instance();
-        bool is_connected = instance.isConnected();
 
         while (true) 
         {
-            is_connected = instance.isConnected();
-            if(!is_connected)
-            {
-                instance.m_connection_status_callback(is_connected);
-            }
-
+            instance.m_connection_status_callback(instance.isConnected());
             vTaskDelay(50);
         }
     }
