@@ -131,25 +131,20 @@ void Engine::wifiStatus(bool is_connected)
         }, 1, 1000);
     }
 
-    // prev = is_connected;
     else if(prev != is_connected)
     {   
-        // Utils::Logger::printf("Change: %d\n", is_connected);
         if(is_connected)
         {
             this->m_taskExecutor.suspendTask(this->m_animationTaskID);
             this->m_taskExecutor.resumeTask(this->m_inputTaskID);
             this->clearSrcBuffers();
-            // Utils::Logger::printf("Conneected: %d\n", is_connected);
         }
         else
         {
             this->m_taskExecutor.suspendTask(this->m_inputTaskID);
-            
             if(this->m_settings.wifi_animation)
             {
                 this->m_taskExecutor.resumeTask(this->m_animationTaskID);
-                // Utils::Logger::printf("Disconnected: %d\n", is_connected);
             }
         }
     }
@@ -339,8 +334,9 @@ void Engine::parseConfig(const std::string& host, const std::string& data, bool 
             Utils::Wifi::instance().toJson(obj);
             serializeJson(jsonTemp, response);
             sendResponse();
-            // temp
-            ESP.restart();
+            sleep(1);
+            Utils::Wifi::instance().reinitialize(m_settings.ssid.c_str(), m_settings.password.c_str());
+            m_inputHandler.reconnectInputs();
         }
     }    
     else if(strcmp(req, "getfixture") == 0)
@@ -427,10 +423,12 @@ void Engine::parseConfig(const std::string& host, const std::string& data, bool 
                     {
                         response = Utils::String::concat("Cannot set universe of fixture '", fix->getName(), "'[", std::to_string(fix->id()), "] to ", universe);    
                         status = "ERROR";
-                        return;
                     }
-                    fix->setUniverse(universe);
-                    set = true;
+                    else
+                    {
+                        fix->setUniverse(universe);
+                        set = true;
+                    }
                 }
                 if (doc["address"].is<uint16_t>())
                 {
@@ -439,16 +437,26 @@ void Engine::parseConfig(const std::string& host, const std::string& data, bool 
                     {
                         response = Utils::String::concat("Cannot set address of fixture '", fix->getName(), "'[", std::to_string(fix->id()), "] to ", address);    
                         status = "ERROR";
-                        return;
                     }
-                    fix->setAddress(address);
-                    set = true;
+                    else
+                    {
+                        fix->setAddress(address);
+                        set = true;
+                    }
                 }
                 if (doc["presetIndex"].is<uint8_t>())
                 {
                     uint8_t presetIndex = doc["presetIndex"];
-                    fix->setPreset(presetIndex);
-                    set = true;
+                    if(presetIndex >= fix->getNumPresets())
+                    {
+                        response = Utils::String::concat("Cannot set preset of fixture '", fix->getName(), "'[", std::to_string(fix->id()), "] to ", presetIndex);    
+                        status = "ERROR";
+                    }
+                    else
+                    {
+                        fix->setPreset(presetIndex);
+                        set = true;
+                    }
                 }
                 if (doc["name"].is<const char*>())
                 {

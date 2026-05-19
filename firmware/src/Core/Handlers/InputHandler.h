@@ -44,6 +44,7 @@ namespace Handler
         // void canUpdate(bool b);
         // void initInputs();
         void clearSrcBuffers();
+        void reconnectInputs();
         
         void fromJson(std::string json) override;
         void toJson(JsonObject& doc) override;

@@ -25,60 +25,7 @@ namespace Utils
             vTaskDelay(50);
         }
     }
-    // void Wifi::receiveData(void*)
-    // {
-    //     Utils::Logger::println("[TASK] Created 'WIFI receive data' task");
-
-    //     Wifi& instance = Wifi::instance();
-
-    //     WiFiServer server(8888);
-    //     server.begin();
-
-    //     while (true)
-    //     {
-    //         if (instance.isConnected())
-    //         {
-    //             WiFiClient client = server.accept();
-
-    //             if (client)
-    //             {
-    //                 IPAddress ip = client.remoteIP();
-    //                 std::string buffer;
-
-    //                 unsigned long lastData = millis();
-
-    //                 while (client.connected())
-    //                 {
-    //                     while (client.available())
-    //                     {
-    //                         char c = client.read();
-    //                         buffer += c;
-    //                         lastData = millis();
-    //                     }
-
-    //                     // timeout (important for broken clients)
-    //                     if (millis() - lastData > 2000)
-    //                         break;
-
-    //                     vTaskDelay(1);
-    //                 }
-
-    //                 if (!buffer.empty())
-    //                 {
-    //                     instance.m_receive_callback(
-    //                         ip.toString().c_str(),
-    //                         buffer.c_str()
-    //                     );
-    //                 }
-
-    //                 client.stop();
-    //             }
-    //         }
-
-    //         vTaskDelay(10);
-    //     }
-    // }
-
+    
     void Wifi::receiveData(void*) 
     {
         Utils::Logger::println("[TASK] Created 'WIFI receive data' task");
@@ -213,7 +160,6 @@ namespace Utils
     
     void Wifi::sendUdpPacket(uint16_t port, std::string data)
     {
-        // Utils::Logger::println("Sending data on port");
         if(isConnected())
         {
             WiFiUDP udp;
@@ -223,8 +169,6 @@ namespace Utils
             udp.beginPacket(broadcast, port);
             udp.print(data.c_str());
             udp.endPacket();
-            // Utils::Logger::printf("%d\n", data.length());
-            // Serial.printf("=====Packet sent: %s\n", data.c_str());
         }
     }
 
@@ -247,14 +191,14 @@ namespace Utils
             return;
         }
 
-        Utils::Logger::println("TCP connected");
+        // Utils::Logger::println("TCP connected");
 
         size_t sent = client.print(data.c_str());
 
-        Utils::Logger::println(("Bytes sent: " + std::to_string(sent)).c_str());
+        // Utils::Logger::println(("Bytes sent: " + std::to_string(sent)).c_str());
 
         client.stop();
-        Utils::Logger::println("TCP closed");
+        // Utils::Logger::println("TCP closed");
     }
 
 

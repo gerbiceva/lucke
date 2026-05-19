@@ -11,6 +11,7 @@ namespace Input
         Sacn(uint8_t universe);
         ~Sacn();
 
+        void reinit() override;
         void update() override;
 
         void toJson(JsonObject& doc) override;

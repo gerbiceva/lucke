@@ -80,47 +80,14 @@ namespace Handler
         return subscribe(universe);
     }
 
-    // void InputHandler::canUpdate(bool b)
-    // {
-    //     // static bool m_inited = false;
-    //
-    //     // if(!m_inited)
-    //     // {
-    //     //     if(b)
-    //     //     {
-    //     //         xTaskCreate(InputHandler::updateTask, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, &m_handle);
-    //     //         m_inited = true;
-    //     //     }
-    //
-    //     //     return;
-    //     // }
-    //
-    //     if(b)
-    //     {
-    //         vTaskResume(m_handle);
-    //     }
-    //     else
-    //     {
-    //         vTaskSuspend(m_handle);
-    //     }
-    // }
-
 
     void InputHandler::update()
     {
-
         while(true)
         {
-            // iterateInputs([this](std::shared_ptr<InputInterface> iface) {
-            //     iface->update();
-            // })
             for (auto& it : m_inputs) {
                 it.second.interface->update();
             }
-            // for(InputInterface* p : m_inputs)
-            // {
-            //     p->update();
-            // }
             vTaskDelay(20);
         }
     }
@@ -129,6 +96,13 @@ namespace Handler
     {
         for (auto& it : m_inputs) {
             it.second.interface->clearSrcBuffer();
+        }
+    }
+
+    void InputHandler::reconnectInputs()
+    {
+        for (auto& it : m_inputs) {
+            it.second.interface->reinit();
         }
     }
 

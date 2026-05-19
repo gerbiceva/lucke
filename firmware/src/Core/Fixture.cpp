@@ -16,6 +16,7 @@ Fixture::Fixture(Config::Fixture config, std::string presets)
     m_config = config;
     m_config.obtainID();
     deserializeJson(jsonPreset, presets);
+    countPresets();
 }
 
 
@@ -26,7 +27,14 @@ Fixture::Fixture(std::string name, std::string type, std::string presets)
     m_config.type = type;
 
     deserializeJson(jsonPreset, presets);
+    countPresets();
     // obtainSrcBuffer();
+}
+
+void Fixture::countPresets()
+{
+    JsonArray arr1 = jsonPreset["groups"].as<JsonArray>();
+    m_config.numPresets = arr1.size();
 }
 
 void Fixture::obtainSrcBuffer()
@@ -73,6 +81,11 @@ uint16_t Fixture::getAddress() const
 uint8_t Fixture::getSelectedPreset() const
 {
     return m_config.selectedPreset;
+}
+
+uint8_t Fixture::getNumPresets() const
+{
+    return m_config.numPresets;
 }
 
 

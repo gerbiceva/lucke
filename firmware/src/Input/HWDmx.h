@@ -12,7 +12,7 @@ namespace Input
          }
         ~HWDmx() {}
 
-        
+        void reinit() override {}
         void update() override {}
         // virtual void setUniverse(uint8_t) override {}
 

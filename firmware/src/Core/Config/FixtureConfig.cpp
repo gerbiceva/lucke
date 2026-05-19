@@ -17,6 +17,7 @@ void Fixture::toJson(JsonObject& obj)
     obj["universe"] = universe;
     obj["address"] = address;
     obj["presetIndex"] = selectedPreset;
+    obj["numPresets"] = numPresets;
 }
 
 JsonDocument Fixture::toJsonDoc() 

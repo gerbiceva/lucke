@@ -24,6 +24,7 @@ namespace Traits
         std::string typeToString() const;
     public:
         InputInterface(uint8_t universe);
+        virtual void reinit() = 0;
         virtual ~InputInterface();
 
         uint8_t* getBuffer();

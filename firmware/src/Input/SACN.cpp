@@ -14,6 +14,12 @@ namespace Input
         m_sacn.stop();
     }
 
+    void Sacn::reinit()
+    {
+        m_sacn.stop();
+        m_sacn.begin(m_universe);
+    }
+
     void Sacn::update()
     {
         m_sacn.dmx(m_dmxBuffer);

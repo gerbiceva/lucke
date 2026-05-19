@@ -10,6 +10,7 @@
 
 class Fixture : public Traits::Serializable, public Traits::Deserializable
 {
+    void countPresets();
     void obtainSrcBuffer();
     void configureOutput(Traits::OutputInterface* output);
     
@@ -33,6 +34,7 @@ public:
     uint8_t getUniverse() const;
     uint16_t getAddress() const;
     uint8_t getSelectedPreset() const;
+    uint8_t getNumPresets() const;
     const std::string& getName() const;
     const std::string& getType() const;
     bool& getHighlighted();

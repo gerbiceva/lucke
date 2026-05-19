@@ -174,11 +174,6 @@ def initArguments():
 
     return parser.parse_args()
 
-{"request": "wifi", "ssid": "HP LaserJet 3600x Series", "password": "aaaaaaaaa"}
-{"request": "describe"}
-
-
-
 # ---------------- Example Usage ----------------
 if __name__ == "__main__":
     
@@ -280,3 +275,9 @@ if __name__ == "__main__":
             fid = int(fid)
         run_command(client.set_name, name, fid)    
 
+
+
+        {"request": "wifi", "ssid": "Ledique", "password": "dasenebipovezau"}
+        {"request": "wifi", "ssid": "HP LaserJet 3600x Series", "password": "aaaaaaaaa"}
+        {"request": "wifi_animation", "value": true}
+        {"request": "reboot"}
