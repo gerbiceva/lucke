@@ -201,36 +201,23 @@ void Engine::parseConfig(const std::string& host, const std::string& data, bool 
 
     if(strcmp(req, "describe") == 0)
     {
-        response = Engine::instance().toString();
+        response = describe(doc);
     }
     else if(strcmp(req, "fixtures") == 0)
     {
-        JsonObject obj = jsonTemp["fixture_handler"].to<JsonObject>();
-        m_fixtureHandler.toJsonFull(obj);
-        serializeJson(jsonTemp, response);
+        response = fixtures(doc);
     }
     else if(strcmp(req, "presets") == 0)
     {
-        auto obj = m_fixtureHandler.presetsJson();
-        serializeJson(obj, response);
+        response = presets(doc);
     }
     else if(strcmp(req, "inputs") == 0)
     {
-        JsonObject obj = jsonTemp["input_handler"].to<JsonObject>();
-        m_inputHandler.toJson(obj);
-        serializeJson(jsonTemp, response);
+        response = inputs(doc);
     }
     else if(strcmp(req, "ip") == 0)
     {
-        auto v = Utils::Wifi::instance().getIP();
-        if(v.has_value())
-        {
-            response = v.value();
-        }
-        else 
-        {
-            response = "No IP?";
-        }
+        response = getip(doc);
     }
     else if(strcmp(req, "reboot") == 0)
     {
@@ -251,52 +238,15 @@ void Engine::parseConfig(const std::string& host, const std::string& data, bool 
     }
     else if(strcmp(req, "serial_report_task") == 0)
     {
-        if(doc["value"].is<bool>())
-        {
-            bool value = doc["value"];
-            spawnSerialPrintTask(value);
-
-            m_settings.serial_report_task = value;
-            m_storage.putString("settings", m_settings.toString());
-            response = Utils::String::concat("Set serial report enabled to ", value);
-        }
-        else 
-        {
-            Utils::Logger::println("[REQUEST] Invalid json, missing field value");
-            response = "Serial report is set to: " + std::to_string(m_settings.serial_report_task);
-        }
+        response = serial_report(doc);
     }
     else if(strcmp(req, "wireless_report_task") == 0)
     {
-        if(doc["value"].is<bool>())
-        {
-            bool value = doc["value"];
-            spawnWirelessPrintTask(value);
-
-            m_settings.wireless_report_task = value;
-            m_storage.putString("settings", m_settings.toString());
-            response = Utils::String::concat("Set wireless report enabled to ", value);
-        }
-        else 
-        {
-            Utils::Logger::println("[REQUEST] Invalid json, missing field value");
-            response = "Wireless report is set to: " + std::to_string(m_settings.wireless_report_task);
-        }
+        response = wireless_report(doc);
     }
     else if(strcmp(req, "wifi_animation") == 0)
     {
-        if(doc["value"].is<bool>())
-        {
-            bool value = doc["value"];
-            m_settings.wifi_animation = value;
-            m_storage.putString("settings", m_settings.toString());
-            response = Utils::String::concat("Set wifi animation enabled to ", value);
-        }
-        else 
-        {
-            Utils::Logger::println("[REQUEST] Invalid json, missing field value");
-            response = "Wifi animation is set to: " + std::to_string(m_settings.wifi_animation);
-        }
+        response = wifi_animation(doc);
     }
 
     else if(strcmp(req, "wifi") == 0)
@@ -341,162 +291,11 @@ void Engine::parseConfig(const std::string& host, const std::string& data, bool 
     }    
     else if(strcmp(req, "getfixture") == 0)
     {
-        if(doc["id"].is<uint8_t>())
-        {
-            uint8_t id = doc["id"];
-            Fixture* fix = m_fixtureHandler.get(id);
-            if(fix)
-            {
-                auto v = doc["value"].is<const char*>();
-                if(v)
-                {
-                    std::string request = doc["value"];
-                    JsonDocument doc;
-                    if(request == "universe")
-                    {
-                        doc["request"] = "universe";
-                        doc["value"] = fix->getUniverse();
-                        serializeJson(doc, response);
-                    }
-                    else if(request == "address")
-                    {
-                        doc["request"] = "address";
-                        doc["value"] = fix->getAddress();
-                        serializeJson(doc, response);
-                    }
-                    else if(request == "preset")
-                    {
-                        doc["request"] = "preset";
-                        doc["value"] = fix->getSelectedPreset();
-                        serializeJson(doc, response);
-                    }
-                    else if(request == "name")
-                    {
-                        doc["request"] = "name";
-                        doc["value"] = fix->getName();
-                        serializeJson(doc, response);
-                    }
-                    else if(request == "type")
-                    {
-                        doc["request"] = "type";
-                        doc["value"] = fix->getType();
-                        serializeJson(doc, response);
-                    }
-                    else if(request == "config")
-                    {
-                        doc["request"] = "config";
-                        doc["value"] = fix->configJson();
-                        serializeJson(doc, response);
-                    }
-                }
-                // JsonObject o = jsonTemp["fixture"].to<JsonObject>();
-                // fix->toJsonFull(o);
-                // serializeJson(jsonTemp, response);
-            }
-            else
-            {
-                Utils::Logger::printf("[REQUEST] Could not find fixture with id %d\n", id);
-                response = "Could not find selected fixture";
-                status = "ERROR";
-            }
-        }
-        else 
-        {
-            Utils::Logger::printf("[REQUEST] Get fixture json does not containd 'id' field!\n");
-            response = "Invalid json";
-            status = "ERROR";
-        }
+        response = getFixture(doc);
     }
     else if(strcmp(req, "setfixture") == 0)
     {
-        if(doc["id"].is<uint8_t>())
-        {    
-            uint8_t id = doc["id"];
-            Fixture* fix = m_fixtureHandler.get(id);
-            if(fix)
-            {
-                bool set = false;
-                if (doc["universe"].is<uint8_t>())
-                {
-                    uint8_t universe = doc["universe"];
-                    if(universe < 1)
-                    {
-                        response = Utils::String::concat("Cannot set universe of fixture '", fix->getName(), "'[", std::to_string(fix->id()), "] to ", universe);    
-                        status = "ERROR";
-                    }
-                    else
-                    {
-                        fix->setUniverse(universe);
-                        set = true;
-                    }
-                }
-                if (doc["address"].is<uint16_t>())
-                {
-                    uint16_t address = doc["address"];
-                    if(address >= 512)
-                    {
-                        response = Utils::String::concat("Cannot set address of fixture '", fix->getName(), "'[", std::to_string(fix->id()), "] to ", address);    
-                        status = "ERROR";
-                    }
-                    else
-                    {
-                        fix->setAddress(address);
-                        set = true;
-                    }
-                }
-                if (doc["presetIndex"].is<uint8_t>())
-                {
-                    uint8_t presetIndex = doc["presetIndex"];
-                    if(presetIndex >= fix->getNumPresets())
-                    {
-                        response = Utils::String::concat("Cannot set preset of fixture '", fix->getName(), "'[", std::to_string(fix->id()), "] to ", presetIndex);    
-                        status = "ERROR";
-                    }
-                    else
-                    {
-                        fix->setPreset(presetIndex);
-                        set = true;
-                    }
-                }
-                if (doc["name"].is<const char*>())
-                {
-                    const char* name = doc["name"];
-                    fix->setName(name);
-                    set = true;
-                    should_reserialize = true;
-                }
-                if (doc["highlight"].is<bool>())
-                {
-                    bool highlight = doc["highlight"];
-                    m_fixtureHandler.highlightFixture(id);
-                    response = Utils::String::concat("Toggled highlight for fixture '", fix->getName(), "'[", std::to_string(fix->id()), "] to ", highlight);
-                }
-
-                if(set)
-                {
-                    fix->updatePresets();
-
-                    std::string key = "fixture" + std::to_string(id);
-                    std::string store;
-
-                    // TODO: make with Optional
-                    serializeJson(fix->toJsonDoc(), store);
-                    this->m_storage.putString(key, store);
-                }
-            }
-            else
-            {
-                Utils::Logger::printf("[REQUEST] Could not find fixture with id %d\n", id);
-                response = Utils::String::concat("Fixture with id '", id, "' does not exist");
-                status = "ERROR";
-            }
-        }
-        else 
-        {
-            Utils::Logger::printf("[REQUEST] Set fixture json does not containd 'id' field!\n");
-            response = "Invalid json";
-            status = "ERROR";
-        }
+        response = setFixture(doc);
     }
 
     sendResponse();
@@ -523,16 +322,12 @@ std::shared_ptr<Traits::InputInterface> Engine::getDMXInput(uint8_t universe, ui
     return m_inputHandler.interface(universe, old_universe);
 }
 
-// Traits::InputInterface* Engine::getDMXInput(uint8_t universe)
-// {
-//     return m_inputHandler.interface(universe);
-// }
-
-
 void Engine::clearSrcBuffers()
 {
     m_inputHandler.clearSrcBuffers();
 }
+
+
 
 JsonDocument Engine::basicDesc()
 {
@@ -580,6 +375,8 @@ std::string Engine::toString()
     return ret;
 }
 
+
+
 void Engine::ping()
 {
     std::string temp;
@@ -604,6 +401,8 @@ void Engine::animateConnecting()
         vTaskDelay(20);
     }
 }
+
+
 
 void Engine::sendReport()
 {
@@ -641,6 +440,8 @@ void Engine::readSerial()
     }
 }
 
+
+
 void Engine::spawnSerialPrintTask(bool value , bool init)
 {
     if((init && m_settings.serial_report_task) || (value && !m_settings.serial_report_task))
@@ -673,4 +474,307 @@ void Engine::spawnWirelessPrintTask(bool value, bool init)
     {
         m_taskExecutor.stopTask(m_wPrintTaskID);
     }
+}
+
+
+
+std::string Engine::describe(const JsonDocument& doc)
+{
+    return Engine::instance().toString();
+}
+
+std::string Engine::fixtures(const JsonDocument& doc)
+{
+    JsonDocument jsonTemp;
+    JsonObject obj = jsonTemp["fixture_handler"].to<JsonObject>();
+    m_fixtureHandler.toJsonFull(obj);
+    std::string response;
+    serializeJson(jsonTemp, response);
+    return response;
+}
+
+std::string Engine::presets(const JsonDocument& doc)
+{
+    std::string response;
+    auto obj = m_fixtureHandler.presetsJson();
+    serializeJson(obj, response);
+    return response;
+}
+
+std::string Engine::inputs(const JsonDocument& doc)
+{
+    JsonDocument jsonTemp;
+    JsonObject obj = jsonTemp["input_handler"].to<JsonObject>();
+    m_inputHandler.toJson(obj);
+
+    std::string response;
+    serializeJson(jsonTemp, response);
+    return response;
+}
+
+std::string Engine::getip(const JsonDocument& doc)
+{
+    std::string response;
+    auto v = Utils::Wifi::instance().getIP();
+    if(v.has_value())
+    {
+        response = v.value();
+    }
+    else 
+    {
+        response = "No IP?";
+    }
+    return response;
+}
+
+
+std::string Engine::serial_report(const JsonDocument& doc)
+{
+    std::string response;
+    if(doc["value"].is<bool>())
+    {
+        bool value = doc["value"];
+        spawnSerialPrintTask(value);
+
+        m_settings.serial_report_task = value;
+        m_storage.putString("settings", m_settings.toString());
+        response = Utils::String::concat("Set serial report to ", endis(value));
+    }
+    else 
+    {
+        response = "Serial report is " + endis(m_settings.serial_report_task);
+    }
+
+    return response;
+}
+
+std::string Engine::wireless_report(const JsonDocument& doc)
+{
+    std::string response;
+    if(doc["value"].is<bool>())
+    {
+        bool value = doc["value"];
+        spawnWirelessPrintTask(value);
+
+        m_settings.wireless_report_task = value;
+        m_storage.putString("settings", m_settings.toString());
+        response = Utils::String::concat("Set wireless report to ", endis(value));
+    }
+    else 
+    {
+        response = "Wireless report is " + endis(m_settings.wireless_report_task);
+    }
+    
+    return response;
+}
+
+std::string Engine::wifi_animation(const JsonDocument& doc)
+{
+    std::string response;
+    if(doc["value"].is<bool>())
+    {
+        bool value = doc["value"];
+        m_settings.wifi_animation = value;
+        m_storage.putString("settings", m_settings.toString());
+        response = Utils::String::concat("Set wifi animation to ", endis(value));
+    }
+    else 
+    {
+        response = "Wifi animation is " + endis(m_settings.wifi_animation);
+    }
+
+    return response;
+}
+
+
+std::string Engine::getFixture(const JsonDocument& req)
+{
+    std::string response;
+    if(req["id"].is<uint8_t>())
+    {
+        uint8_t id = req["id"];
+        Fixture* fix = m_fixtureHandler.get(id);
+        if(fix)
+        {
+            auto v = req["value"].is<const char*>();
+            if(v)
+            {
+                std::string request = req["value"];
+                JsonDocument doc;
+                if(request == "universe")
+                {
+                    doc["request"] = "universe";
+                    doc["value"] = fix->getUniverse();
+                    serializeJson(doc, response);
+                }
+                else if(request == "address")
+                {
+                    doc["request"] = "address";
+                    doc["value"] = fix->getAddress();
+                    serializeJson(doc, response);
+                }
+                else if(request == "preset")
+                {
+                    doc["request"] = "preset";
+                    doc["value"] = fix->getSelectedPreset();
+                    serializeJson(doc, response);
+                }
+                else if(request == "name")
+                {
+                    doc["request"] = "name";
+                    doc["value"] = fix->getName();
+                    serializeJson(doc, response);
+                }
+                else if(request == "type")
+                {
+                    doc["request"] = "type";
+                    doc["value"] = fix->getType();
+                    serializeJson(doc, response);
+                }
+                else if(request == "config")
+                {
+                    doc["request"] = "config";
+                    doc["value"] = fix->configJson();
+                    serializeJson(doc, response);
+                }
+            }
+            // JsonObject o = jsonTemp["fixture"].to<JsonObject>();
+            // fix->toJsonFull(o);
+            // serializeJson(jsonTemp, response);
+        }
+        else
+        {
+            Utils::Logger::printf("[REQUEST] Could not find fixture with id %d\n", id);
+            response = "Could not find selected fixture";
+            // status = "ERROR";
+        }
+    }
+    else 
+    {
+        Utils::Logger::printf("[REQUEST] Get fixture json does not containd 'id' field!\n");
+        response = "Invalid json";
+        // status = "ERROR";
+    }
+    return response;
+}
+
+std::string Engine::setFixture(const JsonDocument& doc)
+{
+    std::string response;
+    std::string status;
+    if(doc["id"].is<uint8_t>())
+    {    
+        uint8_t id = doc["id"];
+        Fixture* fix = m_fixtureHandler.get(id);
+        if(fix)
+        {
+            bool set = false;
+            if (doc["universe"].is<uint8_t>())
+            {
+                uint8_t universe = doc["universe"];
+                if(universe < 1)
+                {
+                    response = Utils::String::concat("Cannot set universe of fixture '", fix->getName(), "'[", std::to_string(fix->id()), "] to ", universe);    
+                    status = "ERROR";
+                }
+                else
+                {
+                    fix->setUniverse(universe);
+                    response = Utils::String::concat("Set universe to: ", universe);
+                    set = true;
+                }
+            }
+            if (doc["address"].is<uint16_t>())
+            {
+                uint16_t address = doc["address"];
+                if(address >= 512)
+                {
+                    response = Utils::String::concat("Cannot set address of fixture '", fix->getName(), "'[", std::to_string(fix->id()), "] to ", address);    
+                    status = "ERROR";
+                }
+                else
+                {
+                    fix->setAddress(address);
+                    if(response.empty())
+                    {
+                        response = Utils::String::concat("Set address to: ", address);
+                    }
+                    else
+                    {
+                        response = Utils::String::concat(response, " and set address to: ", address);
+                    }
+                    set = true;
+                }
+            }
+            if (doc["presetIndex"].is<uint8_t>())
+            {
+                uint8_t presetIndex = doc["presetIndex"];
+                if(presetIndex >= fix->getNumPresets())
+                {
+                    response = Utils::String::concat("Cannot set preset of fixture '", fix->getName(), "'[", std::to_string(fix->id()), "] to ", presetIndex);    
+                    status = "ERROR";
+                }
+                else
+                {
+                    if(response.empty())
+                    {
+                        response = Utils::String::concat("Selected preset: ", presetIndex);
+                    }
+                    else
+                    {
+                        response = Utils::String::concat(response, " and selected preset: ", presetIndex);
+                    }
+                    fix->setPreset(presetIndex);
+                    set = true;
+                }
+            }
+            if (doc["name"].is<const char*>())
+            {
+                const char* name = doc["name"];
+                fix->setName(name);
+                if(response.empty())
+                {
+                    response = Utils::String::concat("Set name to: ", name);
+                }
+                else
+                {
+                    response = Utils::String::concat(response, " and set name to: ", name);
+                }
+                set = true;
+                should_reserialize = true;
+            }
+            if (doc["highlight"].is<bool>())
+            {
+                bool highlight = doc["highlight"];
+                m_fixtureHandler.highlightFixture(id);
+                response = Utils::String::concat("Toggled highlight for fixture '", fix->getName(), "'[", std::to_string(fix->id()), "] to ", highlight);
+            }
+
+            if(set)
+            {
+                fix->updatePresets();
+
+                std::string key = "fixture" + std::to_string(id);
+                std::string store;
+
+                // TODO: make with Optional
+                serializeJson(fix->toJsonDoc(), store);
+                this->m_storage.putString(key, store);
+            }
+        }
+        else
+        {
+            Utils::Logger::printf("[REQUEST] Could not find fixture with id %d\n", id);
+            response = Utils::String::concat("Fixture with id '", id, "' does not exist");
+            status = "ERROR";
+        }
+    }
+    else 
+    {
+        Utils::Logger::printf("[REQUEST] Set fixture json does not containd 'id' field!\n");
+        response = "Invalid json";
+        status = "ERROR";
+    }
+
+    return response;
 }

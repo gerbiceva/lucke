@@ -105,6 +105,11 @@ public:
     JsonDocument basicDesc();
     std::string toString();
 
+    std::string endis (bool val) const
+    {
+        return val ? "enabled" : "disabled";
+    };
+
 private:
     Config::Engine m_settings;
     Utils::Storage m_storage;
@@ -122,4 +127,19 @@ private:
     std::function<void()> wifiAnimation;
     
     bool inited = false;
+
+    std::string describe(const JsonDocument& doc);
+    std::string fixtures(const JsonDocument& doc);
+    std::string presets(const JsonDocument& doc);
+    std::string inputs(const JsonDocument& doc);
+    std::string getip(const JsonDocument& doc);
+
+    std::string serial_report(const JsonDocument& doc);
+    std::string wireless_report(const JsonDocument& doc);
+    std::string wifi_animation(const JsonDocument& doc);
+
+    // std::string setwifi(const JsonDocument& doc);
+
+    std::string getFixture(const JsonDocument& doc);
+    std::string setFixture(const JsonDocument& doc);
 };
