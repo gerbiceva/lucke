@@ -636,6 +636,7 @@ std::string Engine::getFixture(const JsonDocument& req)
                 {
                     doc["request"] = "config";
                     doc["value"] = fix->configJson();
+                    serializeJson(doc, response);
                 }
                 else if(request == "inbytes")
                 {
