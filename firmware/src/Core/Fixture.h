@@ -59,6 +59,11 @@ public:
     void toJson(JsonObject& doc) override;
     void toJsonFull(JsonObject& doc) override;
 
+    void dmxBytes(JsonArray& arr) const
+    {
+        m_dmxIn->bytesJson(arr);
+    }
+
 private:
     Config::Fixture m_config;
 

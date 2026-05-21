@@ -236,6 +236,7 @@ void Engine::parseConfig(const std::string& host, const std::string& data, bool 
         ESP.restart();
         return;
     }
+ 
     else if(strcmp(req, "serial_report_task") == 0)
     {
         response = serial_report(doc);
@@ -635,6 +636,12 @@ std::string Engine::getFixture(const JsonDocument& req)
                 {
                     doc["request"] = "config";
                     doc["value"] = fix->configJson();
+                }
+                else if(request == "inbytes")
+                {
+                    doc["request"] = "inbytes";
+                    JsonArray arr = doc["value"].to<JsonArray>();
+                    fix->dmxBytes(arr);
                     serializeJson(doc, response);
                 }
             }

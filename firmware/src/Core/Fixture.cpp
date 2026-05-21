@@ -243,19 +243,17 @@ void Fixture::toJson(JsonObject& doc)
 
 void Fixture::toJsonFull(JsonObject& doc)
 {
-    m_config.toJson(doc);
+    JsonObject conf = doc["config"].to<JsonObject>();
+    m_config.toJson(conf);
+
     doc["footprint"] = m_lastOffset;
     doc["preset"] = getSelectedPresetName();
+    doc["input_type"] = m_dmxIn->inputTypeStr();
 
-    JsonObject inputDoc = doc["input"].to<JsonObject>();
-    m_dmxIn->toJson(inputDoc);
-    JsonArray objectsArray = doc["objects"].to<JsonArray>();
-
+    JsonArray objectsArray = doc["outputs"].to<JsonArray>();
     for(Traits::OutputInterface* o : m_outputs)
     {
         JsonObject entry = objectsArray.add<JsonObject>();
         o->toJson(entry);
     }
-
-    // doc["presets"] = jsonPreset;
 }
