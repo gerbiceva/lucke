@@ -1,4 +1,5 @@
 #include "SacnParser.h"
+#include "Utils/Logger.h"
 
 #define ADDR_SEQ 111
 #define ADDR_DMX 126
@@ -17,6 +18,7 @@ namespace Utils
 
 	void SacnParser::begin(uint8_t universe)
 	{
+		Utils::Logger::printf("AAAAAAAAAAAAAAAAAAAAAAAAAAA: %d\n", universe);
         // if(!m_inited)
         // {}
 		m_ip = IPAddress(239, 255, 0, universe);
@@ -55,6 +57,12 @@ namespace Utils
 			{
 				m_sequenceDiff.pop();
 			}
+
+            Utils::Logger::printf("DMX seq:%d | %d %d %d %d %d %d %d %d %d\n",
+                m_seq,
+                copyBuffer[0], copyBuffer[1], copyBuffer[2],
+                copyBuffer[3], copyBuffer[4], copyBuffer[5],
+                copyBuffer[6], copyBuffer[7], copyBuffer[8]);
 
         	return true;
         }

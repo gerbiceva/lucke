@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <array>
 #include <ArduinoJson.h>
 #include "Traits/Deserializable.h"
 
@@ -16,8 +17,7 @@ namespace Traits
             DMX
         };
     protected:
-        uint8_t* m_dmxBuffer;
-        // std::unique_ptr<uint8_t> m_dmxBuffer;
+        std::array<uint8_t, 512> m_dmxBuffer;
         uint8_t m_universe;
         InputType m_type;
         uint8_t m_ID;

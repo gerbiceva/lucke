@@ -38,6 +38,14 @@ namespace Handler
 
     void InputHandler::unsubscribe(uint8_t universe) {
         m_inputs.erase(universe);
+        // auto it = m_inputs.find(universe);
+        // if (it == m_inputs.end()) return;
+
+        // use_count == 2: one ref in the map, one in the calling fixture (which is about to be reassigned)
+        // If it's > 2, other fixtures still use this universe — don't erase
+        // if (it->second.use_count() <= 2) {
+            // m_inputs.erase(it);
+        // }s
     }
 
     std::shared_ptr<Traits::InputInterface> InputHandler::newInterface(uint8_t universe, Traits::InputInterface::InputType type) {

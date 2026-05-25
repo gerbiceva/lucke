@@ -9,6 +9,7 @@
 #include <mutex>
 
 #include "Utils/Optional.h"
+#include "Utils/SyncBuffer.h"
 
 
 namespace Handler
@@ -17,6 +18,8 @@ namespace Handler
     {
 
         std::unordered_map<uint8_t, std::shared_ptr<Traits::InputInterface>> m_inputs;
+        std::unordered_map<uint8_t, SyncBuffer> m_buffers;
+        std::unordered_map<uint8_t, uint16_t> m_refCount;
         
         std::shared_ptr<Traits::InputInterface> find(uint8_t universe);
         void iterateInputs(std::function<void(std::shared_ptr<Traits::InputInterface>)> callback);

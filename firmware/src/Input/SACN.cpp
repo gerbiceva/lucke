@@ -22,7 +22,7 @@ namespace Input
 
     void Sacn::update()
     {
-        m_sacn.dmx(m_dmxBuffer);
+        m_sacn.dmx(&m_dmxBuffer[0]);
     }
 
     void Sacn::toJson(JsonObject& doc)
@@ -36,7 +36,6 @@ namespace Input
         // {
         //     arr.add(el);
         // }
-
         JsonArray arr1 = doc["9_bytes"].to<JsonArray>();
         for(uint8_t i = 0; i < 9; i++)
         {

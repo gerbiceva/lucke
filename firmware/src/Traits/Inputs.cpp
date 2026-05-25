@@ -21,8 +21,8 @@ namespace Traits
     {
         m_ID = s_ID++;
 
-        this->m_dmxBuffer = new uint8_t[512];
-        memset(m_dmxBuffer, 0, 512);
+        // this->m_dmxBuffer = new uint8_t[512];
+        memset(&m_dmxBuffer[0], 0, 512);
     }
         
     InputInterface::~InputInterface() {}
@@ -30,7 +30,7 @@ namespace Traits
 
     void InputInterface::clearSrcBuffer()
     {
-        memset(m_dmxBuffer, 0, 512);
+        memset(&m_dmxBuffer[0], 0, 512);
     }
 
     uint8_t InputInterface::getUniverse() const
@@ -40,6 +40,6 @@ namespace Traits
 
     uint8_t* InputInterface::getBuffer()
     {
-        return m_dmxBuffer;
+        return &m_dmxBuffer[0];
     }
 }
