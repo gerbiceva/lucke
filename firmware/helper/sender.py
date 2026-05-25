@@ -148,6 +148,9 @@ def initArguments():
     parser.add_argument("--serial-print", action="store_true", help="Enable serial log task")
     parser.add_argument("--wireless-print", action="store_true", help="Enable wireless log task")
 
+
+192.168.0.143
+
     # WiFi credentials
     parser.add_argument("--wifi-conf", nargs=2, metavar=("SSID", "PASSWORD"), help="Set WiFi credentials (SSID and PASSWORD)")
 

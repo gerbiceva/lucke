@@ -2,8 +2,10 @@
 
 namespace Traits
 {
+    uint16_t OutputInterface::s_uuid = 0;
     OutputInterface::OutputInterface(uint16_t buffer_size)
     {
+        m_uuid = s_uuid++;
         m_size = buffer_size;
         // m_usedPins.emplace(pin);
         m_dstBuffer = new uint8_t[m_size]();

@@ -123,14 +123,17 @@ void Engine::wifiStatus(bool is_connected)
         this->m_taskExecutor.suspendTask(this->m_inputTaskID);
     }
 
+    // Utils::Logger::printf("Connected?: %d, %d\n", prev, is_connected);
+
     if(firstTime)
     {
         this->m_animationTaskID = this->m_taskExecutor.spawnTask("Wifi animation", [this]()
         {
             this->animateConnecting();
         }, 1, 1000);
-    }
+            // this->m_taskExecutor.suspendTask(this->m_animationTaskID);
 
+    }
     else if(prev != is_connected)
     {   
         if(is_connected)
@@ -202,6 +205,10 @@ void Engine::parseConfig(const std::string& host, const std::string& data, bool 
     if(strcmp(req, "describe") == 0)
     {
         response = describe(doc);
+    }
+    else if(strcmp(req, "fixture") == 0)
+    {
+        response = fixture(doc);
     }
     else if(strcmp(req, "fixtures") == 0)
     {
@@ -342,6 +349,7 @@ JsonDocument Engine::basicDesc()
         JsonObject entry = arr.add<JsonObject>();
         entry["name"] = f->getName();
         entry["type"] = f->getType();
+        entry["basic"] = f->getBasicInfo();
     }
 
     return doc;
@@ -398,6 +406,10 @@ void Engine::animateConnecting()
     this->clearSrcBuffers();
     while(true)
     {
+        // for(auto& f : this->m_wifiAnimations)
+        // {
+        //     f();
+        // }
         this->wifiAnimation();
         vTaskDelay(20);
     }
@@ -492,6 +504,26 @@ std::string Engine::fixtures(const JsonDocument& doc)
     std::string response;
     serializeJson(jsonTemp, response);
     return response;
+}
+
+std::string Engine::fixture(const JsonDocument& doc)
+{
+    if(doc["id"].is<uint8_t>())
+    {    
+        uint8_t id = doc["id"];
+        Fixture* fix = m_fixtureHandler.get(id);
+        if(fix)
+        {
+            JsonDocument jsonTemp;
+            JsonObject obj = jsonTemp["fixture"].to<JsonObject>();
+            fix->toJsonFull(obj);
+            std::string response;
+            serializeJson(jsonTemp, response);
+            return response;
+        }
+    }
+
+    return "Fixture does not exist";
 }
 
 std::string Engine::presets(const JsonDocument& doc)
@@ -673,73 +705,66 @@ std::string Engine::setFixture(const JsonDocument& doc)
     if(doc["id"].is<uint8_t>())
     {    
         uint8_t id = doc["id"];
-        Fixture* fix = m_fixtureHandler.get(id);
-        if(fix)
+        if(m_fixtureHandler.exists(id))
         {
             bool set = false;
             if (doc["universe"].is<uint8_t>())
             {
                 uint8_t universe = doc["universe"];
-                if(universe < 1)
+                if(!m_fixtureHandler.setFixtureUniverse(id, universe).has_value())
                 {
-                    response = Utils::String::concat("Cannot set universe of fixture '", fix->getName(), "'[", std::to_string(fix->id()), "] to ", universe);    
+                    response = Utils::String::concat("Cannot set universe to ", std::to_string(universe));    
                     status = "ERROR";
                 }
                 else
                 {
-                    fix->setUniverse(universe);
-                    response = Utils::String::concat("Set universe to: ", universe);
-                    set = true;
+                    response = Utils::String::concat("Set universe to: ", std::to_string(universe));
                 }
             }
             if (doc["address"].is<uint16_t>())
             {
                 uint16_t address = doc["address"];
-                if(address >= 512)
+                if(!m_fixtureHandler.setFixtureAddress(id, address))
                 {
-                    response = Utils::String::concat("Cannot set address of fixture '", fix->getName(), "'[", std::to_string(fix->id()), "] to ", address);    
+                    response = Utils::String::concat("Cannot set address to ", std::to_string(address));    
                     status = "ERROR";
                 }
                 else
                 {
-                    fix->setAddress(address);
                     if(response.empty())
                     {
-                        response = Utils::String::concat("Set address to: ", address);
+                        response = Utils::String::concat("Set address to: ", std::to_string(address));
                     }
                     else
                     {
-                        response = Utils::String::concat(response, " and set address to: ", address);
+                        response = Utils::String::concat(response, " and set address to: ", std::to_string(address));
                     }
-                    set = true;
                 }
             }
             if (doc["presetIndex"].is<uint8_t>())
             {
                 uint8_t presetIndex = doc["presetIndex"];
-                if(presetIndex >= fix->getNumPresets())
+                if(!m_fixtureHandler.setFixturePreset(id, presetIndex))
                 {
-                    response = Utils::String::concat("Cannot set preset of fixture '", fix->getName(), "'[", std::to_string(fix->id()), "] to ", presetIndex);    
+                    response = Utils::String::concat("Cannot set preset to ", std::to_string(presetIndex));    
                     status = "ERROR";
                 }
                 else
                 {
                     if(response.empty())
                     {
-                        response = Utils::String::concat("Selected preset: ", presetIndex);
+                        response = Utils::String::concat("Selected preset: ", std::to_string(presetIndex));
                     }
                     else
                     {
-                        response = Utils::String::concat(response, " and selected preset: ", presetIndex);
+                        response = Utils::String::concat(response, " and selected preset: ", std::to_string(presetIndex));
                     }
-                    fix->setPreset(presetIndex);
-                    set = true;
                 }
             }
             if (doc["name"].is<const char*>())
             {
                 const char* name = doc["name"];
-                fix->setName(name);
+                m_fixtureHandler.setFixtureName(id, name);
                 if(response.empty())
                 {
                     response = Utils::String::concat("Set name to: ", name);
@@ -748,26 +773,13 @@ std::string Engine::setFixture(const JsonDocument& doc)
                 {
                     response = Utils::String::concat(response, " and set name to: ", name);
                 }
-                set = true;
                 should_reserialize = true;
             }
             if (doc["highlight"].is<bool>())
             {
                 bool highlight = doc["highlight"];
                 m_fixtureHandler.highlightFixture(id);
-                response = Utils::String::concat("Toggled highlight for fixture '", fix->getName(), "'[", std::to_string(fix->id()), "] to ", highlight);
-            }
-
-            if(set)
-            {
-                fix->updatePresets();
-
-                std::string key = "fixture" + std::to_string(id);
-                std::string store;
-
-                // TODO: make with Optional
-                serializeJson(fix->toJsonDoc(), store);
-                this->m_storage.putString(key, store);
+                response = Utils::String::concat("Toggled highlight to ", highlight);
             }
         }
         else

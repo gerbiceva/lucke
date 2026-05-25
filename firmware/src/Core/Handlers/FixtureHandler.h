@@ -4,34 +4,45 @@
 #include "Traits/Serializable.h"
 #include "Traits/Deserializable.h"
 #include "Utils/Optional.h"
+#include "Utils/Storage.h"
+#include "Fixtures/All.h"
 
 
-class Fixture;
+
+// class Fixture;
 
 namespace Handler
 {
     class FixtureHandler : public Traits::Serializable, public Traits::Deserializable
     {
+        Utils::Storage m_storage;
         std::vector<Fixture*> fixtures;
+
+        Fixture* configureAndAddFixture(Fixture* fix, bool factoryReset);
     public:
+        FixtureHandler()
+            : m_storage(Utils::Storage("fixtures"))
+        {
+            
+        }
+
+        void updateFixtureStorage(uint8_t fid);
+
         template<typename TFixture>
-        Fixture* addFixture()
+        Fixture* addFixture(bool factoryReset)
         {
             Fixture* fix = new TFixture();
-
-            fixtures.push_back(fix);
-            return fix;
+            return configureAndAddFixture(fix, factoryReset);
         }
 
         template<typename TFixture, typename... Args>
-        Fixture* addFixture(Args&&... args)
+        Fixture* addFixture(bool factoryReset, Args&&... args)
         {
             Fixture* fix = new TFixture(std::forward<Args>(args)...);
-
-            fixtures.push_back(fix);
-            return fix;
+            return configureAndAddFixture(fix, factoryReset);
         }
     
+        bool exists(uint8_t index);
         Fixture* get(uint8_t index);
         std::vector<Fixture*>& allFixtures();
         Utils::Optional<JsonDocument> fixtureJson(uint8_t id);

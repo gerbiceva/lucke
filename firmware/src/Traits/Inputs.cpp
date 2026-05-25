@@ -21,7 +21,7 @@ namespace Traits
     {
         m_ID = s_ID++;
 
-        m_dmxBuffer = new uint8_t[512];
+        this->m_dmxBuffer = new uint8_t[512];
         memset(m_dmxBuffer, 0, 512);
     }
         

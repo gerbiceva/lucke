@@ -52,6 +52,7 @@ namespace Output
 
         void toJson(JsonObject& doc) override
         {
+            doc["uuid"] = this->m_uuid;
             doc["type"] = "FastLED-1D";
             doc["hardware_pin"] = TPin;
             doc["num_leds"] = this->m_numLeds;

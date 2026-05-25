@@ -11,7 +11,7 @@
 class Fixture : public Traits::Serializable, public Traits::Deserializable
 {
     void countPresets();
-    void obtainSrcBuffer();
+    // void obtainSrcBuffer();
     void configureOutput(Traits::OutputInterface* output);
     
 public:
@@ -26,6 +26,23 @@ public:
     {
         configureOutput(new TOutput(std::forward<Args>(args)...));
     }
+    
+    void updatePresets();
+
+    virtual void update();
+    virtual void wifiAnimation() {};
+    virtual void highlight() {};
+
+    std::string getSelectedPresetName();
+
+    void getPresets(JsonObject& obj);
+    void fromConfig();
+    void fromJson(std::string json) override;
+    const std::string& getBasicInfo();
+    JsonDocument toJsonDoc() override;
+    JsonDocument configJson();
+    void toJson(JsonObject& doc) override;
+    void toJsonFull(JsonObject& doc) override;
 
     uint8_t id() const;
     uint8_t* getSrcBuffer();
@@ -44,20 +61,6 @@ public:
     void setPreset(uint8_t new_preset);
     void setName(const std::string& other);
     void setType(const std::string& other);
-    void updatePresets();
-
-    virtual void update();
-    virtual void wifiAnimation() = 0;
-    virtual void highlight() {};
-
-    std::string getSelectedPresetName();
-
-    void getPresets(JsonObject& obj);
-    void fromJson(std::string json) override;
-    JsonDocument toJsonDoc() override;
-    JsonDocument configJson();
-    void toJson(JsonObject& doc) override;
-    void toJsonFull(JsonObject& doc) override;
 
     void dmxBytes(JsonArray& arr) const
     {
@@ -73,4 +76,8 @@ private:
     uint8_t* m_srcBuffer;
     uint16_t m_lastOffset = 0U;
     JsonDocument jsonPreset;
+
+    std::string outputInfoSerialized;
+    JsonDocument outputInfoJson;
+    void updateOutputInfo();
 };

@@ -12,7 +12,7 @@
 #include "Utils/Storage.h"
 #include "Traits/Serializable.h"
 #include "Config/EngineConfig.h"
-#include "Fixtures/All.h"
+// #include "Fixtures/All.h"
 
 class Engine : public Traits::Deserializable
 {
@@ -41,58 +41,35 @@ public:
     template<typename TFixture>
     Fixture* addFixture(bool animateWifiConnecting = false)
     {
-        Fixture* fix = m_fixtureHandler.addFixture<TFixture>();
+        Fixture* fix = m_fixtureHandler.addFixture<TFixture>(factoryReset);
         if(animateWifiConnecting)
         {
+            // m_wifiAnimations.push_back(fix->wifiAnimation);
+            m_wifiAnimations.push_back([fix](){fix->wifiAnimation();});
+
             wifiAnimation = [fix]() 
             {
                 fix->wifiAnimation();
             };
+
         }
 
-        std::string key = "fixture" + std::to_string(fix->id());
-        if(m_storage.isKey(key) && !factoryReset)
-        {
-            fix->fromJson(m_storage.getString(key));
-        }
-
-        fix->updatePresets();
-
-        JsonDocument doc = fix->toJsonDoc();
-        std::string serialized;
-        serializeJson(doc, serialized);
-        m_storage.putString(key, serialized);
-
-        // Utils::Logger::dprintf("[ENGINE] Added new fixture %s", fix->getName().c_str());
         return fix;
     }
 
     template<typename TFixture, typename... Args>
     Fixture* addFixture(bool animateWifiConnecting, Args&&... args)
     {
-        Fixture* fix = m_fixtureHandler.addFixture<TFixture>(std::forward<Args>(args)...);
+        Fixture* fix = m_fixtureHandler.addFixture<TFixture>(factoryReset, std::forward<Args>(args)...);
         if(animateWifiConnecting)
         {
+            m_wifiAnimations.push_back([fix](){fix->wifiAnimation();});
             wifiAnimation = [fix]() 
             {
                 fix->wifiAnimation();
             };
         }
 
-        std::string key = "fixture" + std::to_string(fix->id());
-        if(m_storage.isKey(key) && !factoryReset)
-        {
-            fix->fromJson(m_storage.getString(key));
-        }
-
-        fix->updatePresets();
-
-        JsonDocument doc = fix->toJsonDoc();
-        std::string serialized;
-        serializeJson(doc, serialized);
-        m_storage.putString(key, serialized);
-
-        // Utils::Logger::dprintf("[ENGINE] Added new fixture %s", fix->getName().c_str());
         return fix;
     }
 
@@ -125,10 +102,12 @@ private:
     uint32_t m_sPrintTaskID = 0;
     uint32_t m_wPrintTaskID = 0;
     std::function<void()> wifiAnimation;
+    std::list<std::function<void()>> m_wifiAnimations;
     
     bool inited = false;
 
     std::string describe(const JsonDocument& doc);
+    std::string fixture(const JsonDocument& doc);
     std::string fixtures(const JsonDocument& doc);
     std::string presets(const JsonDocument& doc);
     std::string inputs(const JsonDocument& doc);

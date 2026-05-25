@@ -11,8 +11,10 @@ namespace Traits
 
     class OutputInterface : public Deserializable
     {
+        static uint16_t s_uuid;
     protected:
         // std::vector<uint8_t> m_dstBuffer;
+        uint16_t m_uuid = 0;
         uint8_t* m_dstBuffer;
         uint8_t* m_srcBuffer;
         uint16_t m_size;
@@ -34,6 +36,8 @@ namespace Traits
         virtual void clear() {}
         virtual void applyDimmer(float perctentage) {}
         virtual void setPreset(const JsonDocument& doc) = 0;
+
+        virtual void appendBasicInfo(JsonDocument& doc) {};
     };
 
 }

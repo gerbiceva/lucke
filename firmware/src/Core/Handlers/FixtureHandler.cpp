@@ -5,6 +5,44 @@
 
 namespace Handler
 {   
+    Fixture* FixtureHandler::configureAndAddFixture(Fixture* fix, bool factoryReset)
+    {
+        std::string key = "fixture" + std::to_string(fix->id());
+            // sleep(5);
+        if(m_storage.isKey(key) && !factoryReset)
+        {
+            fix->fromJson(m_storage.getString(key));
+        }
+        else 
+        {
+            fix->fromConfig();
+        }
+
+        fixtures.push_back(fix);
+
+        JsonDocument doc = fix->toJsonDoc();
+        std::string serialized;
+        serializeJson(doc, serialized);
+        m_storage.putString(key, serialized);
+        return fix;
+    }
+    void FixtureHandler::updateFixtureStorage(uint8_t fid)
+    {
+        Fixture* fix = get(fid);
+        JsonDocument doc = fix->toJsonDoc();
+        std::string serialized;
+        serializeJson(doc, serialized);
+
+        std::string key = "fixture" + std::to_string(fix->id());
+        m_storage.putString(key, serialized);
+    }
+
+    bool FixtureHandler::exists(uint8_t index)
+    {
+        return index < fixtures.size();
+    }
+
+
     Fixture* FixtureHandler::get(uint8_t index)
     {
         if(index > fixtures.size())
@@ -31,9 +69,11 @@ namespace Handler
     Utils::Optional<std::string> FixtureHandler::setFixtureUniverse(uint8_t id, uint8_t universe) 
     {
         Fixture* fix = get(id);
-        if(fix)
+        if(fix && universe > 0)
         {
             fix->setUniverse(universe);
+            fix->updatePresets();
+            updateFixtureStorage(id);
             return fix->getName();
         }
         
@@ -43,9 +83,11 @@ namespace Handler
     Utils::Optional<std::string> FixtureHandler::setFixtureAddress(uint8_t id, uint16_t address) 
     {
         Fixture* fix = get(id);
-        if(fix)
+        if(fix && address < 512)
         {
             fix->setAddress(address);
+            fix->updatePresets();
+            updateFixtureStorage(id);
             return fix->getName();
         }
         
@@ -55,9 +97,12 @@ namespace Handler
     Utils::Optional<std::string> FixtureHandler::setFixturePreset(uint8_t id, uint8_t preset) 
     {
         Fixture* fix = get(id);
-        if(fix)
+        auto n = fix->getNumPresets();
+        if(fix && preset < n)
         {
             fix->setPreset(preset);
+            fix->updatePresets();
+            updateFixtureStorage(id);
             return fix->getName();
         }
         return Utils::Optional<std::string>();
@@ -69,6 +114,7 @@ namespace Handler
         if(fix)
         {
             fix->setName(name);
+            updateFixtureStorage(id);
             return fix->getName();
         }
         return Utils::Optional<std::string>();        

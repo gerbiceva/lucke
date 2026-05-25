@@ -68,8 +68,8 @@ namespace Output {
                 return;
             }
 
-            m_cled = &FastLED.addLeds<TLedType, TPin, TOrder>((CRGB*) m_dstBuffer, m_numLeds);
-            m_cled->clearLeds();
+            this->m_cled = &FastLED.addLeds<TLedType, TPin, TOrder>((CRGB*) this->m_dstBuffer, m_numLeds);
+            this->m_cled->clearLeds();
             // updateFastLED();
         }
 
@@ -87,5 +87,15 @@ namespace Output {
                 m_dstBuffer[i] = static_cast<uint8_t>(255.f * percentage);
             }
         }
+
+        virtual void appendBasicInfo(JsonDocument& obj) override {
+            // auto v = obj.
+            int nl = this->m_numLeds;
+            if (obj["num_leds"].is<int>()) {
+                nl += obj["num_leds"].as<int>();
+            }
+            
+            obj["num_leds"] = nl;
+        };
     };
 }

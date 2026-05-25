@@ -15,16 +15,13 @@ namespace Handler
 {
     class InputHandler : public Traits::Serializable, public Traits::Deserializable
     {
-        struct Counter {
-            uint8_t count = 0;
-            std::shared_ptr<Traits::InputInterface> interface;
-        };
 
-        Utils::Optional<Counter*> find(uint8_t universe);
+        
         void iterateInputs(std::function<void(std::shared_ptr<Traits::InputInterface>)> callback);
 
-        void unsubscribe(uint8_t universe);
+        std::shared_ptr<Traits::InputInterface> find(uint8_t universe);
         std::shared_ptr<Traits::InputInterface> subscribe(uint8_t universe);
+        void unsubscribe(uint8_t universe);
 
         InputHandler(){};
     public:
@@ -50,7 +47,9 @@ namespace Handler
         void toJson(JsonObject& doc) override;
 
     private:
-        std::unordered_map<uint8_t, Counter> m_inputs;
+        // std::unordered_map<uint8_t, Counter> m_inputs;
+        std::unordered_map<uint8_t, std::shared_ptr<Traits::InputInterface>> m_inputs;
+
         // TaskHandle_t m_handle;
     };
 }
