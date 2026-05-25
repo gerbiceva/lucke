@@ -17,6 +17,7 @@ namespace Traits
         };
     protected:
         uint8_t* m_dmxBuffer;
+        // std::unique_ptr<uint8_t> m_dmxBuffer;
         uint8_t m_universe;
         InputType m_type;
         uint8_t m_ID;
@@ -51,7 +52,7 @@ namespace Traits
         {
             for(int i = 0; i < 512; i++)
             {
-                obj.add(m_dmxBuffer[i]);
+                obj.add((uint8_t)m_dmxBuffer[i]);
             }
         }
     private:

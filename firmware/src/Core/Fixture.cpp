@@ -60,9 +60,9 @@ uint8_t* Fixture::getOffsetSrcBuffer()
 
 
 
-void Fixture::setUniverse(uint8_t new_universe)
+void Fixture::setUniverse(uint8_t new_universe, bool first)
 {
-    if(this->m_dmxIn == nullptr)
+    if(first)
     {
         this->m_dmxIn = Handler::InputHandler::instance().newInterface(new_universe);
         Utils::Logger::println("HERE");
@@ -170,7 +170,7 @@ void Fixture::fromConfig()
     setName(m_config.name);
     setAddress(m_config.address);
     setPreset(m_config.selectedPreset);
-    setUniverse(m_config.universe);
+    setUniverse(m_config.universe, true);
     updatePresets();
 }
 
@@ -180,17 +180,20 @@ void Fixture::fromJson(std::string json)
     deserializeJson(doc, json);
 
     const char* name = Utils::Json::getElement(doc, "name", m_config.name.c_str());
-    // uint8_t uni = Utils::Json::getElement(doc, "universe", m_config.universe);
+    uint8_t uni = Utils::Json::getElement(doc, "universe", m_config.universe);
 
 
-    Utils::Json::updateElement<uint8_t>(doc, "universe", m_config.universe);
+    // Utils::Json::updateElement<uint8_t>(doc, "universe", m_config.universe);
     Utils::Json::updateElement<uint16_t>(doc, "address", m_config.address);
     Utils::Json::updateElement<uint8_t>(doc, "presetIndex", m_config.selectedPreset);
     
     setName(name);
     setAddress(m_config.address);
     setPreset(m_config.selectedPreset);
-    setUniverse(m_config.universe);
+    setUniverse(uni, true);
+    Utils::Json::updateElement<uint8_t>(doc, "universe", m_config.universe);
+
+    
     // obtainSrcBuffer();
     // setUniverse(m_config.universe);
     updatePresets();

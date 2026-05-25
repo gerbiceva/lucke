@@ -29,6 +29,7 @@ namespace Handler
         if (iface == nullptr) 
         {
             m_inputs[universe] = std::make_shared<Input::Sacn>(universe);
+            Utils::Logger::printf("Subscr:%p \n", m_inputs[universe]->getBuffer());
         }
 
         return m_inputs[universe];
@@ -45,6 +46,11 @@ namespace Handler
 
     std::shared_ptr<InputInterface> InputHandler::interface(uint8_t universe, uint8_t old_universe, InputInterface::InputType type)
     {
+        for(auto& it : m_inputs)
+        {
+            Utils::Logger::printf("%p \n", it.second->getBuffer());
+        }
+        
         unsubscribe(old_universe);
         return subscribe(universe);
     }

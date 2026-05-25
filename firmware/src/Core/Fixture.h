@@ -56,7 +56,7 @@ public:
     const std::string& getType() const;
     bool& getHighlighted();
 
-    void setUniverse(uint8_t new_universe);
+    void setUniverse(uint8_t new_universe, bool first = false);
     void setAddress(uint16_t new_address);
     void setPreset(uint8_t new_preset);
     void setName(const std::string& other);
