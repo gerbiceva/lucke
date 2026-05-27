@@ -70,7 +70,7 @@ namespace Utils
     std::string Storage::putString(std::string name, std::string value) {
         if(!m_inited)
         {
-            return "0";
+            return "";
         }
 
         m_Preferences.putString(name.c_str(), value.c_str());
@@ -125,7 +125,7 @@ namespace Utils
     std::string Storage::putIfNExistString(std::string name, std::string value) {
         if(!m_inited)
         {
-            return "0";
+            return "";
         }
 
         if(isKey(name))
@@ -171,7 +171,7 @@ namespace Utils
     {
         if(!m_inited)
         {
-            return "0";
+            return "";
         }
 
         return m_Preferences.getString(name.c_str()).c_str();

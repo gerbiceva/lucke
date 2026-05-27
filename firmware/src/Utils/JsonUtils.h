@@ -1,6 +1,7 @@
 #pragma once
 #include <ArduinoJson.h>
 #include <string>
+#include "Utils/Logger.h"
 
 namespace Utils::Json
 {

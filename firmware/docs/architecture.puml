@@ -1,0 +1,367 @@
+@startuml architecture
+skinparam classAttributeIconSize 0
+skinparam groupInheritance 2
+hide empty members
+
+' ─────────────────────────────────────────
+'  TRAITS
+' ─────────────────────────────────────────
+package Traits {
+
+  abstract class Serializable {
+    +fromJson(json : string) {abstract}
+  }
+
+  abstract class Deserializable {
+    +toJson(doc : JsonObject&) {abstract}
+    +toJsonFull(doc : JsonObject&)
+    +toJsonDoc() : JsonDocument
+  }
+
+  abstract class InputInterface {
+    #m_dmxBuffer : array<uint8_t, 512>
+    #m_universe  : uint8_t
+    #m_type      : InputType
+    #m_ID        : uint8_t
+    --
+    +getBuffer()   : uint8_t*
+    +getUniverse() : uint8_t
+    +clearSrcBuffer()
+    +update()  {abstract}
+    +reinit()  {abstract}
+    +setUniverse(universe : uint8_t)
+  }
+
+  abstract class OutputInterface {
+    #m_dstBuffer : uint8_t*
+    #m_srcBuffer : uint8_t*
+    #m_size      : uint16_t
+    #m_uuid      : uint16_t
+    --
+    +setSrcBuffer(src : uint8_t*)
+    +getSize() : uint16_t
+    +bind()    {abstract}
+    +update()
+    +postupdate()
+    +setPreset(doc : JsonDocument&) {abstract}
+    +appendBasicInfo(doc : JsonDocument&)
+  }
+
+  InputInterface  --|> Deserializable
+  OutputInterface --|> Deserializable
+}
+
+' ─────────────────────────────────────────
+'  CONFIG
+' ─────────────────────────────────────────
+package Config {
+
+  class FixtureConfig {
+    +m_ID           : uint8_t
+    +universe       : uint8_t = 8
+    +address        : uint16_t = 0
+    +selectedPreset : uint8_t
+    +numPresets     : uint8_t
+    +name           : string
+    +type           : string
+    +highlighted    : bool
+    --
+    +obtainID()
+    +toJson(obj : JsonObject&)
+    +toJsonDoc() : JsonDocument
+  }
+
+  class EngineConfig {
+    +version              : string
+    +ssid                 : string
+    +password             : string
+    +serial_report_task   : bool
+    +wireless_report_task : bool
+    +wifi_animation       : bool
+    +to_factory_settings  : bool
+    --
+    +toJson(obj : JsonObject&)
+    +toString() : string
+  }
+
+  FixtureConfig --|> Traits.Deserializable
+  EngineConfig  --|> Traits.Deserializable
+}
+
+' ─────────────────────────────────────────
+'  UTILS
+' ─────────────────────────────────────────
+package Utils {
+
+  class SacnParser {
+    -m_udp    : WiFiUDP
+    -packet   : uint8_t[1500]
+    -m_buffer : uint8_t[512]
+    -m_seq    : uint8_t
+    -m_inited : bool
+    --
+    +begin(universe : uint8_t)
+    +stop()
+    +dmx(copyBuffer : uint8_t*) : bool
+    -update() : bool
+  }
+
+  class TaskExecutor {
+    -m_tasks        : list<TaskRecord>
+    -id_generator   : uint32_t
+    --
+    +spawnTask(name, fn, priority, stack) : uint32_t
+    +suspendTask(id : uint32_t)
+    +resumeTask(id : uint32_t)
+    +stopTask(id : uint32_t)
+    +isTaskRunning(id : uint32_t) : bool
+  }
+
+  class Storage {
+    +getString(key : string) : string
+    +putString(key : string, val : string)
+    +isKey(key : string) : bool
+  }
+}
+
+' ─────────────────────────────────────────
+'  INPUT
+' ─────────────────────────────────────────
+package Input {
+
+  class Sacn {
+    -m_sacn : Utils.SacnParser
+    --
+    +Sacn(universe : uint8_t)
+    +update()
+    +reinit()
+    +toJson(doc : JsonObject&)
+  }
+
+  class "HWDmx<RXpin, TXpin>" as HWDmx {
+    +update()
+    +reinit()
+    +toJson(doc : JsonObject&)
+  }
+
+  class Button {
+    -buttonName      : string
+    -buttonPin       : uint8_t
+    -holdTime        : ulong
+    -risingCallback  : function<void()>
+    -holdCallback    : function<void()>
+    --
+    +update()
+    +setRisingFunction(fn)
+    +setHoldFunction(fn)
+    +getName() : string
+    +getPin()  : uint8_t
+  }
+
+  Sacn   --|> Traits.InputInterface
+  HWDmx  --|> Traits.InputInterface
+  Button --|> Traits.Deserializable
+
+  Sacn *--> Utils.SacnParser : m_sacn
+}
+
+' ─────────────────────────────────────────
+'  OUTPUT
+' ─────────────────────────────────────────
+package Output {
+
+  class "HardwareLED<TLedType, TPin, TOrder>" as HardwareLED {
+    #m_numLeds : uint16_t
+    #m_numPxls : uint8_t = 3
+    #m_cled    : CLEDController*
+    --
+    +bind()
+    +postupdate()
+    +applyDimmer(pct : float)
+    +appendBasicInfo(doc : JsonDocument&)
+  }
+
+  class "HardwareLED1D<TLedType, TPin, TOrder>" as HardwareLED1D {
+    -m_numGroups : uint16_t
+    --
+    +update()
+    +setPreset(doc : JsonDocument&)
+    +getSize() : uint16_t
+    +toJson(doc : JsonObject&)
+  }
+
+  HardwareLED   --|> Traits.OutputInterface
+  HardwareLED1D --|> HardwareLED
+}
+
+' ─────────────────────────────────────────
+'  CORE — Fixture
+' ─────────────────────────────────────────
+class Fixture {
+  -m_config     : Config.FixtureConfig
+  -m_dmxIn      : shared_ptr<Traits.InputInterface>
+  -m_outputs    : vector<Traits.OutputInterface*>
+  -m_srcBuffer  : uint8_t*
+  -m_lastOffset : uint16_t
+  -jsonPreset   : JsonDocument
+  --
+  +update()
+  +setUniverse(uni : uint8_t, first : bool)
+  +setAddress(addr : uint16_t)
+  +setPreset(preset : uint8_t)
+  +setName(name : string)
+  +fromConfig()
+  +fromJson(json : string)
+  +getSrcBuffer()       : uint8_t*
+  +getOffsetSrcBuffer() : uint8_t*
+  +getUniverse()  : uint8_t
+  +getAddress()   : uint16_t
+  +id()           : uint8_t
+  +wifiAnimation()  {abstract}
+  +highlight()      {abstract}
+  #addOutput<TOutput>(args...)
+  -configureOutput(output : Traits.OutputInterface*)
+  -updatePresets()
+}
+
+Fixture --|> Traits.Serializable
+Fixture --|> Traits.Deserializable
+Fixture *--> Config.FixtureConfig        : m_config
+Fixture "1" o--> "0..1" Traits.InputInterface  : m_dmxIn\n(shared_ptr)
+Fixture "1" *--> "1..*" Traits.OutputInterface : m_outputs
+
+' ─────────────────────────────────────────
+'  FIXTURES (concrete)
+' ─────────────────────────────────────────
+package Fixtures {
+
+  class "Strip2815<N, TPin=5>" as Strip2815 {
+    +{static} BYTES : uint16_t
+    --
+    +wifiAnimation()
+    +highlight()
+  }
+
+  class "Strip2812<N, TPin=5>" as Strip2812 {
+    +wifiAnimation()
+    +highlight()
+  }
+
+  class Astera60 {
+    +wifiAnimation()
+  }
+
+  class Astera144 {
+    +wifiAnimation()
+  }
+
+  Strip2815 --|> Fixture
+  Strip2812 --|> Fixture
+  Astera60  --|> Fixture
+  Astera144 --|> Fixture
+}
+
+' ─────────────────────────────────────────
+'  HANDLERS
+' ─────────────────────────────────────────
+package Handler {
+
+  class InputHandler {
+    -m_inputs : unordered_map<uint8_t,\n  shared_ptr<InputInterface>>
+    --
+    +{static} instance() : InputHandler&
+    +newInterface(uni : uint8_t) : shared_ptr<InputInterface>
+    +interface(uni, old_uni)     : shared_ptr<InputInterface>
+    +update()
+    +clearSrcBuffers()
+    +reconnectInputs()
+    -subscribe(uni : uint8_t)   : shared_ptr<InputInterface>
+    -unsubscribe(uni : uint8_t)
+    -find(uni : uint8_t)        : shared_ptr<InputInterface>
+  }
+
+  class FixtureHandler {
+    -fixtures   : vector<Fixture*>
+    -m_storage  : Utils.Storage
+    --
+    +addFixture<TFixture>(factoryReset) : Fixture*
+    +get(index : uint8_t) : Fixture*
+    +exists(index : uint8_t) : bool
+    +setFixtureUniverse(id, uni)    : Optional<string>
+    +setFixtureAddress(id, addr)    : Optional<string>
+    +setFixturePreset(id, preset)   : Optional<string>
+    +setFixtureName(id, name)       : Optional<string>
+    +highlightFixture(id)           : Optional<string>
+    +update()
+    -configureAndAddFixture(fix, factoryReset) : Fixture*
+    -updateFixtureStorage(id : uint8_t)
+  }
+
+  class ButtonHandler <<Handler::Button>> {
+    -buttons : vector<Input.Button>
+    --
+    +update()
+    +add(btn : Input.Button)
+    +toJson(doc : JsonObject&)
+  }
+
+  class Pin {
+    -{static} m_usedPins : set<uint8_t>
+    --
+    +{static} available(pin : uint8_t) : bool
+    +{static} toJson(doc : JsonObject&)
+  }
+
+  InputHandler  --|> Traits.Serializable
+  InputHandler  --|> Traits.Deserializable
+  FixtureHandler --|> Traits.Serializable
+  FixtureHandler --|> Traits.Deserializable
+  ButtonHandler  --|> Traits.Deserializable
+
+  InputHandler  "1" o--> "0..*" Traits.InputInterface : manages
+  FixtureHandler "1" *--> "0..*" Fixture              : owns
+  FixtureHandler *--> Utils.Storage
+  ButtonHandler  "1" *--> "0..*" Input.Button         : buttons
+}
+
+' ─────────────────────────────────────────
+'  ENGINE  (singleton)
+' ─────────────────────────────────────────
+class Engine {
+  -m_settings      : Config.EngineConfig
+  -m_storage       : Utils.Storage
+  -m_taskExecutor  : Utils.TaskExecutor
+  -m_fixtureHandler: Handler.FixtureHandler
+  -m_inputHandler  : Handler.InputHandler&
+  -m_buttonManager : Handler.ButtonHandler
+  -m_pinManager    : Handler.Pin
+  -wifiAnimation   : function<void()>
+  -inited          : bool
+  +should_reserialize : atomic_bool
+  --
+  +{static} instance() : Engine&
+  +init()
+  +addFixture<TFixture>(animate : bool) : Fixture*
+  +getDMXInput(uni, old_uni) : shared_ptr<InputInterface>
+  +clearSrcBuffers()
+  +toJson(doc : JsonObject&)
+  +toString() : string
+  -readSettings()
+  -parseConfig(host, data, serial)
+  -wifiStatus(connected : bool)
+  -ping()
+  -animateConnecting()
+  -sendReport()
+  -readSerial()
+}
+
+Engine --|> Traits.Deserializable
+Engine *--> Config.EngineConfig
+Engine *--> Utils.Storage
+Engine *--> Utils.TaskExecutor
+Engine *--> Handler.FixtureHandler
+Engine *--> Handler.ButtonHandler
+Engine ..> Handler.InputHandler   : uses (singleton ref)
+Engine ..> Handler.Pin            : uses (static)
+
+@enduml

@@ -1,124 +1,66 @@
 #pragma once
-#include <string>
-#include <functional>
-#include <atomic>
-
+#include "Config/EngineConfig.h"
+#include "Network/Wifi.h"
+#include "Network/TcpServer.h"
+#include "Network/UdpBroadcaster.h"
+#include "Network/SerialTransport.h"
+#include "Commands/CommandDispatcher.h"
+#include "Commands/DescribeHandler.h"
+#include "Commands/GetFixtureHandler.h"
+#include "Commands/SetFixtureHandler.h"
+#include "Commands/InputsHandler.h"
+#include "Commands/WifiConfigHandler.h"
+#include "Commands/RebootHandler.h"
+#include "Commands/EngineConfigHandler.h"
 #include "Handlers/FixtureHandler.h"
 #include "Handlers/InputHandler.h"
-#include "Handlers/ButtonHandler.h"
-#include "Handlers/PinHandler.h"
-
-#include "Utils/TaskExecutor.h"
+#include "Tasks/TaskExecutor.h"
 #include "Utils/Storage.h"
-#include "Traits/Serializable.h"
-#include "Config/EngineConfig.h"
-// #include "Fixtures/All.h"
 
-class Engine : public Traits::Deserializable
+class Engine
 {
-    Engine ();
-    void readSettings();
-    
-    void wifiStatus(bool connected);
-    void parseConfig(const std::string& host, const std::string& data, bool serial = false);
-    
-    void ping();
-    void animateConnecting();
-    void sendReport();
-    void printReport();
-    void readSerial();
-
-    void spawnSerialPrintTask(bool value, bool init = false);
-    void spawnWirelessPrintTask(bool value, bool init = false);
-
-    bool factoryReset = false;
-    
 public:
-    std::atomic_bool should_reserialize;
-    static Engine& instance();
+    Engine();
     void init();
 
     template<typename TFixture>
-    Fixture* addFixture(bool animateWifiConnecting = false)
+    void addFixture()
     {
-        Fixture* fix = m_fixtureHandler.addFixture<TFixture>(factoryReset);
-        if(animateWifiConnecting)
-        {
-            // m_wifiAnimations.push_back(fix->wifiAnimation);
-            m_wifiAnimations.push_back([fix](){fix->wifiAnimation();});
-
-            wifiAnimation = [fix]() 
-            {
-                fix->wifiAnimation();
-            };
-
-        }
-
-        return fix;
+        m_fixtures.addFixture<TFixture>(m_factoryReset);
     }
 
-    template<typename TFixture, typename... Args>
-    Fixture* addFixture(bool animateWifiConnecting, Args&&... args)
-    {
-        Fixture* fix = m_fixtureHandler.addFixture<TFixture>(factoryReset, std::forward<Args>(args)...);
-        if(animateWifiConnecting)
-        {
-            m_wifiAnimations.push_back([fix](){fix->wifiAnimation();});
-            wifiAnimation = [fix]() 
-            {
-                fix->wifiAnimation();
-            };
-        }
-
-        return fix;
-    }
-
-    void addButton(Input::Button&& button);
-
-    std::shared_ptr<Traits::InputInterface> getDMXInput(uint8_t universe, uint8_t old_universe);
-    void clearSrcBuffers();
-    
-    void toJson(JsonObject& doc) override;
-    JsonDocument basicDesc();
     std::string toString();
 
-    std::string endis (bool val) const
-    {
-        return val ? "enabled" : "disabled";
-    };
-
 private:
-    Config::Engine m_settings;
+    void loadConfig();
+    void saveConfig();
+    void registerCommands();
+    void spawnTasks();
+    void onWifiStatus(bool connected);
+
+    uint32_t m_fixtureTaskId = 0;
+    uint32_t m_animationTaskId = 0;
+
+    Config::Engine m_config;
     Utils::Storage m_storage;
-    Utils::TaskExecutor m_taskExecutor;
+    bool m_factoryReset = false;
 
-    Handler::FixtureHandler m_fixtureHandler;
-    Handler::InputHandler& m_inputHandler;
-    Handler::Button m_buttonManager;
-    Handler::Pin m_pinManager;
-    
-    uint32_t m_animationTaskID;
-    uint32_t m_inputTaskID;
-    uint32_t m_sPrintTaskID = 0;
-    uint32_t m_wPrintTaskID = 0;
-    std::function<void()> wifiAnimation;
-    std::list<std::function<void()>> m_wifiAnimations;
-    
-    bool inited = false;
+    Network::Wifi m_wifi;
+    Network::TcpServer m_tcpServer;
+    Network::UdpBroadcaster m_udpHeartbeat;
+    Network::UdpBroadcaster m_udpReport;
+    Network::SerialTransport m_serial;
 
-    std::string describe(const JsonDocument& doc);
-    std::string fixture(const JsonDocument& doc);
-    std::string fixtures(const JsonDocument& doc);
-    std::string presets(const JsonDocument& doc);
-    std::string inputs(const JsonDocument& doc);
-    std::string getip(const JsonDocument& doc);
+    Commands::CommandDispatcher m_dispatcher;
+    Commands::DescribeHandler m_describeHandler;
+    Commands::GetFixtureHandler m_getFixtureHandler;
+    Commands::SetFixtureHandler m_setFixtureHandler;
+    Commands::InputsHandler m_inputsHandler;
+    Commands::WifiConfigHandler m_wifiConfigHandler;
+    Commands::RebootHandler m_rebootHandler;
+    Commands::EngineConfigHandler m_engineConfigHandler;
 
-    std::string serial_report(const JsonDocument& doc);
-    std::string wireless_report(const JsonDocument& doc);
-    std::string wifi_animation(const JsonDocument& doc);
-
-    // std::string setwifi(const JsonDocument& doc);
-
-    std::string getFixture(const JsonDocument& doc);
-    std::string setFixture(const JsonDocument& doc);
+    Handler::InputHandler m_inputs;
+    Handler::FixtureHandler m_fixtures;
+    Tasks::Manager m_tasks;
 };

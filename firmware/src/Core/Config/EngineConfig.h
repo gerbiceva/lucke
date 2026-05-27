@@ -1,5 +1,5 @@
 #pragma once
-#include "Traits/Deserializable.h"
+#include "Interfaces/Serializable.h"
 #include <string>
 #include <ArduinoJson.h>
 
@@ -10,6 +10,7 @@
 // #define DEFAULT_WIFI_SSID "lasportiva5"
 // #define DEFAULT_WIFI_PASSWORD "GregorJeCar!56"
 
+#define COMMAND_PORT 8888
 #define HEARTBEAT_PORT 12343
 #define REPORT_PORT 12344
 #define RESPONSE_PORT 12345
@@ -17,7 +18,7 @@
 namespace Config
 {
 
-struct Engine : public Traits::Deserializable
+struct Engine : public Interface::Serializable
 {
     const std::string version = ENGINE_VERSION;
 

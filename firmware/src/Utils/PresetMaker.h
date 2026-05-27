@@ -29,27 +29,6 @@ struct FillDivisors<N, N, IDX> {
     }
 };
 
-// ---------- Integer to String ----------
-
-template<int N, int IDX = 0>
-struct WriteInt {
-    template<typename Arr>
-    static void apply(Arr& buf, int& pos) {
-        WriteInt<N / 10, IDX>::apply(buf, pos);
-        buf[pos++] = '0' + (N % 10);
-    }
-};
-
-template<int IDX>
-struct WriteInt<0, IDX> {
-    template<typename Arr>
-    static void apply(Arr& buf, int& pos) {
-        buf[pos++] = '0';
-    }
-};
-
-// ---------- ConstStr ----------
-
 template<size_t N>
 struct ConstStr {
     std::array<char, N> data{};
@@ -65,27 +44,19 @@ struct ConstStr {
     }
 
     void push_int(int value) {
-        // simple recursive integer write
-        char buf[20]{};
-        int p = 0;
-        int tmp = value;
         char tmpbuf[20]{};
         int idx = 0;
-
-        // convert int to string
         int div = 1;
-        while (tmp / div >= 10) div *= 10;
+        while (value / div >= 10) div *= 10;
         while (div > 0) {
-            tmpbuf[idx++] = '0' + tmp / div;
-            tmp %= div;
+            tmpbuf[idx++] = '0' + value / div;
+            value %= div;
             div /= 10;
         }
         for (int i = 0; i < idx; ++i)
             push(tmpbuf[i]);
     }
 };
-
-// ---------- MakeJSON ----------
 
 template<int N>
 struct MakeJSON {

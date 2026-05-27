@@ -1,7 +1,8 @@
 #pragma once
+#include <Arduino.h>
 #include "Core/Fixture.h"
 #include "Utils/PresetMaker.h"
-#include "Output/HardwareLED1D.h"
+#include "Output/FastLED1D.h"
 
 namespace Fixtures
 {
@@ -12,36 +13,36 @@ struct Strip2815 : public Fixture
     static constexpr uint16_t BYTES = N * 3;
 
     Strip2815()
-		: Fixture("neki", "Strip",  MakeJSON<N>::make().data())
+        : Fixture("name", "Strip2815", MakeJSON<N>::make().data())
     {
-        addOutput<Output::HardwareLED1D<WS2815, TPin, RGB>> (N);
+        addOutput<Output::FastLED1D<WS2815, TPin, RGB>>(N);
     }
 
     Strip2815(std::string name, std::string type, std::string presetJson)
-		: Fixture(name, type, presetJson)
+        : Fixture(name, type, presetJson)
     {
-        addOutput<Output::HardwareLED1D<WS2815, TPin, RGB>> (N);
-    }
-
-    Strip2815(Config::Fixture config, std::string presetJson)
-		: Fixture(config, presetJson)
-    {
-        addOutput<Output::HardwareLED1D<WS2815, TPin, RGB>> (N);
+        addOutput<Output::FastLED1D<WS2815, TPin, RGB>>(N);
     }
 
     void wifiAnimation() override
     {
-        static uint16_t off = 0;
-        getOffsetSrcBuffer()[off] = 255;
-        getOffsetSrcBuffer()[off == 0 ? (BYTES - 1) : off - 1] = 0;
-        off = (off + 1) % BYTES;
+        m_animBuf[m_animOff] = 255;
+        m_animBuf[m_animOff == 0 ? (BYTES - 1) : m_animOff - 1] = 0;
+        m_animOff = (m_animOff + 1) % BYTES;
+
+        uint8_t* ptr = m_animBuf;
+        for (auto o : getOutputs())
+        {
+            o->update(ptr);
+            ptr += o->footprint();
+        }
+
         vTaskDelay(20);
     }
 
-    void highlight() override
-    {
-        memset(getOffsetSrcBuffer(), 255, BYTES);
-    }
+private:
+    uint8_t m_animBuf[BYTES] = {};
+    uint16_t m_animOff = 0;
 };
 
 }

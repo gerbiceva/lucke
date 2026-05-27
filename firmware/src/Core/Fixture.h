@@ -1,53 +1,39 @@
 #pragma once
-#include <vector>
-#include <memory>
-#include "Traits/Outputs.h"
-#include "Traits/Inputs.h"
-#include "Traits/Serializable.h"
-#include "Traits/Deserializable.h"
-
 #include "Config/FixtureConfig.h"
+#include "Utils/SyncBuffer.h"
+#include "Interfaces/Output.h"
+#include "Interfaces/Serializable.h"
+#include "Interfaces/Deserializable.h"
+#include <memory>
+#include <vector>
 
-class Fixture : public Traits::Serializable, public Traits::Deserializable
+
+class Fixture : public Interface::Serializable, public Interface::Deserializable
 {
+    void _addOutput(Interface::Output* output);
     void countPresets();
-    // void obtainSrcBuffer();
-    void configureOutput(Traits::OutputInterface* output);
-    
 public:
     Fixture();
-    Fixture(Config::Fixture config, std::string presets);
     Fixture(std::string name, std::string type, std::string presets);
-
     virtual ~Fixture() = default;
+
+    void update();
+    virtual void wifiAnimation() {};
 
     template<typename TOutput, typename... Args>
     void addOutput(Args&&... args)
     {
-        configureOutput(new TOutput(std::forward<Args>(args)...));
+        _addOutput(new TOutput(std::forward<Args>(args)...));
     }
-    
-    void updatePresets();
 
-    virtual void update();
-    virtual void wifiAnimation() {};
-    virtual void highlight() {};
+    void setSyncBuffer(std::shared_ptr<SyncBuffer> buf);
+    void setUniverse(uint8_t new_universe);
+    void setAddress(uint16_t new_address);
+    void setPreset(uint8_t new_preset);
+    void setName(const std::string& other);
 
-    std::string getSelectedPresetName();
-
-    void getPresets(JsonObject& obj);
-    void fromConfig();
-    void fromJson(std::string json) override;
-    const std::string& getBasicInfo();
-    JsonDocument toJsonDoc() override;
-    JsonDocument configJson();
-    void toJson(JsonObject& doc) override;
-    void toJsonFull(JsonObject& doc) override;
-
+    void setId(uint8_t id);
     uint8_t id() const;
-    uint8_t* getSrcBuffer();
-    uint8_t* getOffsetSrcBuffer();
-
     uint8_t getUniverse() const;
     uint16_t getAddress() const;
     uint8_t getSelectedPreset() const;
@@ -55,29 +41,20 @@ public:
     const std::string& getName() const;
     const std::string& getType() const;
     bool& getHighlighted();
+    std::vector<Interface::Output*>& getOutputs();
 
-    void setUniverse(uint8_t new_universe, bool first = false);
-    void setAddress(uint16_t new_address);
-    void setPreset(uint8_t new_preset);
-    void setName(const std::string& other);
-    void setType(const std::string& other);
 
-    void dmxBytes(JsonArray& arr) const
-    {
-        m_dmxIn->bytesJson(arr);
-    }
+    void fromConfig();
+    void fromJson(std::string json) override;
+    JsonDocument toJsonDoc() override;
+    void toJson(JsonObject& doc) override;
 
 private:
     Config::Fixture m_config;
+    std::shared_ptr<SyncBuffer> m_synbuffer;
+    std::array<uint8_t, 512> m_buffer;
+    std::vector<Interface::Output*> m_outputs;    
+    JsonDocument m_jsonPresets;
 
-    std::shared_ptr<Traits::InputInterface> m_dmxIn;
-    std::vector<Traits::OutputInterface*> m_outputs;
-    
-    uint8_t* m_srcBuffer;
-    uint16_t m_lastOffset = 0U;
-    JsonDocument jsonPreset;
-
-    std::string outputInfoSerialized;
-    JsonDocument outputInfoJson;
-    void updateOutputInfo();
+    uint16_t m_lastOffset = 0;
 };

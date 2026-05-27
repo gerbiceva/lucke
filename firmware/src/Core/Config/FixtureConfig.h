@@ -2,15 +2,14 @@
 #include <cstdint>
 #include <string>
 
-#include "Traits/Deserializable.h"
+#include "Interfaces/Serializable.h"
 
 
 namespace Config
 {
 
-struct Fixture : public Traits::Deserializable
+struct Fixture : public Interface::Serializable
 {
-    static uint8_t s_ID;
     uint8_t m_ID = 0;
 
     uint8_t universe = 8U;
@@ -23,7 +22,6 @@ struct Fixture : public Traits::Deserializable
 
     bool highlighted = false;
 
-    void obtainID();
     void toJson(JsonObject& obj) override;
     JsonDocument toJsonDoc() override;
 };
