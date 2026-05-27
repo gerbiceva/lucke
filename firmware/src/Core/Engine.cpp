@@ -4,7 +4,7 @@
 
 Engine::Engine()
     : m_tcpServer(COMMAND_PORT),
-      m_describeHandler(m_config, m_fixtures, m_inputs),
+      m_describeHandler(m_config, m_fixtures, m_inputs, m_wifi),
       m_getFixtureHandler(m_fixtures),
       m_setFixtureHandler(m_fixtures),
       m_inputsHandler(m_inputs),
@@ -247,30 +247,13 @@ void Engine::spawnTasks()
         }
     }, 2, 8192);
 
-    // Serial report task (if enabled in config)
-    if (m_config.serial_report_task)
-    {
-        m_tasks.spawnTask("serial_report", [this]() {
-            while (true)
-            {
-                Utils::Logger::println(toString().c_str());
-                vTaskDelay(10000);
-            }
-        }, 1, 15000);
-    }
-
-    // Wireless report task (if enabled in config)
-    if (m_config.wireless_report_task)
-    {
-        m_tasks.spawnTask("wireless_report", [this]() {
-            while (true)
-            {
-                if (m_wifi.isConnected())
-                {
-                    m_udpReport.send(m_config.toString());
-                }
-                vTaskDelay(10000);
-            }
-        }, 1, 8192);
-    }
+    // Report tasks — owned by EngineConfigHandler so it can toggle them
+    m_engineConfigHandler.initTasks(
+        [this]() { return toString(); },
+        [this]() {
+            if (m_wifi.isConnected())
+                m_udpReport.send(m_config.toString());
+            return std::string();
+        }
+    );
 }

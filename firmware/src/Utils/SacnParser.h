@@ -17,7 +17,7 @@ class SacnParser
 	std::queue<uint8_t> m_sequenceDiff;
 
 	uint8_t m_buffer[512];
-
+    uint8_t m_universe = 0;
     bool m_inited = false;
 
 	bool update();

@@ -23,6 +23,7 @@ namespace Interface
         virtual void postupdate() = 0;
         virtual void setPreset(const JsonDocument& doc) = 0;
 
+        virtual void toJson(JsonObject& doc) {};
         virtual void appendBasicInfo(JsonDocument& doc) {};
     };
 

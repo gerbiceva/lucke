@@ -18,6 +18,7 @@ namespace Handler
         else
         {
             auto src = std::make_shared<Input::SacnSource>();
+            if (m_ready) src->begin(uni);
             m_sources[uni] = src;
             m_buffers[uni] = std::make_shared<SyncBuffer>();
             m_refcount[uni] = 1;
@@ -46,13 +47,16 @@ namespace Handler
         uint8_t tmp[512];
         for(auto& pair : m_sources)
         {
-            pair.second->poll(tmp);
-            m_buffers[pair.first]->write(tmp);
+            if (pair.second->poll(tmp))
+            {
+                m_buffers[pair.first]->write(tmp);
+            }
         }
     }
 
     void InputHandler::reconnect()
     {
+        m_ready = true;
         for (auto& pair : m_sources)
         {
             pair.second->stop();

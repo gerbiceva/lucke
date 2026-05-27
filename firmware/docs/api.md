@@ -1,7 +1,17 @@
 # Firmware Command API
 
-All commands are sent as JSON over TCP (port 8888) or Serial.
-Responses come back via the same transport.
+## Network Overview
+
+| Port  | Protocol | Direction | Description                        |
+|-------|----------|-----------|------------------------------------|
+| 8888  | TCP      | Receive   | Command input                      |
+| 12345 | TCP      | Send      | Command response                   |
+| 12343 | UDP      | Send      | Heartbeat broadcast (every 500ms)  |
+| 12344 | UDP      | Send      | Wireless report (every 10s)        |
+| 5568  | UDP      | Receive   | sACN / E1.31 DMX input (multicast) |
+| Serial| UART     | Both      | Command input / output             |
+
+---
 
 ## Response keys
 
@@ -19,9 +29,10 @@ Responses come back via the same transport.
 ```
 -> {"request": "describe"}
 <- {
-     "version": "0.96", "serial_report_task": true, ...
-     "fixtures": {"fixtures": [{"id":0, "name":"...", ...}]},
-     "inputs": {"inputs": [{"universe":1, "refcount":2}]}
+     "settings": {"version": "0.96", "serial_report_task": true, ...},
+     "wifi": {"rssi": -61, "local_ip": "192.168.0.143", "connected": true},
+     "fixture_handler": {"fixtures": [{"id":0, "name":"...", ...}]},
+     "input_handler": {"num_inputs": 1, "inputs": [{"type": "SACN", "universe": 8}]}
    }
 ```
 
@@ -29,13 +40,42 @@ Responses come back via the same transport.
 
 ```
 -> {"request": "fixtures"}
-<- {"fixtures": [{"id":0, "name":"strip", "type":"ws2815", ...}]}
+<- {"fixtures": [{"id":0, "name":"strip", "type":"Strip2815", ...}]}
 
 -> {"request": "getfixture", "id": 0}
-<- {"id":0, "name":"strip", "type":"ws2815", "universe":8, "address":0, "presetIndex":0, "numPresets":3}
+<- {"id":0, "name":"strip", "type":"Strip2815", "universe":8, "address":0, "presetIndex":0, "numPresets":8}
 
 -> {"request": "getfixture", "id": 0, "value": "universe"}
 <- {"req": "universe", "val": 8}
+
+-> {"request": "getfixture", "id": 0, "value": "address"}
+<- {"req": "address", "val": 0}
+
+-> {"request": "getfixture", "id": 0, "value": "preset"}
+<- {"req": "preset", "val": 0}
+
+-> {"request": "getfixture", "id": 0, "value": "name"}
+<- {"req": "name", "val": "strip"}
+
+-> {"request": "getfixture", "id": 0, "value": "type"}
+<- {"req": "type", "val": "Strip2815"}
+
+-> {"request": "getfixture", "id": 0, "value": "config"}
+<- {"req": "config", "val": {
+     "id":0, "name":"strip", "type":"Strip2815", "universe":8, "address":0,
+     "presetIndex":0, "numPresets":8, "footprint":72,
+     "outputs": [{"uuid":0, "type":"FastLED-1D", "hardware_pin":5, "num_leds":24, "num_groups":24}]
+   }}
+
+-> {"request": "getfixture", "id": 0, "value": "presets"}
+<- {"req": "presets", "val": {
+     "selected": 0,
+     "presets": {"groups": [
+       {"name": "group by 1", "settings": [{"num_groups": 24}]},
+       {"name": "group by 2", "settings": [{"num_groups": 12}]},
+       ...
+     ]}
+   }}
 
 -> {"request": "getfixture", "id": 99}
 <- {"err": "fixture not found"}
@@ -48,10 +88,16 @@ Responses come back via the same transport.
 -> {"request": "setfixture", "id": 0, "address": 100}
 -> {"request": "setfixture", "id": 0, "presetIndex": 2}
 -> {"request": "setfixture", "id": 0, "name": "main"}
--> {"request": "setfixture", "id": 0, "highlight": true}
 -> {"request": "setfixture", "id": 0, "universe": 5, "address": 10}
 <- {"status": "ok", "id":0, "name":"main", "universe":5, ...}
 
+-> {"request": "setfixture", "id": 0, "highlight": true}
+<- {"status": "ok", ...}
+```
+
+Highlight toggles all LEDs to white. Sending `"highlight": true` again toggles it off.
+
+```
 -> {"request": "setfixture"}
 <- {"err": "missing id"}
 ```
@@ -60,7 +106,7 @@ Responses come back via the same transport.
 
 ```
 -> {"request": "inputs"}
-<- {"inputs": [{"universe": 1, "refcount": 2}, {"universe": 5, "refcount": 1}]}
+<- {"num_inputs": 1, "inputs": [{"type": "SACN", "universe": 8}]}
 ```
 
 ## wifi
@@ -115,6 +161,9 @@ Sets flag, saves, restarts. Next boot all fixtures use defaults.
 
 ## wifi_animation
 
+Controls whether a running-pixel animation plays on LED outputs when WiFi is disconnected.
+The animation always runs before the first connection. After connecting, it only resumes on disconnect if enabled.
+
 ```
 -> {"request": "wifi_animation"}
 <- {"req": "wifi_animation", "val": false}
@@ -139,5 +188,13 @@ Sets flag, saves, restarts. Next boot all fixtures use defaults.
 ## Heartbeat (UDP broadcast, port 12343, every 500ms)
 
 ```
-{"version": "0.96", "fixtures": [{"name": "strip", "type": "ws2815"}, ...]}
+{"version": "0.96", "fixtures": [{"name": "strip", "type": "Strip2815"}, ...]}
 ```
+
+## Wireless Report (UDP broadcast, port 12344, every 10s)
+
+Full engine state as JSON (settings, wifi, fixtures, inputs). Only sent when `wireless_report_task` is enabled and WiFi is connected.
+
+## Serial Report (UART, every 10s)
+
+Same full engine state as the wireless report, printed to Serial. Only active when `serial_report_task` is enabled.

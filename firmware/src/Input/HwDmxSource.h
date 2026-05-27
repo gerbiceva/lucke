@@ -8,7 +8,7 @@ namespace Input
     public:
         void begin(uint8_t universe) override {}
         void stop() override {}
-        void poll(uint8_t* buff) override {}
+        bool poll(uint8_t* buff) override { return false; }
 
     private:
         uint8_t m_universe = 0;

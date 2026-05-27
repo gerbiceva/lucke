@@ -1,6 +1,8 @@
 #include "SacnParser.h"
 
 #define ADDR_SEQ 111
+#define ADDR_UNI_HI 113
+#define ADDR_UNI_LO 114
 #define ADDR_DMX 126
 
 namespace Utils
@@ -17,11 +19,9 @@ namespace Utils
 
 	void SacnParser::begin(uint8_t universe)
 	{
-		// Utils::Logger::printf("[SACN] begin universe: %d\n", universe);
-        // if(!m_inited)
-        // {}
+		m_universe = universe;
 		m_ip = IPAddress(239, 255, 0, universe);
-		m_udp.beginMulticast(m_ip, 5568);	
+		m_udp.beginMulticast(m_ip, 5568);
         m_inited = true;
 	}
 
@@ -37,6 +37,9 @@ namespace Utils
 		if(size)
 		{
 			m_udp.read(packet, size);
+
+			uint16_t packetUni = (packet[ADDR_UNI_HI] << 8) | packet[ADDR_UNI_LO];
+			if (packetUni != m_universe) return false;
 
 			memcpy(m_buffer, packet + ADDR_DMX, 512);
 			m_seq_prev = m_seq;

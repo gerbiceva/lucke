@@ -10,7 +10,12 @@ namespace Commands
     {
         if (!req["id"].is<uint8_t>())
         {
-            transport.send("{\"err\":\"missing id\"}");
+            JsonDocument doc;
+            JsonObject obj = doc.to<JsonObject>();
+            m_fixtures.toJson(obj);
+            std::string response;
+            serializeJson(doc, response);
+            transport.send(response);
             return;
         }
 
@@ -52,6 +57,16 @@ namespace Commands
             {
                 doc["req"] = "type";
                 doc["val"] = fix->getType();
+            }
+            else if (field == "config")
+            {
+                doc["req"] = "config";
+                doc["val"] = fix->configJson();
+            }
+            else if (field == "presets")
+            {
+                doc["req"] = "presets";
+                doc["val"] = fix->presetsJson();
             }
             else
             {

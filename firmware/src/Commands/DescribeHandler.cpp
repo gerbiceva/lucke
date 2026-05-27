@@ -2,8 +2,8 @@
 
 namespace Commands
 {
-    DescribeHandler::DescribeHandler(Config::Engine& config, Handler::FixtureHandler& fixtures, Handler::InputHandler& inputs)
-        : m_config(config), m_fixtures(fixtures), m_inputs(inputs)
+    DescribeHandler::DescribeHandler(Config::Engine& config, Handler::FixtureHandler& fixtures, Handler::InputHandler& inputs, Network::Wifi& wifi)
+        : m_config(config), m_fixtures(fixtures), m_inputs(inputs), m_wifi(wifi)
     {}
 
     void DescribeHandler::handle(JsonDocument& req, Interface::Transport& transport)
@@ -12,6 +12,9 @@ namespace Commands
         JsonObject obj = doc.to<JsonObject>();
 
         m_config.toJson(obj);
+
+        JsonObject wifiObj = obj["wifi"].to<JsonObject>();
+        m_wifi.toJson(wifiObj);
 
         JsonObject fixturesObj = obj["fixtures"].to<JsonObject>();
         m_fixtures.toJson(fixturesObj);

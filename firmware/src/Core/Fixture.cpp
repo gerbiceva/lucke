@@ -26,7 +26,15 @@ void Fixture::update()
 {
     if (!m_synbuffer) return;
 
-    m_buffer = m_synbuffer->read();
+    if (m_config.highlighted)
+    {
+        memset(&m_buffer[m_config.address], 255, m_lastOffset);
+    }
+    else
+    {
+        m_buffer = m_synbuffer->read();
+    }
+
     uint8_t* buff = &m_buffer[0] + m_config.address;
 
     for(auto o : m_outputs)
@@ -89,6 +97,27 @@ JsonDocument Fixture::toJsonDoc()
     JsonDocument doc;
     JsonObject obj = doc.to<JsonObject>();
     toJson(obj);
+    return doc;
+}
+
+JsonDocument Fixture::configJson()
+{
+    JsonDocument doc = m_config.toJsonDoc();
+    doc["footprint"] = m_lastOffset;
+    JsonArray outputs = doc["outputs"].to<JsonArray>();
+    for (auto o : m_outputs)
+    {
+        JsonObject entry = outputs.add<JsonObject>();
+        o->toJson(entry);
+    }
+    return doc;
+}
+
+JsonDocument Fixture::presetsJson()
+{
+    JsonDocument doc;
+    doc["selected"] = m_config.selectedPreset;
+    doc["presets"] = m_jsonPresets;
     return doc;
 }
 

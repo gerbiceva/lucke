@@ -47,6 +47,8 @@ public:
     void fromConfig();
     void fromJson(std::string json) override;
     JsonDocument toJsonDoc() override;
+    JsonDocument configJson();
+    JsonDocument presetsJson();
     void toJson(JsonObject& doc) override;
 
 private:

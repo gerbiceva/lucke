@@ -10,13 +10,19 @@ namespace Commands
     class EngineConfigHandler : public Interface::CommandHandler
     {
     public:
+        using ReportFn = std::function<std::string()>;
+
         EngineConfigHandler(Config::Engine& config, Utils::Storage& storage, Tasks::Manager& tasks);
         void handle(JsonDocument& req, Interface::Transport& transport) override;
+        void initTasks(ReportFn serialFn, ReportFn wirelessFn);
 
     private:
         Config::Engine& m_config;
         Utils::Storage& m_storage;
         Tasks::Manager& m_tasks;
+
+        ReportFn m_serialReportFn;
+        ReportFn m_wirelessReportFn;
 
         uint32_t m_serialReportTaskId = 0;
         uint32_t m_wirelessReportTaskId = 0;

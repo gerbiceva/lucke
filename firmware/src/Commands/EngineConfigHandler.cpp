@@ -77,6 +77,25 @@ namespace Commands
         transport.send(response);
     }
 
+    void EngineConfigHandler::initTasks(ReportFn serialFn, ReportFn wirelessFn)
+    {
+        m_serialReportFn = std::move(serialFn);
+        m_wirelessReportFn = std::move(wirelessFn);
+
+        if (m_config.serial_report_task)
+        {
+            m_config.serial_report_task = false;
+            toggleSerialReport(true);
+            m_config.serial_report_task = true;
+        }
+        if (m_config.wireless_report_task)
+        {
+            m_config.wireless_report_task = false;
+            toggleWirelessReport(true);
+            m_config.wireless_report_task = true;
+        }
+    }
+
     void EngineConfigHandler::toggleSerialReport(bool enable)
     {
         if (enable && !m_config.serial_report_task)
@@ -84,10 +103,10 @@ namespace Commands
             m_serialReportTaskId = m_tasks.spawnTask("serial_report", [this]() {
                 while (true)
                 {
-                    Utils::Logger::println(m_config.toString().c_str());
+                    Utils::Logger::println(m_serialReportFn().c_str());
                     vTaskDelay(10000);
                 }
-            }, 1, 4096);
+            }, 1, 15000);
         }
         else if (!enable && m_config.serial_report_task)
         {
@@ -102,9 +121,10 @@ namespace Commands
             m_wirelessReportTaskId = m_tasks.spawnTask("wireless_report", [this]() {
                 while (true)
                 {
+                    m_wirelessReportFn();
                     vTaskDelay(10000);
                 }
-            }, 1, 4096);
+            }, 1, 8192);
         }
         else if (!enable && m_config.wireless_report_task)
         {

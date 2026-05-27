@@ -18,6 +18,7 @@ namespace Handler
 
         void toJson(JsonObject& obj) override;
     private:
+        bool m_ready = false;
         std::unordered_map<uint8_t, std::shared_ptr<Interface::Input>> m_sources;
         std::unordered_map<uint8_t, std::shared_ptr<SyncBuffer>> m_buffers;
         std::unordered_map<uint8_t, uint16_t> m_refcount;
