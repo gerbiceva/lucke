@@ -17,6 +17,7 @@ namespace Network
         WiFi.mode(WIFI_STA);
         WiFi.setSleep(false);
         WiFi.begin(m_ssid.c_str(), m_password.c_str());
+        // TODO: call esp_wifi_set_storage(WIFI_STORAGE_RAM) after first connect to reduce flash wear
     }
 
     void Wifi::reconnect(const std::string& ssid, const std::string& pass)
