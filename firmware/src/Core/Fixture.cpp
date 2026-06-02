@@ -24,7 +24,7 @@ void Fixture::_addOutput(Interface::Output* output)
 
 void Fixture::update()
 {
-    if (!m_synbuffer) return;
+    if (m_syncBuffers.empty()) return;
 
     if (m_config.highlighted)
     {
@@ -32,10 +32,14 @@ void Fixture::update()
     }
     else
     {
-        m_buffer = m_synbuffer->read();
+        for (size_t i = 0; i < m_syncBuffers.size(); i++)
+        {
+            const auto& data = m_syncBuffers[i]->read();
+            memcpy(&m_buffer[i * 512], data.data(), 512);
+        }
     }
 
-    uint8_t* buff = &m_buffer[0] + m_config.address;
+    uint8_t* buff = m_buffer.data() + m_config.address;
 
     for(auto o : m_outputs)
     {
@@ -44,10 +48,10 @@ void Fixture::update()
     }
 }
 
-void Fixture::setSyncBuffer(std::shared_ptr<SyncBuffer> buf)
+void Fixture::setSyncBuffers(std::vector<std::shared_ptr<SyncBuffer>> bufs)
 {
-    Utils::Logger::println("SET");
-    m_synbuffer = buf;
+    m_syncBuffers = std::move(bufs);
+    m_buffer.resize(m_syncBuffers.size() * 512, 0);
 }
 
 void Fixture::setUniverse(uint8_t new_universe)
@@ -210,6 +214,16 @@ const std::string& Fixture::getType() const
 bool& Fixture::getHighlighted()
 {
     return m_config.highlighted;
+}
+
+uint16_t Fixture::getFootprint() const
+{
+    return m_lastOffset;
+}
+
+uint8_t Fixture::getNumUniverses() const
+{
+    return m_syncBuffers.size();
 }
 
 void Fixture::countPresets()

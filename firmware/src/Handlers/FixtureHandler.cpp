@@ -21,8 +21,16 @@ namespace Handler
             fix->fromConfig();
         }
 
-        // Subscribe to the fixture's universe and give it the SyncBuffer
-        fix->setSyncBuffer(m_inputs.subscribe(fix->getUniverse()));
+        // Subscribe to all universes this fixture spans
+        uint8_t baseUni = fix->getUniverse();
+        uint16_t totalBytes = fix->getAddress() + fix->getFootprint();
+        uint8_t numUni = totalBytes > 0 ? ((totalBytes - 1) / 512 + 1) : 1;
+
+        std::vector<std::shared_ptr<SyncBuffer>> bufs;
+        for (uint8_t i = 0; i < numUni; i++)
+            bufs.push_back(m_inputs.subscribe(baseUni + i));
+
+        fix->setSyncBuffers(std::move(bufs));
         m_fixtures.push_back(fix);
         persistFixture(fix->id());
     }
@@ -64,14 +72,25 @@ namespace Handler
         Fixture* fix = get(id);
         if (!fix) return false;
 
-        uint8_t oldUni = fix->getUniverse();
-        if (oldUni == uni) return true;
+        uint8_t oldBase = fix->getUniverse();
+        if (oldBase == uni) return true;
 
-        // Unsubscribe from old, subscribe to new
-        m_inputs.unsubscribe(oldUni);
-        fix->setSyncBuffer(m_inputs.subscribe(uni));
+        // Unsubscribe from all old universes
+        uint8_t oldCount = fix->getNumUniverses();
+        for (uint8_t i = 0; i < oldCount; i++)
+            m_inputs.unsubscribe(oldBase + i);
+
         fix->setUniverse(uni);
 
+        // Subscribe to new universe span
+        uint16_t totalBytes = fix->getAddress() + fix->getFootprint();
+        uint8_t numUni = totalBytes > 0 ? ((totalBytes - 1) / 512 + 1) : 1;
+
+        std::vector<std::shared_ptr<SyncBuffer>> bufs;
+        for (uint8_t i = 0; i < numUni; i++)
+            bufs.push_back(m_inputs.subscribe(uni + i));
+
+        fix->setSyncBuffers(std::move(bufs));
         persistFixture(id);
         return true;
     }

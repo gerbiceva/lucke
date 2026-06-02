@@ -6,6 +6,7 @@
 #include "Interfaces/Deserializable.h"
 #include <memory>
 #include <vector>
+#include <cstring>
 
 
 class Fixture : public Interface::Serializable, public Interface::Deserializable
@@ -26,7 +27,9 @@ public:
         _addOutput(new TOutput(std::forward<Args>(args)...));
     }
 
-    void setSyncBuffer(std::shared_ptr<SyncBuffer> buf);
+    void setSyncBuffers(std::vector<std::shared_ptr<SyncBuffer>> bufs);
+    uint16_t getFootprint() const;
+    uint8_t getNumUniverses() const;
     void setUniverse(uint8_t new_universe);
     void setAddress(uint16_t new_address);
     void setPreset(uint8_t new_preset);
@@ -53,9 +56,9 @@ public:
 
 private:
     Config::Fixture m_config;
-    std::shared_ptr<SyncBuffer> m_synbuffer;
-    std::array<uint8_t, 512> m_buffer;
-    std::vector<Interface::Output*> m_outputs;    
+    std::vector<std::shared_ptr<SyncBuffer>> m_syncBuffers;
+    std::vector<uint8_t> m_buffer;
+    std::vector<Interface::Output*> m_outputs;
     JsonDocument m_jsonPresets;
 
     uint16_t m_lastOffset = 0;
