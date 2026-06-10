@@ -3,13 +3,18 @@
 #include "Utils/JsonUtils.h"
 
 Engine::Engine()
-    : m_tcpServer(COMMAND_PORT),
+    : m_serialChannel(m_dispatcher),
+      m_tcpChannel(m_dispatcher, COMMAND_PORT, RESPONSE_PORT),
+      m_bleChannel(m_dispatcher, DEFAULT_WIFI_SSID),
+      m_udpHeartbeatSink(m_wifi, HEARTBEAT_PORT),
+      m_udpReportSink(m_wifi, REPORT_PORT),
+      m_bleSink(m_bleChannel.transport()),
       m_describeHandler(m_config, m_fixtures, m_inputs, m_wifi),
       m_getFixtureHandler(m_fixtures),
       m_setFixtureHandler(m_fixtures),
       m_inputsHandler(m_inputs),
       m_wifiConfigHandler(m_wifi, m_config, m_storage),
-      m_engineConfigHandler(m_config, m_storage, m_tasks),
+      m_engineConfigHandler(m_config, m_storage, m_publisher),
       m_fixtures(m_inputs)
 {
     Utils::Logger::enable();
@@ -30,6 +35,12 @@ void Engine::init()
     Utils::Logger::println("Register");
 
     registerCommands();
+
+    // BLE config channel comes up independent of wifi, so credentials can be
+    // set over Bluetooth before the device has ever joined a network.
+    m_serialChannel.begin();
+    m_bleChannel.begin();
+
     Utils::Logger::println("Spaw3n");
 
     spawnTasks();
@@ -121,9 +132,9 @@ void Engine::onWifiStatus(bool connected)
         m_tasks.suspendTask(m_animationTaskId);
         m_tasks.resumeTask(m_fixtureTaskId);
 
-        m_tcpServer.begin();
-        m_udpHeartbeat.begin(HEARTBEAT_PORT);
-        m_udpReport.begin(REPORT_PORT);
+        m_tcpChannel.begin();
+        m_udpHeartbeatSink.begin();
+        m_udpReportSink.begin();
         m_inputs.reconnect();
     }
     else
@@ -134,7 +145,7 @@ void Engine::onWifiStatus(bool connected)
             m_tasks.resumeTask(m_animationTaskId);
         }
 
-        m_tcpServer.stop();
+        m_tcpChannel.stop();
     }
 }
 
@@ -183,77 +194,84 @@ void Engine::spawnTasks()
         }
     }, 1, 3000);
 
-    // Heartbeat task
-    m_tasks.spawnTask("heartbeat", [this]() {
-        std::string cached;
+    // Outbound periodic broadcasts (heartbeat + reports) run on one task.
+    registerReports();
+    m_tasks.spawnTask("publisher", [this]() {
         while (true)
         {
-            if (m_wifi.isConnected())
-            {
-                if (cached.empty())
-                {
-                    JsonDocument doc;
-                    doc["version"] = m_config.version;
-                    JsonArray arr = doc["fixtures"].to<JsonArray>();
-                    for (auto fix : m_fixtures.all())
-                    {
-                        JsonObject entry = arr.add<JsonObject>();
-                        entry["name"] = fix->getName();
-                        entry["type"] = fix->getType();
-                    }
-                    serializeJson(doc, cached);
-                }
-                m_udpHeartbeat.send(cached);
-            }
-            vTaskDelay(500);
+            m_publisher.tick();
+            vTaskDelay(10);
         }
-    }, 1, 4096);
+    }, 1, 16000);
 
-    // Serial command task
+    // Command channels — each polled on its own task so a slow read on one
+    // channel never stalls the others. All feed the same CommandDispatcher.
     m_tasks.spawnTask("serial_cmd", [this]() {
         while (true)
         {
-            if (m_serial.isAvailable())
-            {
-                std::string line = m_serial.readLine();
-                m_dispatcher.dispatch(line, m_serial);
-            }
+            m_serialChannel.poll();
             vTaskDelay(10);
         }
     }, 1, 8192);
 
-    // TCP command task — receive on 8888, respond on RESPONSE_PORT
+    // TCP command channel — receive on COMMAND_PORT, respond on RESPONSE_PORT
     m_tasks.spawnTask("tcp_cmd", [this]() {
         while (true)
         {
-            auto conn = m_tcpServer.accept();
-            if (conn.has_value())
-            {
-                auto& tc = conn.value();
-                std::string remoteIp = tc.remoteAddress();
-                while (tc.isConnected())
-                {
-                    if (tc.isAvailable())
-                    {
-                        std::string line = tc.readLine();
-                        Network::TcpConnection response(remoteIp, RESPONSE_PORT);
-                        m_dispatcher.dispatch(line, response);
-                        response.close();
-                    }
-                    vTaskDelay(10);
-                }
-            }
+            m_tcpChannel.poll();
             vTaskDelay(10);
         }
     }, 2, 8192);
 
-    // Report tasks — owned by EngineConfigHandler so it can toggle them
-    m_engineConfigHandler.initTasks(
-        [this]() { return toString(); },
-        [this]() {
-            if (m_wifi.isConnected())
-                m_udpReport.send(m_config.toString());
-            return std::string();
+    // BLE command channel — config over Bluetooth, available without wifi
+    m_tasks.spawnTask("ble_cmd", [this]() {
+        while (true)
+        {
+            m_bleChannel.poll();
+            vTaskDelay(10);
         }
-    );
+    }, 1, 8192);
+}
+
+void Engine::registerReports()
+{
+    // Heartbeat: small fixture summary broadcast over UDP every 500ms.
+    m_publisher.add({ "heartbeat",
+        [this]() { return heartbeatJson(); },
+        &m_udpHeartbeatSink, 500 });
+
+    // Wireless report: full settings dump over UDP, toggled via config.
+    m_publisher.add({ Commands::WIRELESS_REPORT_FEED,
+        [this]() { return m_config.toString(); },
+        &m_udpReportSink, 10000, m_config.wireless_report_task });
+
+    // Serial report: full engine state printed to the console, toggled via config.
+    m_publisher.add({ Commands::SERIAL_REPORT_FEED,
+        [this]() { return toString(); },
+        &m_serialSink, 10000, m_config.serial_report_task });
+
+    // BLE report: same engine state pushed to a connected central. Opt-in —
+    // shares the NUS TX characteristic with command responses, so enable it
+    // only when a client expects an unsolicited feed.
+    m_publisher.add({ "ble_report",
+        [this]() { return toString(); },
+        &m_bleSink, 10000, false });
+}
+
+std::string Engine::heartbeatJson()
+{
+    if (m_heartbeatCache.empty())
+    {
+        JsonDocument doc;
+        doc["version"] = m_config.version;
+        JsonArray arr = doc["fixtures"].to<JsonArray>();
+        for (auto fix : m_fixtures.all())
+        {
+            JsonObject entry = arr.add<JsonObject>();
+            entry["name"] = fix->getName();
+            entry["type"] = fix->getType();
+        }
+        serializeJson(doc, m_heartbeatCache);
+    }
+    return m_heartbeatCache;
 }

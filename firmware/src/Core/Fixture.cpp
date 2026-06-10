@@ -34,8 +34,7 @@ void Fixture::update()
     {
         for (size_t i = 0; i < m_syncBuffers.size(); i++)
         {
-            const auto& data = m_syncBuffers[i]->read();
-            memcpy(&m_buffer[i * 512], data.data(), 512);
+            m_syncBuffers[i]->read(&m_buffer[i * 512]);
         }
     }
 

@@ -1,0 +1,145 @@
+@startuml architecture_overview
+title <size:20><b>Lucke Firmware — Architecture Overview</b></size>
+
+skinparam backgroundColor #FBFBFD
+skinparam shadowing true
+skinparam roundCorner 12
+skinparam defaultFontName "Helvetica"
+skinparam defaultFontSize 12
+skinparam ArrowColor #5A6472
+skinparam ArrowThickness 1.3
+skinparam componentStyle rectangle
+
+skinparam component {
+    BorderThickness 1.4
+    FontStyle bold
+}
+skinparam rectangle {
+    BorderThickness 1.6
+    FontStyle bold
+    FontSize 13
+}
+
+' ===================================================================
+' External world
+' ===================================================================
+actor "Controller / App" as App
+cloud "sACN / DMX\nLighting Console" as Console
+node "WS2815 LED\nStrips & Panels" as Leds #FFF8E1
+
+' ===================================================================
+' Command ingress layer
+' ===================================================================
+rectangle "Command Channels  <<Network>>" as Channels #E0F7FA {
+    component "SerialChannel" as Serial
+    component "TcpChannel\n(:8888)" as Tcp
+    component "BleChannel\n(NUS)" as Ble
+    note bottom of Tcp
+        each Channel owns a Transport
+        (Serial / TcpConnection / Ble)
+        for sending responses
+    end note
+}
+
+' ===================================================================
+' Dispatch + handlers
+' ===================================================================
+rectangle "Command Processing  <<Commands>>" as CmdLayer #E3F2FD {
+    component "CommandDispatcher" as Dispatcher
+    component "Describe /\nGet|SetFixture /\nInputs / WifiConfig /\nEngineConfig / Reboot\nHandlers" as Handlers
+}
+
+' ===================================================================
+' Core orchestration
+' ===================================================================
+rectangle "Core  <<Engine>>" as Core #FFF3E0 {
+    component "Engine\n(owns everything)" as Engine
+    component "Tasks::Manager\n(FreeRTOS)" as Tasks
+    database "Storage\n(NVS prefs)" as Storage
+    component "Config::Engine" as EngineCfg
+}
+
+' ===================================================================
+' Domain handlers
+' ===================================================================
+rectangle "Domain Handlers  <<Handler>>" as Domain #E8F5E9 {
+    component "FixtureHandler\n(owns Fixtures)" as FixtureH
+    component "InputHandler\n(universe -> SyncBuffer)" as InputH
+}
+
+' ===================================================================
+' Pipeline: inputs -> fixtures -> outputs
+' ===================================================================
+rectangle "Input Sources  <<Input>>" as Inputs #FCE4EC {
+    component "SacnSource\n(sACN/E1.31)" as Sacn
+    component "HwDmxSource" as HwDmx
+}
+
+rectangle "Fixtures  <<Fixtures>>" as Fixtures #F1F8E9 {
+    component "Strip2815 / Grid2815" as Fixture
+    component "FastLED1D\nOutputs" as Output
+}
+
+queue "SyncBuffer\n(512B, mutex)" as Sync #F5F5F5
+
+' ===================================================================
+' Reporting / connectivity
+' ===================================================================
+rectangle "Connectivity  <<Network>>" as Conn #E0F7FA {
+    component "Wifi" as Wifi
+    component "UdpBroadcaster\nheartbeat + report" as Udp
+}
+
+' ===================================================================
+' Flows
+' ===================================================================
+App        --> Serial   : command lines
+App        --> Tcp      : command lines
+App        --> Ble      : command lines
+Console    --> Sacn     : E1.31 packets (UDP)
+
+Serial     --> Dispatcher : poll() / dispatch
+Tcp        --> Dispatcher : poll() / dispatch
+Ble        --> Dispatcher : poll() / dispatch
+Dispatcher --> Handlers   : route by "cmd"
+
+Handlers   --> FixtureH   : query / mutate
+Handlers   --> InputH     : query
+Handlers   --> Wifi       : configure
+Handlers   --> EngineCfg  : read / write
+Handlers   ..> Storage    : persist
+
+Engine     *--> Tasks
+Engine     *--> Storage
+Engine     *--> EngineCfg
+Engine     *--> Channels
+Engine     *--> Dispatcher
+Engine     *--> FixtureH
+Engine     *--> InputH
+Engine     *--> Conn
+
+Tasks      ..> FixtureH : "fixture task:\nupdate() loop"
+Tasks      ..> InputH   : "input task:\npoll sources"
+Tasks      ..> Udp      : "report task"
+
+Sacn       --> Sync : write DMX
+HwDmx      --> Sync : write DMX
+InputH     --> Sync : owns / subscribe(uni)
+FixtureH   --> Fixture : update()
+Fixture    --> Sync : read by universe
+Fixture    --> Output : update(buffer)
+Output     --> Leds  : FastLED.show()
+
+Wifi       ..> Engine : onWifiStatus(connected)
+Udp        --> App    : heartbeat + status report
+
+legend right
+    <b>Data paths</b>
+    Solid  = ownership / data flow
+    Dotted = uses / callback
+    ----
+    Control plane : App -> Channels -> Dispatcher -> Handlers
+    Render plane  : Console -> Input -> SyncBuffer -> Fixture -> Output -> LEDs
+endlegend
+
+@enduml

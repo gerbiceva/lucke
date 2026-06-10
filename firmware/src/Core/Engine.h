@@ -1,9 +1,13 @@
 #pragma once
 #include "Config/EngineConfig.h"
 #include "Network/Wifi.h"
-#include "Network/TcpServer.h"
-#include "Network/UdpBroadcaster.h"
-#include "Network/SerialTransport.h"
+#include "Network/SerialChannel.h"
+#include "Network/TcpChannel.h"
+#include "Network/BleChannel.h"
+#include "Reports/Publisher.h"
+#include "Reports/UdpSink.h"
+#include "Reports/SerialSink.h"
+#include "Reports/BleSink.h"
 #include "Commands/CommandDispatcher.h"
 #include "Commands/DescribeHandler.h"
 #include "Commands/GetFixtureHandler.h"
@@ -35,8 +39,10 @@ private:
     void loadConfig();
     void saveConfig();
     void registerCommands();
+    void registerReports();
     void spawnTasks();
     void onWifiStatus(bool connected);
+    std::string heartbeatJson();
 
     uint32_t m_fixtureTaskId = 0;
     uint32_t m_animationTaskId = 0;
@@ -46,10 +52,18 @@ private:
     bool m_factoryReset = false;
 
     Network::Wifi m_wifi;
-    Network::TcpServer m_tcpServer;
-    Network::UdpBroadcaster m_udpHeartbeat;
-    Network::UdpBroadcaster m_udpReport;
-    Network::SerialTransport m_serial;
+
+    Network::SerialChannel m_serialChannel;
+    Network::TcpChannel m_tcpChannel;
+    Network::BleChannel m_bleChannel;
+
+    // Outbound periodic broadcasts (heartbeat / serial + wireless reports).
+    Reports::Publisher m_publisher;
+    Reports::UdpSink m_udpHeartbeatSink;
+    Reports::UdpSink m_udpReportSink;
+    Reports::SerialSink m_serialSink;
+    Reports::BleSink m_bleSink;
+    std::string m_heartbeatCache;
 
     Commands::CommandDispatcher m_dispatcher;
     Commands::DescribeHandler m_describeHandler;

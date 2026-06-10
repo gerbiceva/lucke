@@ -15,15 +15,12 @@ public:
         memcpy(&m_buffer[0], buff, 512);
     }
 
-    const std::array<uint8_t, 512>& read()
+    // Copy the buffer into the caller's destination while holding the lock.
+    // Returning a reference instead would release the lock before the caller
+    // reads the data, defeating the synchronisation and allowing torn reads.
+    void read(uint8_t* dst)
     {
         std::lock_guard<std::mutex> lock(m_mutex);
-        return m_buffer;
-    }
-
-    std::array<uint8_t, 512>& getBuffer()
-    {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        return m_buffer;
+        memcpy(dst, m_buffer.data(), 512);
     }
 };

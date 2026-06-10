@@ -2,34 +2,28 @@
 #include <Arduino.h>
 #include "Interfaces/Command.h"
 #include "Core/Config/EngineConfig.h"
-#include "Tasks/TaskExecutor.h"
+#include "Reports/Publisher.h"
 #include "Utils/Storage.h"
 
 namespace Commands
 {
+    // Feed names registered with the Publisher in Engine::spawnTasks; this
+    // handler toggles them by name when the corresponding setting changes.
+    constexpr const char* SERIAL_REPORT_FEED   = "serial_report";
+    constexpr const char* WIRELESS_REPORT_FEED = "wireless_report";
+
     class EngineConfigHandler : public Interface::CommandHandler
     {
     public:
-        using ReportFn = std::function<std::string()>;
-
-        EngineConfigHandler(Config::Engine& config, Utils::Storage& storage, Tasks::Manager& tasks);
+        EngineConfigHandler(Config::Engine& config, Utils::Storage& storage, Reports::Publisher& publisher);
         void handle(JsonDocument& req, Interface::Transport& transport) override;
-        void initTasks(ReportFn serialFn, ReportFn wirelessFn);
 
     private:
         Config::Engine& m_config;
         Utils::Storage& m_storage;
-        Tasks::Manager& m_tasks;
-
-        ReportFn m_serialReportFn;
-        ReportFn m_wirelessReportFn;
-
-        uint32_t m_serialReportTaskId = 0;
-        uint32_t m_wirelessReportTaskId = 0;
+        Reports::Publisher& m_publisher;
 
         void save();
         void respond(Interface::Transport& transport, const char* key, bool value);
-        void toggleSerialReport(bool enable);
-        void toggleWirelessReport(bool enable);
     };
 }

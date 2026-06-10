@@ -3,8 +3,8 @@
 
 namespace Commands
 {
-    EngineConfigHandler::EngineConfigHandler(Config::Engine& config, Utils::Storage& storage, Tasks::Manager& tasks)
-        : m_config(config), m_storage(storage), m_tasks(tasks)
+    EngineConfigHandler::EngineConfigHandler(Config::Engine& config, Utils::Storage& storage, Reports::Publisher& publisher)
+        : m_config(config), m_storage(storage), m_publisher(publisher)
     {}
 
     void EngineConfigHandler::handle(JsonDocument& req, Interface::Transport& transport)
@@ -25,9 +25,8 @@ namespace Commands
         {
             if (req["value"].is<bool>())
             {
-                bool value = req["value"];
-                toggleSerialReport(value);
-                m_config.serial_report_task = value;
+                m_config.serial_report_task = req["value"];
+                m_publisher.setEnabled(SERIAL_REPORT_FEED, m_config.serial_report_task);
                 save();
             }
             respond(transport, "serial_report_task", m_config.serial_report_task);
@@ -38,9 +37,8 @@ namespace Commands
         {
             if (req["value"].is<bool>())
             {
-                bool value = req["value"];
-                toggleWirelessReport(value);
-                m_config.wireless_report_task = value;
+                m_config.wireless_report_task = req["value"];
+                m_publisher.setEnabled(WIRELESS_REPORT_FEED, m_config.wireless_report_task);
                 save();
             }
             respond(transport, "wireless_report_task", m_config.wireless_report_task);
@@ -75,60 +73,5 @@ namespace Commands
         std::string response;
         serializeJson(doc, response);
         transport.send(response);
-    }
-
-    void EngineConfigHandler::initTasks(ReportFn serialFn, ReportFn wirelessFn)
-    {
-        m_serialReportFn = std::move(serialFn);
-        m_wirelessReportFn = std::move(wirelessFn);
-
-        if (m_config.serial_report_task)
-        {
-            m_config.serial_report_task = false;
-            toggleSerialReport(true);
-            m_config.serial_report_task = true;
-        }
-        if (m_config.wireless_report_task)
-        {
-            m_config.wireless_report_task = false;
-            toggleWirelessReport(true);
-            m_config.wireless_report_task = true;
-        }
-    }
-
-    void EngineConfigHandler::toggleSerialReport(bool enable)
-    {
-        if (enable && !m_config.serial_report_task)
-        {
-            m_serialReportTaskId = m_tasks.spawnTask("serial_report", [this]() {
-                while (true)
-                {
-                    Utils::Logger::println(m_serialReportFn().c_str());
-                    vTaskDelay(10000);
-                }
-            }, 1, 15000);
-        }
-        else if (!enable && m_config.serial_report_task)
-        {
-            m_tasks.stopTask(m_serialReportTaskId);
-        }
-    }
-
-    void EngineConfigHandler::toggleWirelessReport(bool enable)
-    {
-        if (enable && !m_config.wireless_report_task)
-        {
-            m_wirelessReportTaskId = m_tasks.spawnTask("wireless_report", [this]() {
-                while (true)
-                {
-                    m_wirelessReportFn();
-                    vTaskDelay(10000);
-                }
-            }, 1, 8192);
-        }
-        else if (!enable && m_config.wireless_report_task)
-        {
-            m_tasks.stopTask(m_wirelessReportTaskId);
-        }
     }
 }

@@ -1,0 +1,435 @@
+@startuml architecture
+title <size:20><b>Lucke Firmware — Architecture</b></size>
+
+' ===================================================================
+' Global styling
+' ===================================================================
+skinparam backgroundColor #FBFBFD
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam shadowing true
+skinparam roundCorner 12
+skinparam defaultFontName "Helvetica"
+skinparam defaultFontSize 12
+hide empty members
+
+skinparam class {
+    BorderThickness 1.4
+    AttributeFontColor #333333
+    AttributeFontSize 11
+}
+
+skinparam package {
+    BorderThickness 1.6
+    FontStyle bold
+    FontSize 13
+    BackgroundColor transparent
+}
+
+skinparam ArrowColor #5A6472
+skinparam ArrowThickness 1.2
+
+' Stereotype palettes (one accent color per architectural layer)
+skinparam class {
+    BackgroundColor<<iface>>   #EDE7F6
+    BorderColor<<iface>>       #7E57C2
+    BackgroundColor<<core>>    #FFF3E0
+    BorderColor<<core>>        #FB8C00
+    BackgroundColor<<config>>  #ECEFF1
+    BorderColor<<config>>      #78909C
+    BackgroundColor<<cmd>>     #E3F2FD
+    BorderColor<<cmd>>         #1E88E5
+    BackgroundColor<<handler>> #E8F5E9
+    BorderColor<<handler>>     #43A047
+    BackgroundColor<<net>>     #E0F7FA
+    BorderColor<<net>>         #00ACC1
+    BackgroundColor<<output>>  #FFF8E1
+    BorderColor<<output>>      #F9A825
+    BackgroundColor<<input>>   #FCE4EC
+    BorderColor<<input>>       #D81B60
+    BackgroundColor<<fixture>> #F1F8E9
+    BorderColor<<fixture>>     #7CB342
+    BackgroundColor<<task>>    #FFEBEE
+    BorderColor<<task>>        #E53935
+    BackgroundColor<<util>>    #F5F5F5
+    BorderColor<<util>>        #9E9E9E
+}
+
+' ===================================================================
+' Interfaces (namespace Interface)
+' ===================================================================
+package "Interface" <<Folder>> #EDE7F6 {
+    interface CommandChannel <<iface>> {
+        +begin()
+        +stop()
+        +poll()
+    }
+    interface Transport <<iface>> {
+        +send(data)
+        +readLine() : string
+        +isAvailable() : bool
+        +remoteAddress() : string
+        +close()
+    }
+    interface CommandHandler <<iface>> {
+        +handle(req, transport)
+    }
+    interface Input <<iface>> {
+        +begin(universe)
+        +stop()
+        +poll(buff) : bool
+        +toJson(obj)
+    }
+    interface Output <<iface>> {
+        +footprint() : uint16
+        +bind()
+        +update(src)
+        +postupdate()
+        +setPreset(doc)
+        +toJson(obj)
+        +appendBasicInfo(doc)
+    }
+    interface Serializable <<iface>> {
+        +toJson(obj)
+        +toJsonDoc() : JsonDocument
+    }
+    interface Deserializable <<iface>> {
+        +fromJson(json)
+    }
+}
+
+' ===================================================================
+' Core
+' ===================================================================
+class Engine <<core>> {
+    +init()
+    +addFixture<TFixture>()
+    +toString() : string
+    -loadConfig()
+    -saveConfig()
+    -registerCommands()
+    -spawnTasks()
+    -onWifiStatus(connected)
+}
+
+class Fixture <<core>> {
+    +update()
+    +wifiAnimation()
+    +addOutput<TOutput>(args...)
+    +setSyncBuffers(bufs)
+    +getFootprint() : uint16
+    +getNumUniverses() : uint8
+    +setUniverse(u)
+    +setAddress(a)
+    +setPreset(p)
+    +getOutputs() : vector<Output*>
+    +fromConfig()
+    +fromJson(json)
+    +toJsonDoc() : JsonDocument
+    -_addOutput(output)
+    -countPresets()
+}
+
+package "Config" <<Folder>> #ECEFF1 {
+    class "Config::Engine" as ConfigEngine <<config>> {
+        +version : string
+        +to_factory_settings : bool
+        +serial_report_task : bool
+        +wireless_report_task : bool
+        +wifi_animation : bool
+        +ssid : string
+        +password : string
+    }
+    class "Config::Fixture" as ConfigFixture <<config>> {
+        +m_ID : uint8
+        +universe : uint8
+        +address : uint16
+        +selectedPreset : uint8
+        +numPresets : uint8
+        +name : string
+        +type : string
+        +highlighted : bool
+    }
+}
+
+' ===================================================================
+' Commands
+' ===================================================================
+package "Commands" <<Folder>> #E3F2FD {
+    class CommandDispatcher <<cmd>> {
+        +registerHandler(cmd, handler)
+        +dispatch(data, transport)
+        -m_handlers : map<string, CommandHandler*>
+    }
+    class DescribeHandler <<cmd>>
+    class GetFixtureHandler <<cmd>>
+    class SetFixtureHandler <<cmd>>
+    class InputsHandler <<cmd>>
+    class WifiConfigHandler <<cmd>>
+    class RebootHandler <<cmd>>
+    class EngineConfigHandler <<cmd>> {
+        +initTasks(serialFn, wirelessFn)
+        -toggleSerialReport(enable)
+        -toggleWirelessReport(enable)
+    }
+}
+
+' ===================================================================
+' Handlers
+' ===================================================================
+package "Handler" <<Folder>> #E8F5E9 {
+    class FixtureHandler <<handler>> {
+        +addFixture<TFixture>(factoryReset)
+        +get(id) : Fixture*
+        +all() : vector<Fixture*>
+        +setUniverse(id, uni) : bool
+        +setAddress(id, addr) : bool
+        +setPreset(id, preset) : bool
+        +setName(id, name) : bool
+        +highlight(id) : bool
+        +update()
+        +wifiAnimation()
+    }
+    class InputHandler <<handler>> {
+        +subscribe(uni) : shared_ptr<SyncBuffer>
+        +unsubscribe(uni)
+        +update()
+        +reconnect()
+    }
+    class Pin <<handler>> {
+        +{static} available(pin) : bool
+        +{static} toJson(doc)
+    }
+}
+
+' ===================================================================
+' Network
+' ===================================================================
+package "Network" <<Folder>> #E0F7FA {
+    class Wifi <<net>> {
+        +connect(ssid, pass)
+        +reconnect(ssid, pass)
+        +disconnect()
+        +isConnected() : bool
+        +localIP() : string
+        +rssi() : int
+    }
+    class SerialChannel <<net>>
+    class SerialTransport <<net>>
+    class TcpChannel <<net>>
+    class TcpServer <<net>> {
+        +begin()
+        +stop()
+        +restart()
+        +accept() : Optional<TcpConnection>
+    }
+    class TcpConnection <<net>>
+    class BleChannel <<net>>
+    class BleTransport <<net>>
+    class UdpBroadcaster <<net>> {
+        +begin(port)
+        +send(data)
+    }
+}
+
+' ===================================================================
+' Output
+' ===================================================================
+package "Output" <<Folder>> #FFF8E1 {
+    class "Output::Base" as OutputBase <<output>> {
+        #m_uuid : uint16
+        #m_size : uint16
+        +footprint() : uint16
+    }
+    class "FastLEDBase<TLedType,TPin,TOrder>" as FastLEDBase <<output>> {
+        #c_numPxls : uint8 = 3
+        #m_numLeds : uint16
+        #m_dstBuffer : unique_ptr<uint8[]>
+        #m_cled : CLEDController*
+        +bind()
+        +postupdate()
+        +appendBasicInfo(obj)
+    }
+    class "FastLED1D<TLedType,TPin,TOrder>" as FastLED1D <<output>> {
+        -m_numGroups : uint16
+        +update(srcbuff)
+        +setPreset(doc)
+        +footprint() : uint16
+        +toJson(doc)
+    }
+}
+
+' ===================================================================
+' Input
+' ===================================================================
+package "Input" <<Folder>> #FCE4EC {
+    class HwDmxSource <<input>>
+    class SacnSource <<input>> {
+        -m_universe : uint8
+        -m_sacn : SacnParser
+    }
+}
+
+' ===================================================================
+' Fixtures (concrete)
+' ===================================================================
+package "Fixtures" <<Folder>> #F1F8E9 {
+    class "Strip2815<N,TPin=5>" as Strip2815 <<fixture>> {
+        +{static} BYTES : uint16
+        +wifiAnimation()
+    }
+    class "Grid2815_8x24" as Grid2815 <<fixture>> {
+        +wifiAnimation()
+    }
+}
+
+' ===================================================================
+' Tasks
+' ===================================================================
+package "Tasks" <<Folder>> #FFEBEE {
+    class "Tasks::Manager" as TaskManager <<task>> {
+        +spawnTask<T>(name, invocable, prio, stack) : uint32
+        +suspendTask(id)
+        +resumeTask(id)
+        +stopTask(id)
+        +isTaskRunning(id) : bool
+    }
+}
+
+' ===================================================================
+' Utils
+' ===================================================================
+package "Utils" <<Folder>> #F5F5F5 {
+    class Storage <<util>>
+    class SacnParser <<util>> {
+        +begin(universe)
+        +stop()
+        +dmx(copyBuffer) : bool
+        -update() : bool
+    }
+    class "Optional<T>" as Optional <<util>>
+    class Logger <<util>>
+    class SyncBuffer <<util>> {
+        +write(buff)
+        +read(dst)
+    }
+}
+
+' ===================================================================
+' Inheritance / interface realization
+' ===================================================================
+Serializable <|-- ConfigEngine
+Serializable <|-- ConfigFixture
+Serializable <|.. Fixture
+Deserializable <|.. Fixture
+Serializable <|.. FixtureHandler
+Deserializable <|.. FixtureHandler
+Serializable <|.. InputHandler
+Serializable <|.. Wifi
+Serializable <|.. OutputBase
+
+CommandHandler <|.. DescribeHandler
+CommandHandler <|.. GetFixtureHandler
+CommandHandler <|.. SetFixtureHandler
+CommandHandler <|.. InputsHandler
+CommandHandler <|.. WifiConfigHandler
+CommandHandler <|.. RebootHandler
+CommandHandler <|.. EngineConfigHandler
+
+CommandChannel <|.. SerialChannel
+CommandChannel <|.. TcpChannel
+CommandChannel <|.. BleChannel
+
+Transport <|.. SerialTransport
+Transport <|.. TcpConnection
+Transport <|.. BleTransport
+
+Output <|.. OutputBase
+OutputBase <|-- FastLEDBase
+FastLEDBase <|-- FastLED1D
+
+Input <|.. HwDmxSource
+Input <|.. SacnSource
+
+Fixture <|-- Strip2815
+Fixture <|-- Grid2815
+
+' ===================================================================
+' Composition / aggregation / dependency
+' ===================================================================
+Engine *-- ConfigEngine
+Engine *-- Storage
+Engine *-- Wifi
+Engine *-- "2" UdpBroadcaster
+Engine *-- CommandDispatcher
+Engine *-- DescribeHandler
+Engine *-- GetFixtureHandler
+Engine *-- SetFixtureHandler
+Engine *-- InputsHandler
+Engine *-- WifiConfigHandler
+Engine *-- RebootHandler
+Engine *-- EngineConfigHandler
+Engine *-- SerialChannel
+Engine *-- TcpChannel
+Engine *-- BleChannel
+Engine *-- InputHandler
+Engine *-- FixtureHandler
+Engine *-- TaskManager
+
+Fixture *-- ConfigFixture
+Fixture o-- "*" Output : m_outputs
+Fixture o-- "*" SyncBuffer
+
+FixtureHandler o-- "*" Fixture : owns
+FixtureHandler --> InputHandler
+FixtureHandler *-- Storage
+
+InputHandler o-- "*" Input : sources
+InputHandler o-- "*" SyncBuffer
+
+CommandDispatcher o-- "*" CommandHandler
+
+DescribeHandler --> ConfigEngine
+DescribeHandler --> FixtureHandler
+DescribeHandler --> InputHandler
+DescribeHandler --> Wifi
+GetFixtureHandler --> FixtureHandler
+SetFixtureHandler --> FixtureHandler
+InputsHandler --> InputHandler
+WifiConfigHandler --> Wifi
+WifiConfigHandler --> ConfigEngine
+WifiConfigHandler --> Storage
+EngineConfigHandler --> ConfigEngine
+EngineConfigHandler --> Storage
+EngineConfigHandler --> TaskManager
+
+SerialChannel --> CommandDispatcher
+SerialChannel *-- SerialTransport
+TcpChannel --> CommandDispatcher
+TcpChannel *-- TcpServer
+TcpChannel o-- TcpConnection
+BleChannel --> CommandDispatcher
+BleChannel *-- BleTransport
+TcpServer ..> TcpConnection : creates
+
+FastLEDBase ..> Pin : checks availability
+SacnSource *-- SacnParser
+
+' ===================================================================
+' Legend
+' ===================================================================
+legend right
+    <b>Layers</b>
+    |<#EDE7F6> Interfaces |
+    |<#FFF3E0> Core |
+    |<#E3F2FD> Commands |
+    |<#E8F5E9> Handlers |
+    |<#E0F7FA> Network |
+    |<#FFF8E1> Output |
+    |<#FCE4EC> Input |
+    |<#F1F8E9> Fixtures |
+    |<#FFEBEE> Tasks |
+    |<#F5F5F5> Utils |
+endlegend
+
+@enduml

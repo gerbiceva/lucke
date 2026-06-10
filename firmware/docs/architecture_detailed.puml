@@ -1,0 +1,799 @@
+@startuml architecture_detailed
+title <size:20><b>Lucke Firmware — Detailed Class & Interface Reference</b></size>
+
+' ===================================================================
+' Global styling
+' ===================================================================
+skinparam backgroundColor #FBFBFD
+skinparam classAttributeIconSize 10
+skinparam packageStyle rectangle
+skinparam shadowing true
+skinparam roundCorner 10
+skinparam defaultFontName "Helvetica"
+skinparam defaultFontSize 12
+skinparam ArrowColor #5A6472
+skinparam ArrowThickness 1.2
+skinparam linetype ortho
+hide empty members
+
+skinparam class {
+    BorderThickness 1.4
+    AttributeFontColor #333333
+    AttributeFontSize 11
+    BackgroundColor<<iface>>   #EDE7F6
+    BorderColor<<iface>>       #7E57C2
+    BackgroundColor<<core>>    #FFF3E0
+    BorderColor<<core>>        #FB8C00
+    BackgroundColor<<config>>  #ECEFF1
+    BorderColor<<config>>      #78909C
+    BackgroundColor<<cmd>>     #E3F2FD
+    BorderColor<<cmd>>         #1E88E5
+    BackgroundColor<<handler>> #E8F5E9
+    BorderColor<<handler>>     #43A047
+    BackgroundColor<<net>>     #E0F7FA
+    BorderColor<<net>>         #00ACC1
+    BackgroundColor<<output>>  #FFF8E1
+    BorderColor<<output>>      #F9A825
+    BackgroundColor<<input>>   #FCE4EC
+    BorderColor<<input>>       #D81B60
+    BackgroundColor<<fixture>> #F1F8E9
+    BorderColor<<fixture>>     #7CB342
+    BackgroundColor<<task>>    #FFEBEE
+    BorderColor<<task>>        #E53935
+    BackgroundColor<<util>>    #F5F5F5
+    BorderColor<<util>>        #9E9E9E
+}
+skinparam package {
+    BorderThickness 1.6
+    FontStyle bold
+    FontSize 13
+    BackgroundColor transparent
+}
+
+' ###################################################################
+' #  INTERFACES  (namespace Interface)
+' ###################################################################
+package "Interface" <<Folder>> #EDE7F6 {
+
+    interface CommandChannel <<iface>> {
+        .. lifecycle ..
+        +{abstract} begin() : void
+        +stop() : void
+        +{abstract} poll() : void
+        +~CommandChannel()
+    }
+
+    interface Transport <<iface>> {
+        +{abstract} send(data : const string&) : void
+        +{abstract} readLine() : string
+        +{abstract} isAvailable() : bool
+        +{abstract} remoteAddress() : string
+        +{abstract} close() : void
+    }
+
+    interface CommandHandler <<iface>> {
+        +{abstract} handle(req : JsonDocument&, transport : Transport&) : void
+    }
+
+    interface Input <<iface>> {
+        +{abstract} begin(universe : uint8_t) : void
+        +{abstract} stop() : void
+        +poll(buff : uint8_t*) : bool
+        +toJson(obj : JsonObject&) : void
+    }
+
+    interface Output <<iface>> {
+        +{abstract} footprint() : uint16_t {query}
+        +{abstract} bind() : void
+        +{abstract} update(src : uint8_t*) : void
+        +{abstract} postupdate() : void
+        +{abstract} setPreset(doc : const JsonDocument&) : void
+        +toJson(doc : JsonObject&) : void
+        +appendBasicInfo(doc : JsonDocument&) : void
+    }
+
+    interface Serializable <<iface>> {
+        +{abstract} toJson(obj : JsonObject&) : void
+        +toJsonDoc() : JsonDocument
+    }
+
+    interface Deserializable <<iface>> {
+        +{abstract} fromJson(json : string) : void
+    }
+}
+
+' ###################################################################
+' #  CONFIG  (namespace Config)
+' ###################################################################
+package "Config" <<Folder>> #ECEFF1 {
+
+    class "Config::Engine" as ConfigEngine <<config>> {
+        +version : const string = "0.96"
+        +to_factory_settings : bool = false
+        +serial_report_task : bool = true
+        +wireless_report_task : bool = true
+        +wifi_animation : bool = false
+        +ssid : string
+        +password : string
+        __
+        +toJson(obj : JsonObject&) : void <<override>>
+        +toJsonDoc() : JsonDocument <<override>>
+        +toString() : string
+    }
+
+    class "Config::Fixture" as ConfigFixture <<config>> {
+        +m_ID : uint8_t = 0
+        +universe : uint8_t = 8
+        +address : uint16_t = 0
+        +selectedPreset : uint8_t = 0
+        +numPresets : uint8_t = 0
+        +name : string = "name"
+        +type : string = "type"
+        +highlighted : bool = false
+        __
+        +toJson(obj : JsonObject&) : void <<override>>
+        +toJsonDoc() : JsonDocument <<override>>
+    }
+}
+
+' ###################################################################
+' #  CORE
+' ###################################################################
+class Engine <<core>> {
+    +Engine()
+    +init() : void
+    +addFixture<TFixture>() : void
+    +toString() : string
+    __ private __
+    -loadConfig() : void
+    -saveConfig() : void
+    -registerCommands() : void
+    -spawnTasks() : void
+    -onWifiStatus(connected : bool) : void
+    .. state ..
+    -m_fixtureTaskId : uint32_t
+    -m_animationTaskId : uint32_t
+    -m_config : Config::Engine
+    -m_storage : Utils::Storage
+    -m_factoryReset : bool
+}
+
+class Fixture <<core>> {
+    +Fixture()
+    +Fixture(name : string, type : string, presets : string)
+    +~Fixture()
+    .. render ..
+    +update() : void
+    +wifiAnimation() : void
+    +addOutput<TOutput>(args... : Args&&) : void
+    +setSyncBuffers(bufs : vector<shared_ptr<SyncBuffer>>) : void
+    +getFootprint() : uint16_t {query}
+    +getNumUniverses() : uint8_t {query}
+    .. setters ..
+    +setUniverse(new_universe : uint8_t) : void
+    +setAddress(new_address : uint16_t) : void
+    +setPreset(new_preset : uint8_t) : void
+    +setName(other : const string&) : void
+    +setId(id : uint8_t) : void
+    .. getters ..
+    +id() : uint8_t {query}
+    +getUniverse() : uint8_t {query}
+    +getAddress() : uint16_t {query}
+    +getSelectedPreset() : uint8_t {query}
+    +getNumPresets() : uint8_t {query}
+    +getName() : const string& {query}
+    +getType() : const string& {query}
+    +getHighlighted() : bool&
+    +getOutputs() : vector<Output*>&
+    .. (de)serialization ..
+    +fromConfig() : void
+    +fromJson(json : string) : void <<override>>
+    +toJsonDoc() : JsonDocument <<override>>
+    +configJson() : JsonDocument
+    +presetsJson() : JsonDocument
+    +toJson(doc : JsonObject&) : void <<override>>
+    __ private __
+    -_addOutput(output : Output*) : void
+    -countPresets() : void
+    -m_config : Config::Fixture
+    -m_syncBuffers : vector<shared_ptr<SyncBuffer>>
+    -m_buffer : vector<uint8_t>
+    -m_outputs : vector<Output*>
+    -m_jsonPresets : JsonDocument
+    -m_lastOffset : uint16_t = 0
+}
+
+' ###################################################################
+' #  COMMANDS  (namespace Commands)
+' ###################################################################
+package "Commands" <<Folder>> #E3F2FD {
+
+    class CommandDispatcher <<cmd>> {
+        +registerHandler(cmd : const string&, handler : CommandHandler*) : void
+        +dispatch(data : const string&, transport : Transport&) : void
+        __ private __
+        -m_handlers : unordered_map<string, CommandHandler*>
+    }
+
+    class DescribeHandler <<cmd>> {
+        +DescribeHandler(config : Config::Engine&, fixtures : FixtureHandler&, inputs : InputHandler&, wifi : Wifi&)
+        +handle(req : JsonDocument&, transport : Transport&) : void <<override>>
+    }
+
+    class GetFixtureHandler <<cmd>> {
+        +GetFixtureHandler(fixtures : FixtureHandler&)
+        +handle(req : JsonDocument&, transport : Transport&) : void <<override>>
+    }
+
+    class SetFixtureHandler <<cmd>> {
+        +SetFixtureHandler(fixtures : FixtureHandler&)
+        +handle(req : JsonDocument&, transport : Transport&) : void <<override>>
+    }
+
+    class InputsHandler <<cmd>> {
+        +InputsHandler(inputs : InputHandler&)
+        +handle(req : JsonDocument&, transport : Transport&) : void <<override>>
+    }
+
+    class WifiConfigHandler <<cmd>> {
+        +WifiConfigHandler(wifi : Wifi&, config : Config::Engine&, storage : Storage&)
+        +handle(req : JsonDocument&, transport : Transport&) : void <<override>>
+    }
+
+    class RebootHandler <<cmd>> {
+        +handle(req : JsonDocument&, transport : Transport&) : void <<override>>
+    }
+
+    class EngineConfigHandler <<cmd>> {
+        +EngineConfigHandler(config : Config::Engine&, storage : Storage&, tasks : Tasks::Manager&)
+        +handle(req : JsonDocument&, transport : Transport&) : void <<override>>
+        +initTasks(serialFn : ReportFn, wirelessFn : ReportFn) : void
+        __ private __
+        -save() : void
+        -respond(transport : Transport&, key : const char*, value : bool) : void
+        -toggleSerialReport(enable : bool) : void
+        -toggleWirelessReport(enable : bool) : void
+        -m_serialReportTaskId : uint32_t
+        -m_wirelessReportTaskId : uint32_t
+    }
+}
+
+' ###################################################################
+' #  HANDLERS  (namespace Handler)
+' ###################################################################
+package "Handler" <<Folder>> #E8F5E9 {
+
+    class FixtureHandler <<handler>> {
+        +FixtureHandler(inputs : InputHandler&)
+        +addFixture<TFixture>(factoryReset : bool) : void
+        +get(id : uint8_t) : Fixture*
+        +all() : vector<Fixture*>&
+        +exists(id : uint8_t) : bool
+        .. mutators ..
+        +setUniverse(id : uint8_t, uni : uint8_t) : bool
+        +setAddress(id : uint8_t, addr : uint16_t) : bool
+        +setPreset(id : uint8_t, preset : uint8_t) : bool
+        +setName(id : uint8_t, name : const string&) : bool
+        +highlight(id : uint8_t) : bool
+        .. loop ..
+        +update() : void
+        +wifiAnimation() : void
+        .. (de)serialization ..
+        +fromJson(json : string) : void <<override>>
+        +toJson(obj : JsonObject&) : void <<override>>
+        +toJsonDoc() : JsonDocument <<override>>
+        __ private __
+        -_addFixture(fix : Fixture*, factoryReset : bool) : void
+        -persistFixture(id : uint8_t) : void
+        -m_inputs : InputHandler&
+        -m_storage : Utils::Storage
+        -m_fixtures : vector<Fixture*>
+        -m_nextId : uint8_t = 0
+    }
+
+    class InputHandler <<handler>> {
+        +subscribe(uni : uint8_t) : shared_ptr<SyncBuffer>
+        +unsubscribe(uni : uint8_t) : void
+        +update() : void
+        +reconnect() : void
+        +toJson(obj : JsonObject&) : void <<override>>
+        __ private __
+        -match(uni : uint8_t) : bool
+        -m_ready : bool = false
+        -m_sources : unordered_map<uint8_t, shared_ptr<Input>>
+        -m_buffers : unordered_map<uint8_t, shared_ptr<SyncBuffer>>
+        -m_refcount : unordered_map<uint8_t, uint16_t>
+    }
+
+    class Pin <<handler>> {
+        +{static} available(pin : uint8_t) : bool
+        +{static} toJson(doc : JsonObject&) : void
+        __ private __
+        -{static} m_usedPins : set<uint8_t>
+    }
+}
+
+' ###################################################################
+' #  NETWORK  (namespace Network)
+' ###################################################################
+package "Network" <<Folder>> #E0F7FA {
+
+    class Wifi <<net>> {
+        +connect(ssid : const string&, pass : const string&) : void
+        +reconnect(ssid : const string&, pass : const string&) : void
+        +disconnect() : void
+        +isConnected() : bool {query}
+        +localIP() : string {query}
+        +rssi() : int {query}
+        +toJson(doc : JsonObject&) : void <<override>>
+        __ private __
+        -m_ssid : string
+        -m_password : string
+        -m_connection_status_callback : function<void(bool)>
+    }
+
+    class SerialChannel <<net>> {
+        +SerialChannel(dispatcher : CommandDispatcher&)
+        +begin() : void <<override>>
+        +poll() : void <<override>>
+        __ private __
+        -m_dispatcher : CommandDispatcher&
+        -m_transport : SerialTransport
+    }
+
+    class SerialTransport <<net>> {
+        +send(data : const string&) : void <<override>>
+        +readLine() : string <<override>>
+        +isAvailable() : bool <<override>>
+        +remoteAddress() : string <<override>>
+        +close() : void <<override>>
+    }
+
+    class TcpChannel <<net>> {
+        +TcpChannel(dispatcher : CommandDispatcher&, listenPort : uint16_t, responsePort : uint16_t)
+        +begin() : void <<override>>
+        +stop() : void <<override>>
+        +poll() : void <<override>>
+        __ private __
+        -m_dispatcher : CommandDispatcher&
+        -m_server : TcpServer
+        -m_responsePort : uint16_t
+        -m_conn : Optional<TcpConnection>
+        -m_remoteIp : string
+    }
+
+    class TcpServer <<net>> {
+        +TcpServer(port : uint16_t)
+        +begin() : void
+        +stop() : void
+        +restart() : void
+        +accept() : Optional<TcpConnection>
+        __ private __
+        -m_port : uint16_t
+        -m_server : WiFiServer
+    }
+
+    class TcpConnection <<net>> {
+        +TcpConnection()
+        +TcpConnection(client : WiFiClient)
+        +TcpConnection(host : const string&, port : uint16_t)
+        +send(data : const string&) : void <<override>>
+        +readLine() : string <<override>>
+        +flush() : void
+        +isAvailable() : bool <<override>>
+        +isConnected() : bool
+        +remoteAddress() : string <<override>>
+        +close() : void <<override>>
+        __ private __
+        -m_client : WiFiClient
+    }
+
+    class BleChannel <<net>> {
+        +BleChannel(dispatcher : CommandDispatcher&, deviceName : const string&)
+        +begin() : void <<override>>
+        +stop() : void <<override>>
+        +poll() : void <<override>>
+        __ private __
+        -enqueue(data : const string&) : void
+        -m_dispatcher : CommandDispatcher&
+        -m_deviceName : string
+        -m_server : NimBLEServer*
+        -m_rx : NimBLECharacteristic*
+        -m_tx : NimBLECharacteristic*
+        -m_transport : BleTransport
+        -m_assembly : string
+        -m_lines : deque<string>
+        -m_mutex : std::mutex
+        -m_started : bool = false
+    }
+
+    class "BleChannel::ServerCallbacks" as BleServerCb <<net>> {
+        +onConnect(server : NimBLEServer*) : void <<override>>
+        +onDisconnect(server : NimBLEServer*) : void <<override>>
+        +onMTUChange(mtu : uint16_t, desc : ble_gap_conn_desc*) : void <<override>>
+    }
+
+    class "BleChannel::RxCallbacks" as BleRxCb <<net>> {
+        +onWrite(characteristic : NimBLECharacteristic*) : void <<override>>
+    }
+
+    class BleTransport <<net>> {
+        +setTxCharacteristic(tx : NimBLECharacteristic*) : void
+        +setMtu(mtu : uint16_t) : void
+        +setConnected(connected : bool, peer : const string&) : void
+        +send(data : const string&) : void <<override>>
+        +readLine() : string <<override>>
+        +isAvailable() : bool <<override>>
+        +remoteAddress() : string <<override>>
+        +close() : void <<override>>
+        __ private __
+        -m_tx : NimBLECharacteristic*
+        -m_mtu : atomic<uint16_t> = 23
+        -m_connected : atomic<bool> = false
+        -m_peer : string
+    }
+
+    class UdpBroadcaster <<net>> {
+        +begin(port : uint16_t) : void
+        +send(data : const string&) : void
+        __ private __
+        -m_udp : WiFiUDP
+        -m_port : uint16_t = 0
+    }
+}
+
+' ###################################################################
+' #  OUTPUT  (namespace Output)
+' ###################################################################
+package "Output" <<Folder>> #FFF8E1 {
+
+    class "Output::Base" as OutputBase <<output>> {
+        +Base(size : uint16_t)
+        +footprint() : uint16_t {query} <<override>>
+        +toJsonDoc() : JsonDocument <<override>>
+        __ protected __
+        #m_uuid : uint16_t
+        #m_size : uint16_t
+        -{static} s_uuid : uint16_t
+    }
+
+    class "FastLEDBase<TLedType,TPin,TOrder>" as FastLEDBase <<output>> {
+        +FastLEDBase(num_leds : uint16_t)
+        +bind() : void <<override>>
+        +postupdate() : void <<override>>
+        +appendBasicInfo(obj : JsonDocument&) : void <<override>>
+        __ protected __
+        #{static} c_numPxls : uint8_t = 3
+        #m_numLeds : uint16_t
+        #m_dstBuffer : unique_ptr<uint8_t[]>
+        #m_cled : CLEDController*
+    }
+
+    class "FastLED1D<TLedType,TPin,TOrder>" as FastLED1D <<output>> {
+        +FastLED1D(num_leds : uint16_t)
+        +update(srcbuff : uint8_t*) : void <<override>>
+        +setPreset(doc : const JsonDocument&) : void <<override>>
+        +footprint() : uint16_t {query} <<override>>
+        +toJson(doc : JsonObject&) : void <<override>>
+        __ private __
+        -m_numGroups : uint16_t = 1
+    }
+}
+
+' ###################################################################
+' #  INPUT  (namespace Input)
+' ###################################################################
+package "Input" <<Folder>> #FCE4EC {
+
+    class HwDmxSource <<input>> {
+        +begin(universe : uint8_t) : void <<override>>
+        +stop() : void <<override>>
+        +poll(buff : uint8_t*) : bool <<override>>
+        __ private __
+        -m_universe : uint8_t = 0
+    }
+
+    class SacnSource <<input>> {
+        +~SacnSource()
+        +begin(universe : uint8_t) : void <<override>>
+        +stop() : void <<override>>
+        +poll(buff : uint8_t*) : bool <<override>>
+        +toJson(obj : JsonObject&) : void <<override>>
+        __ private __
+        -m_universe : uint8_t
+        -m_sacn : Utils::SacnParser
+    }
+}
+
+' ###################################################################
+' #  FIXTURES  (namespace Fixtures)
+' ###################################################################
+package "Fixtures" <<Folder>> #F1F8E9 {
+
+    class "Strip2815<N, TPin=5>" as Strip2815 <<fixture>> {
+        +{static} BYTES : uint16_t = N*3
+        +Strip2815()
+        +Strip2815(name : string, type : string, presetJson : string)
+        +wifiAnimation() : void <<override>>
+        __ private __
+        -m_animBuf : uint8_t[BYTES]
+        -m_animOff : uint16_t = 0
+    }
+
+    class "Grid2815_8x24" as Grid2815 <<fixture>> {
+        +{static} W : uint16_t = 8
+        +{static} H : uint16_t = 8
+        +{static} PANELS : uint16_t = 3
+        +{static} LEDS_PER_PANEL : uint16_t = 64
+        +{static} BYTES : uint16_t
+        +Grid2815_8x24()
+        +wifiAnimation() : void <<override>>
+        __ private __
+        -m_animBuf : uint8_t[BYTES]
+        -m_animOff : uint16_t = 0
+    }
+    note bottom of Grid2815
+        Includes Output/FastLED2D.h which is
+        currently deleted — does not compile.
+        Only Strip2815 is registered in main.cpp.
+    end note
+}
+
+' ###################################################################
+' #  TASKS  (namespace Tasks)
+' ###################################################################
+package "Tasks" <<Folder>> #FFEBEE {
+
+    class "Tasks::Manager" as TaskManager <<task>> {
+        +Manager()
+        +spawnTask<TInvocable>(taskName : string, invocable : TInvocable, priority : uint8_t = 1, stackSize : uint32_t = 2000) : uint32_t
+        +suspendTask(id : uint32_t) : void
+        +resumeTask(id : uint32_t) : void
+        +stopTask(id : uint32_t) : void
+        +isTaskRunning(id : uint32_t) : bool
+        __ private __
+        -find(id : uint32_t) : list<TaskRecord>::iterator
+        -find(name : string) : list<TaskRecord>::iterator
+        -{static} trampoline(fn : void*) : void
+        -id_generator : uint32_t = 0
+        -m_tasks : list<TaskRecord>
+    }
+
+    enum "Manager::TaskStatus" as TaskStatus {
+        RUNNING
+        SUSPENDED
+    }
+
+    class "Manager::TaskRecord" as TaskRecord <<task>> {
+        +id : uint32_t
+        +name : string
+        +handle : TaskHandle_t
+        +fn : function<void()>
+        +status : TaskStatus
+    }
+}
+
+' ###################################################################
+' #  UTILS  (namespace Utils)
+' ###################################################################
+package "Utils" <<Folder>> #F5F5F5 {
+
+    class Storage <<util>> {
+        +Storage()
+        +Storage(partition : string)
+        +~Storage()
+        +setPartition(partition : string) : void
+        +isKey(key : string) : bool
+        +putChar(name : string, value : int8_t) : int8_t
+        +putUChar(name : string, value : uint8_t) : uint8_t
+        +putUShort(name : string, value : uint16_t) : uint16_t
+        +putString(name : string, value : string) : string
+        +putIfNExistChar(name, value) : int8_t
+        +putIfNExistUChar(name, value) : uint8_t
+        +putIfNExistUShort(name, value) : uint16_t
+        +putIfNExistString(name, value) : string
+        +getChar(name : string) : int8_t
+        +getUChar(name : string) : uint8_t
+        +getUShort(name : string) : uint16_t
+        +getString(name : string) : string
+        __ private __
+        -m_Partition : string
+        -m_Preferences : Preferences
+        -m_inited : bool = false
+    }
+
+    class SacnParser <<util>> {
+        +SacnParser()
+        +SacnParser(universe : uint8_t)
+        +begin(universe : uint8_t) : void
+        +stop() : void
+        +dmx(copyBuffer : uint8_t*) : bool
+        +getSeq() : uint8_t
+        +getSeqDiff() : uint8_t {query}
+        +getSeqDiffs() : vector<uint8_t>
+        __ private __
+        -update() : bool
+        -m_ip : IPAddress
+        -m_udp : WiFiUDP
+        -packet : uint8_t[1500]
+        -m_buffer : uint8_t[512]
+        -m_seq : uint8_t
+        -m_universe : uint8_t = 0
+        -m_inited : bool = false
+    }
+
+    class "Optional<T>" as Optional <<util>> {
+        +Optional()
+        +Optional(value : const T&)
+        +Optional(value : T&&)
+        +has_value() : bool {query}
+        +operator bool() : bool {query}
+        +value() : T&
+        +value_or(defaultValue : const T&) : T {query}
+        +reset() : void
+        +emplace(args... : Args&&) : void
+        __ private __
+        -m_hasValue : bool
+        -m_storage : unsigned char[sizeof(T)]
+    }
+
+    class SyncBuffer <<util>> {
+        +write(buff : uint8_t*) : void
+        +read(dst : uint8_t*) : void
+        __ private __
+        -m_buffer : array<uint8_t, 512>
+        -m_mutex : std::mutex
+    }
+
+    class Logger <<util>> {
+        +{static} enable(baudrate : uint32_t = 9600) : void
+        +{static} setLevel(level : Level) : void
+        +{static} print(str : const char*) : void
+        +{static} println(str : const char*) : void
+        +{static} printf<Args>(format : const char*, args... : Args&&) : void
+        __ private __
+        -{static} m_enabled : bool
+        -{static} m_level : Level
+    }
+    enum "Logger::Level" as LogLevel {
+        DEBUG
+        INFO
+    }
+
+    class String <<util>> {
+        +{static} concat<Args>(args... : Args&&) : string
+    }
+
+    note as JsonNote
+        <b>Utils::Json</b> (free function templates)
+        getElement<T>(doc, name, alternative) : T
+        updateElement<T>(doc, name, element&) : bool
+        ----
+        <b>MakeJSON<N></b> (compile-time)
+        make() : array<char, 1024>
+        builds preset JSON from divisors of N
+    end note
+}
+
+' ###################################################################
+' #  RELATIONSHIPS — inheritance / realization
+' ###################################################################
+Serializable   <|--  ConfigEngine
+Serializable   <|--  ConfigFixture
+Serializable   <|..  Fixture
+Deserializable <|..  Fixture
+Serializable   <|..  FixtureHandler
+Deserializable <|..  FixtureHandler
+Serializable   <|..  InputHandler
+Serializable   <|..  Wifi
+Serializable   <|..  OutputBase
+
+CommandHandler <|.. DescribeHandler
+CommandHandler <|.. GetFixtureHandler
+CommandHandler <|.. SetFixtureHandler
+CommandHandler <|.. InputsHandler
+CommandHandler <|.. WifiConfigHandler
+CommandHandler <|.. RebootHandler
+CommandHandler <|.. EngineConfigHandler
+
+CommandChannel <|.. SerialChannel
+CommandChannel <|.. TcpChannel
+CommandChannel <|.. BleChannel
+
+Transport <|.. SerialTransport
+Transport <|.. TcpConnection
+Transport <|.. BleTransport
+
+Output       <|.. OutputBase
+OutputBase   <|-- FastLEDBase
+FastLEDBase  <|-- FastLED1D
+
+Input <|.. HwDmxSource
+Input <|.. SacnSource
+
+Fixture <|-- Strip2815
+Fixture <|-- Grid2815
+
+BleChannel +-- BleServerCb
+BleChannel +-- BleRxCb
+TaskManager +-- TaskStatus
+TaskManager +-- TaskRecord
+Logger +-- LogLevel
+
+' ###################################################################
+' #  RELATIONSHIPS — composition / aggregation / dependency
+' ###################################################################
+Engine *-- ConfigEngine
+Engine *-- Storage
+Engine *-- Wifi
+Engine *-- "2" UdpBroadcaster
+Engine *-- CommandDispatcher
+Engine *-- "7" CommandHandler
+Engine *-- SerialChannel
+Engine *-- TcpChannel
+Engine *-- BleChannel
+Engine *-- InputHandler
+Engine *-- FixtureHandler
+Engine *-- TaskManager
+
+Fixture *-- ConfigFixture
+Fixture o-- "*" Output : m_outputs
+Fixture o-- "*" SyncBuffer
+
+FixtureHandler o-- "*" Fixture : owns
+FixtureHandler --> InputHandler
+FixtureHandler *-- Storage
+
+InputHandler o-- "*" Input : sources
+InputHandler *-- "*" SyncBuffer : owns
+
+CommandDispatcher o-- "*" CommandHandler
+
+DescribeHandler --> ConfigEngine
+DescribeHandler --> FixtureHandler
+DescribeHandler --> InputHandler
+DescribeHandler --> Wifi
+GetFixtureHandler --> FixtureHandler
+SetFixtureHandler --> FixtureHandler
+InputsHandler --> InputHandler
+WifiConfigHandler --> Wifi
+WifiConfigHandler --> ConfigEngine
+WifiConfigHandler --> Storage
+EngineConfigHandler --> ConfigEngine
+EngineConfigHandler --> Storage
+EngineConfigHandler --> TaskManager
+
+SerialChannel --> CommandDispatcher
+SerialChannel *-- SerialTransport
+TcpChannel --> CommandDispatcher
+TcpChannel *-- TcpServer
+TcpChannel o-- TcpConnection
+BleChannel --> CommandDispatcher
+BleChannel *-- BleTransport
+TcpServer ..> TcpConnection : creates
+
+FastLEDBase ..> Pin : checks availability
+SacnSource *-- SacnParser
+TaskManager o-- "*" TaskRecord
+
+legend right
+    <b>Layers</b>
+    |<#EDE7F6> Interface |
+    |<#ECEFF1> Config |
+    |<#FFF3E0> Core |
+    |<#E3F2FD> Commands |
+    |<#E8F5E9> Handler |
+    |<#E0F7FA> Network |
+    |<#FFF8E1> Output |
+    |<#FCE4EC> Input |
+    |<#F1F8E9> Fixtures |
+    |<#FFEBEE> Tasks |
+    |<#F5F5F5> Utils |
+    ====
+    <b>Arrows</b>
+    <|--  inherit    <|..  implement
+    *--   compose    o--   aggregate
+    -->   reference  ..>   uses
+endlegend
+
+@enduml
