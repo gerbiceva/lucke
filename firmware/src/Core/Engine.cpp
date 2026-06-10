@@ -14,7 +14,7 @@ Engine::Engine()
       m_setFixtureHandler(m_fixtures),
       m_inputsHandler(m_inputs),
       m_wifiConfigHandler(m_wifi, m_config, m_storage),
-      m_engineConfigHandler(m_config, m_storage, m_publisher),
+      m_engineConfigHandler(m_config, m_storage, m_publisher, m_bleChannel),
       m_fixtures(m_inputs)
 {
     Utils::Logger::enable();
@@ -37,8 +37,11 @@ void Engine::init()
     registerCommands();
 
     // BLE config channel comes up independent of wifi, so credentials can be
-    // set over Bluetooth before the device has ever joined a network.
+    // set over Bluetooth before the device has ever joined a network. The
+    // discover/config flags are applied from stored settings before start.
     m_serialChannel.begin();
+    m_bleChannel.setDiscoverable(m_config.ble_discover);
+    m_bleChannel.setConfigEnabled(m_config.ble_config);
     m_bleChannel.begin();
 
     Utils::Logger::println("Spaw3n");
@@ -93,6 +96,8 @@ void Engine::loadConfig()
         Utils::Json::updateElement<bool>(doc, "serial_report_task", m_config.serial_report_task);
         Utils::Json::updateElement<bool>(doc, "wireless_report_task", m_config.wireless_report_task);
         Utils::Json::updateElement<bool>(doc, "wifi_animation", m_config.wifi_animation);
+        Utils::Json::updateElement<bool>(doc, "ble_discover", m_config.ble_discover);
+        Utils::Json::updateElement<bool>(doc, "ble_config", m_config.ble_config);
 
         const char* ssid = Utils::Json::getElement<const char*>(doc, "ssid", m_config.ssid.c_str());
         m_config.ssid = ssid;
@@ -123,6 +128,8 @@ void Engine::registerCommands()
     m_dispatcher.registerHandler("serial_report_task", &m_engineConfigHandler);
     m_dispatcher.registerHandler("wireless_report_task", &m_engineConfigHandler);
     m_dispatcher.registerHandler("wifi_animation", &m_engineConfigHandler);
+    m_dispatcher.registerHandler("ble_discover", &m_engineConfigHandler);
+    m_dispatcher.registerHandler("ble_config", &m_engineConfigHandler);
 }
 
 void Engine::onWifiStatus(bool connected)

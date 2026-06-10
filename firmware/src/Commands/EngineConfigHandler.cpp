@@ -3,8 +3,9 @@
 
 namespace Commands
 {
-    EngineConfigHandler::EngineConfigHandler(Config::Engine& config, Utils::Storage& storage, Reports::Publisher& publisher)
-        : m_config(config), m_storage(storage), m_publisher(publisher)
+    EngineConfigHandler::EngineConfigHandler(Config::Engine& config, Utils::Storage& storage,
+                                             Reports::Publisher& publisher, Network::BleChannel& ble)
+        : m_config(config), m_storage(storage), m_publisher(publisher), m_ble(ble)
     {}
 
     void EngineConfigHandler::handle(JsonDocument& req, Interface::Transport& transport)
@@ -42,6 +43,34 @@ namespace Commands
                 save();
             }
             respond(transport, "wireless_report_task", m_config.wireless_report_task);
+            return;
+        }
+
+        if (strcmp(request, "ble_discover") == 0)
+        {
+            if (req["value"].is<bool>())
+            {
+                m_config.ble_discover = req["value"];
+                m_ble.setDiscoverable(m_config.ble_discover);
+                save();
+            }
+            respond(transport, "ble_discover", m_config.ble_discover);
+            return;
+        }
+
+        if (strcmp(request, "ble_config") == 0)
+        {
+            if (req["value"].is<bool>())
+            {
+                m_config.ble_config = req["value"];
+                save();
+                // Respond before applying: once config is disabled, future BLE
+                // writes are ignored (this reply still goes out on any channel).
+                respond(transport, "ble_config", m_config.ble_config);
+                m_ble.setConfigEnabled(m_config.ble_config);
+                return;
+            }
+            respond(transport, "ble_config", m_config.ble_config);
             return;
         }
 

@@ -8,6 +8,8 @@ void Engine::toJson(JsonObject& obj)
     obj["serial_report_task"] = serial_report_task;
     obj["wireless_report_task"] = wireless_report_task;
     obj["wifi_animation"] = wifi_animation;
+    obj["ble_discover"] = ble_discover;
+    obj["ble_config"] = ble_config;
     obj["ssid"] = ssid.c_str();
     obj["password"] = password.c_str();
 }

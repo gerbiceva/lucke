@@ -27,6 +27,9 @@ struct Engine : public Interface::Serializable
     bool wireless_report_task = true;
     bool wifi_animation = false;
 
+    bool ble_discover = true;   // advertise over BLE (discoverable)
+    bool ble_config = true;     // accept configuration commands over BLE
+
     std::string ssid = DEFAULT_WIFI_SSID;
     std::string password = DEFAULT_WIFI_PASSWORD;
 

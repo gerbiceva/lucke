@@ -24,6 +24,12 @@ namespace Network
         void stop() override;
         void poll() override;
 
+        // Runtime config (persisted in Config::Engine as ble_discover / ble_config).
+        // setDiscoverable toggles advertising; setConfigEnabled gates whether
+        // incoming command writes are accepted.
+        void setDiscoverable(bool on);
+        void setConfigEnabled(bool on);
+
         // Outbound side, used by Reports::BleSink to broadcast periodic reports
         // to the connected central over the same NUS TX characteristic.
         BleTransport& transport() { return m_transport; }
@@ -66,5 +72,7 @@ namespace Network
         std::mutex m_mutex;
 
         bool m_started = false;
+        bool m_discoverable = true;       // advertising on/off
+        bool m_configEnabled = true;      // accept incoming command writes
     };
 }

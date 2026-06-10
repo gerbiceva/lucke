@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include "Interfaces/Command.h"
 #include "Core/Config/EngineConfig.h"
+#include "Network/BleChannel.h"
 #include "Reports/Publisher.h"
 #include "Utils/Storage.h"
 
@@ -15,13 +16,15 @@ namespace Commands
     class EngineConfigHandler : public Interface::CommandHandler
     {
     public:
-        EngineConfigHandler(Config::Engine& config, Utils::Storage& storage, Reports::Publisher& publisher);
+        EngineConfigHandler(Config::Engine& config, Utils::Storage& storage,
+                            Reports::Publisher& publisher, Network::BleChannel& ble);
         void handle(JsonDocument& req, Interface::Transport& transport) override;
 
     private:
         Config::Engine& m_config;
         Utils::Storage& m_storage;
         Reports::Publisher& m_publisher;
+        Network::BleChannel& m_ble;
 
         void save();
         void respond(Interface::Transport& transport, const char* key, bool value);

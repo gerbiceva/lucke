@@ -15,8 +15,14 @@ namespace Reports
         std::function<std::string()> produce;
         Interface::Sink* sink;
         uint32_t intervalMs;
-        bool enabled = true;
-        uint32_t nextDue = 0;
+        bool enabled;
+        uint32_t nextDue;
+
+        Feed(std::string name, std::function<std::string()> produce,
+             Interface::Sink* sink, uint32_t intervalMs, bool enabled = true)
+            : name(std::move(name)), produce(std::move(produce)), sink(sink),
+              intervalMs(intervalMs), enabled(enabled), nextDue(0)
+        {}
     };
 
     // Owns every periodic broadcast in one place and ticks them on a single

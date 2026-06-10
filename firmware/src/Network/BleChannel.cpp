@@ -37,10 +37,18 @@ namespace Network
         NimBLEAdvertising* adv = NimBLEDevice::getAdvertising();
         adv->addServiceUUID(NUS_SERVICE);
         adv->setScanResponse(true);
-        adv->start();
 
         m_started = true;
-        Utils::Logger::printf("[BLE] advertising as '%s'\n", m_deviceName.c_str());
+
+        if (m_discoverable)
+        {
+            adv->start();
+            Utils::Logger::printf("[BLE] advertising as '%s'\n", m_deviceName.c_str());
+        }
+        else
+        {
+            Utils::Logger::println("[BLE] started (not discoverable)");
+        }
     }
 
     void BleChannel::stop()
@@ -52,6 +60,22 @@ namespace Network
         m_rx = nullptr;
         m_tx = nullptr;
         m_started = false;
+    }
+
+    void BleChannel::setDiscoverable(bool on)
+    {
+        m_discoverable = on;
+        if (!m_started) return;
+
+        if (on)
+            NimBLEDevice::startAdvertising();
+        else
+            NimBLEDevice::stopAdvertising();
+    }
+
+    void BleChannel::setConfigEnabled(bool on)
+    {
+        m_configEnabled = on;
     }
 
     void BleChannel::enqueue(const std::string& data)
@@ -113,6 +137,9 @@ namespace Network
 
     void BleChannel::RxCallbacks::onWrite(NimBLECharacteristic* characteristic)
     {
+        if (!m_owner.m_configEnabled)
+            return; // configuration over BLE disabled — ignore writes
+
         std::string value = characteristic->getValue();
         if (!value.empty())
             m_owner.enqueue(value);
