@@ -1,0 +1,63 @@
+#pragma once
+#include "driver/gpio.h"
+#include "driver/spi_master.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
+
+namespace Core
+{
+    struct RGB
+    {
+        union
+        {
+            struct
+            {
+                uint8_t r, g, b;
+            };
+            uint8_t raw[3];
+        };
+    };
+
+    // template<uint16_t TLedNum>
+    class WS2815
+    {
+        static const uint16_t timing_bits[16];
+        static const uint8_t reset_delay;
+
+        struct spi_settings_t
+        {
+            spi_host_device_t host;
+            spi_device_handle_t spi;
+            int dma_chan;
+            spi_device_interface_config_t devcfg;
+            spi_bus_config_t buscfg;
+        };
+
+        portMUX_TYPE myMux = portMUX_INITIALIZER_UNLOCKED;
+        SemaphoreHandle_t spiMutex = NULL;
+
+        spi_settings_t spi_settings;
+        uint16_t *dma_buffer;
+        RGB *pixels;
+        int n_leds, dma_buf_size;
+
+        esp_err_t initSPI(int pin);
+        esp_err_t update();
+
+    public:
+        WS2815() = default;
+        WS2815(uint16_t num_of_leds, int pin);
+        void init(uint16_t num_of_leds, int pin);
+        void init(uint16_t num_of_leds, int pin, uint8_t *pixels);
+
+        RGB *getPixels();
+        RGB &operator[](int index);
+        uint8_t *getRaw() const;
+
+        void set(RGB color, int i);
+        void fill_all(RGB color);
+
+        void show();
+    };
+
+}

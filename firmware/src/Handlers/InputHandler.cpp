@@ -17,7 +17,7 @@ namespace Handler
         }
         else
         {
-            auto src = std::make_shared<Input::SacnSource>();
+            auto src = std::make_shared<Input::SacnSource>(uni);
             if (m_ready) src->begin(uni);
             m_sources[uni] = src;
             m_buffers[uni] = std::make_shared<SyncBuffer>();

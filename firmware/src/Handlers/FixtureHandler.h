@@ -16,6 +16,12 @@ namespace Handler
         void _addFixture(Fixture* fix, bool factoryReset);
         void persistFixture(uint8_t id);
 
+        // Re-derive the universe span from the fixture's current
+        // address + footprint, dropping the old span (oldBase..oldBase+oldCount)
+        // and subscribing the new one. Call after any change to
+        // universe, address, or preset (footprint).
+        void resubscribe(Fixture* fix, uint8_t oldBase, uint8_t oldCount);
+
     public:
         FixtureHandler(InputHandler& inputs);
 
@@ -45,6 +51,7 @@ namespace Handler
     private:
         InputHandler& m_inputs;
         Utils::Storage m_storage;
+        bool m_storageReady = false;
         std::vector<Fixture*> m_fixtures;
         uint8_t m_nextId = 0;
     };

@@ -4,11 +4,19 @@
 namespace Handler
 {
     FixtureHandler::FixtureHandler(InputHandler& inputs)
-        : m_inputs(inputs), m_storage(Utils::Storage("fixtures"))
+        : m_inputs(inputs)
     {}
 
     void FixtureHandler::_addFixture(Fixture* fix, bool factoryReset)
     {
+        // Lazily open NVS — must happen in setup() context, not at global
+        // construction time (NVS flash isn't initialized that early).
+        if (!m_storageReady)
+        {
+            m_storage.setPartition("fixtures");
+            m_storageReady = true;
+        }
+
         fix->setId(m_nextId++);
 
         std::string key = "fixture" + std::to_string(fix->id());
@@ -21,18 +29,28 @@ namespace Handler
             fix->fromConfig();
         }
 
-        // Subscribe to all universes this fixture spans
-        uint8_t baseUni = fix->getUniverse();
+        // Subscribe to all universes this fixture spans. No prior span
+        // exists yet (oldCount = 0), so nothing is unsubscribed.
+        resubscribe(fix, fix->getUniverse(), 0);
+
+        m_fixtures.push_back(fix);
+        persistFixture(fix->id());
+    }
+
+    void FixtureHandler::resubscribe(Fixture* fix, uint8_t oldBase, uint8_t oldCount)
+    {
+        for (uint8_t i = 0; i < oldCount; i++)
+            m_inputs.unsubscribe(oldBase + i);
+
+        uint8_t base = fix->getUniverse();
         uint16_t totalBytes = fix->getAddress() + fix->getFootprint();
         uint8_t numUni = totalBytes > 0 ? ((totalBytes - 1) / 512 + 1) : 1;
 
         std::vector<std::shared_ptr<SyncBuffer>> bufs;
         for (uint8_t i = 0; i < numUni; i++)
-            bufs.push_back(m_inputs.subscribe(baseUni + i));
+            bufs.push_back(m_inputs.subscribe(base + i));
 
         fix->setSyncBuffers(std::move(bufs));
-        m_fixtures.push_back(fix);
-        persistFixture(fix->id());
     }
 
     void FixtureHandler::persistFixture(uint8_t id)
@@ -75,22 +93,10 @@ namespace Handler
         uint8_t oldBase = fix->getUniverse();
         if (oldBase == uni) return true;
 
-        // Unsubscribe from all old universes
         uint8_t oldCount = fix->getNumUniverses();
-        for (uint8_t i = 0; i < oldCount; i++)
-            m_inputs.unsubscribe(oldBase + i);
-
         fix->setUniverse(uni);
+        resubscribe(fix, oldBase, oldCount);
 
-        // Subscribe to new universe span
-        uint16_t totalBytes = fix->getAddress() + fix->getFootprint();
-        uint8_t numUni = totalBytes > 0 ? ((totalBytes - 1) / 512 + 1) : 1;
-
-        std::vector<std::shared_ptr<SyncBuffer>> bufs;
-        for (uint8_t i = 0; i < numUni; i++)
-            bufs.push_back(m_inputs.subscribe(uni + i));
-
-        fix->setSyncBuffers(std::move(bufs));
         persistFixture(id);
         return true;
     }
@@ -101,6 +107,8 @@ namespace Handler
         if (!fix) return false;
 
         fix->setAddress(addr);
+        // Address shifts totalBytes, so the span may grow/shrink.
+        resubscribe(fix, fix->getUniverse(), fix->getNumUniverses());
         persistFixture(id);
         return true;
     }
@@ -111,6 +119,9 @@ namespace Handler
         if (!fix) return false;
 
         fix->setPreset(preset);
+        // Preset changes the footprint (e.g. pixel grouping), which changes
+        // how many universes the fixture spans.
+        resubscribe(fix, fix->getUniverse(), fix->getNumUniverses());
         persistFixture(id);
         return true;
     }
