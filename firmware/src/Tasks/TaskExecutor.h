@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include <cstdint>
 #include <list>
+#include <mutex>
 #include <string>
 #include "Utils/Logger.h"
 
@@ -21,14 +22,20 @@ public:
     template <typename TInvocable>
     uint32_t spawnTask(std::string taskName, TInvocable invocable, uint8_t priority = 1, uint32_t stackSize = 2000) 
     {
+        std::lock_guard<std::mutex> lock(m_mutex);
+
         uint32_t id = id_generator++;
         TaskRecord rec;
         rec.id = id;
         rec.name = taskName;
-        rec.fn = [this, id, invocable]() 
-        { 
+        // Tasks are expected to loop forever. If one ever returns, self-delete
+        // so the scheduler doesn't run off the end of the task function. The
+        // record is intentionally left in place — a task cannot safely erase
+        // its own record (that would destroy this very std::function mid-call).
+        rec.fn = [invocable]()
+        {
             invocable();
-            this->stopTask(id);
+            vTaskDelete(NULL);
         };
 
         Utils::Logger::printf("[TASK] Created new task '%s'\n", taskName.c_str());
@@ -72,6 +79,9 @@ private:
         (*reinterpret_cast<std::function<void()>*>(fn))();
     }
 
+    // Guards m_tasks: spawn/suspend/resume/stop are called from several task
+    // contexts (e.g. wifi_monitor toggling the fixture/animation tasks).
+    std::mutex m_mutex;
     uint32_t id_generator = 0;
     std::list<TaskRecord> m_tasks{};
 };

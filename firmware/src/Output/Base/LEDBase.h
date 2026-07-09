@@ -40,6 +40,8 @@ namespace Output
         void bind() override {}
         void postupdate() override { m_driver.show(); }
 
+        int hardwarePin() const override { return m_pin; }
+
         void appendBasicInfo(JsonDocument &obj) override
         {
             int nl = m_numLeds;
@@ -48,6 +50,14 @@ namespace Output
                 nl += obj["num_leds"].as<int>();
             }
             obj["num_leds"] = nl;
+        }
+
+        // num_leds here is the source-pixel count (footprint / 3), derived
+        // generically so it stays correct regardless of grouping/mapping.
+        void describe(JsonObject &desc) override
+        {
+            Base::describe(desc);
+            desc["num_leds"] = this->footprint() / c_numPxls;
         }
     };
 }

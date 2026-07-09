@@ -7,6 +7,7 @@
 #include <memory>
 #include <vector>
 #include <cstring>
+#include <mutex>
 
 
 class Fixture : public Interface::Serializable, public Interface::Deserializable
@@ -52,9 +53,14 @@ public:
     JsonDocument toJsonDoc() override;
     JsonDocument configJson();
     JsonDocument presetsJson();
+    JsonDocument outputsJson();
     void toJson(JsonObject& doc) override;
 
 private:
+    // Serializes update() (fixture task) against the mutators that reallocate
+    // m_buffer / swap m_syncBuffers / repoint outputs (command task). Without
+    // it, resize/swap under a live reader corrupts the heap.
+    std::mutex m_mutex;
     Config::Fixture m_config;
     std::vector<std::shared_ptr<SyncBuffer>> m_syncBuffers;
     std::vector<uint8_t> m_buffer;

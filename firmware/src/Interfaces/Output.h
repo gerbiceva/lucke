@@ -18,12 +18,16 @@ namespace Interface
 
         // in question
         virtual uint16_t footprint() const = 0;
+        // Footprint this output WOULD have under `setting`, without applying it.
+        // Used to project a per-preset footprint. Defaults to the live value.
+        virtual uint16_t footprintFor(const JsonDocument& setting) const { return footprint(); }
         virtual void bind() = 0;
         virtual void update(uint8_t* src) = 0;
         virtual void postupdate() = 0;
         virtual void setPreset(const JsonDocument& doc) = 0;
 
         virtual void toJson(JsonObject& doc) {};
+        virtual void describe(JsonObject& doc) {};
         virtual void appendBasicInfo(JsonDocument& doc) {};
     };
 

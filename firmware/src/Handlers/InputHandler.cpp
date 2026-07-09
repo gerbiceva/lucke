@@ -11,6 +11,7 @@ namespace Handler
     
     std::shared_ptr<SyncBuffer> InputHandler::subscribe(uint8_t uni)
     {
+        std::lock_guard<std::mutex> lock(m_mutex);
         if(match(uni))
         {
             m_refcount[uni]++;
@@ -29,6 +30,7 @@ namespace Handler
 
     void InputHandler::unsubscribe(uint8_t uni)
     {
+        std::lock_guard<std::mutex> lock(m_mutex);
         if(!match(uni))
         {
             return;
@@ -44,6 +46,7 @@ namespace Handler
 
     void InputHandler::update()
     {
+        std::lock_guard<std::mutex> lock(m_mutex);
         uint8_t tmp[512];
         for(auto& pair : m_sources)
         {
@@ -56,6 +59,7 @@ namespace Handler
 
     void InputHandler::reconnect()
     {
+        std::lock_guard<std::mutex> lock(m_mutex);
         m_ready = true;
         for (auto& pair : m_sources)
         {
@@ -67,6 +71,7 @@ namespace Handler
 
     void InputHandler::toJson(JsonObject& obj)
     {
+        std::lock_guard<std::mutex> lock(m_mutex);
         obj["num_inputs"] = m_sources.size();
         JsonArray arr = obj["inputs"].to<JsonArray>();
         for (auto& pair : m_sources)

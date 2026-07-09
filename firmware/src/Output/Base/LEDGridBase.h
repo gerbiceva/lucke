@@ -81,6 +81,25 @@ namespace Output
             return f;
         }
 
+        // Footprint under the given subgrid preset (width/height = block counts),
+        // without mutating the live cell sizes. Mirrors setPreset()'s math.
+        uint16_t footprintFor(const JsonDocument &setting) const override
+        {
+            uint16_t vW = m_w, vH = m_h;
+            Utils::Json::updateElement<uint16_t>(setting, "width", vW);
+            Utils::Json::updateElement<uint16_t>(setting, "height", vH);
+
+            if (vW == 0 || vH == 0 || m_w % vW != 0 || m_h % vH != 0)
+                return footprint();
+
+            uint16_t cellW = m_w / vW;
+            uint16_t cellH = m_h / vH;
+            uint16_t f = 0;
+            for (auto &v : m_views)
+                f += (v.x.size() / cellW) * (v.y.size() / cellH) * 3;
+            return f;
+        }
+
         void bind() override {}
 
         void update(uint8_t *src) override
@@ -126,6 +145,15 @@ namespace Output
             }
         }
 
+        const char *name() const override { return "Grid"; }
+
+        void describe(JsonObject &desc) override
+        {
+            Base::describe(desc);
+            desc["width"] = m_w;
+            desc["height"] = m_h;
+        }
+
         void toJson(JsonObject &doc) override
         {
             char type[24];
@@ -135,6 +163,9 @@ namespace Output
             doc["type"] = type;
             doc["width"] = m_w;
             doc["height"] = m_h;
+
+            JsonObject desc = doc["description"].to<JsonObject>();
+            describe(desc);
         }
     };
 }

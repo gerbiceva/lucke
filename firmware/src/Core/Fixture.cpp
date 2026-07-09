@@ -24,6 +24,7 @@ void Fixture::_addOutput(Interface::Output* output)
 
 void Fixture::update()
 {
+    std::lock_guard<std::mutex> lock(m_mutex);
     if (m_syncBuffers.empty()) return;
 
     if (m_config.highlighted)
@@ -34,8 +35,7 @@ void Fixture::update()
     {
         for (size_t i = 0; i < m_syncBuffers.size(); i++)
         {
-            const auto& data = m_syncBuffers[i]->read();
-            memcpy(&m_buffer[i * 512], data.data(), 512);
+            m_syncBuffers[i]->read(&m_buffer[i * 512]);
         }
     }
 
@@ -50,6 +50,7 @@ void Fixture::update()
 
 void Fixture::setSyncBuffers(std::vector<std::shared_ptr<SyncBuffer>> bufs)
 {
+    std::lock_guard<std::mutex> lock(m_mutex);
     m_syncBuffers = std::move(bufs);
     m_buffer.resize(m_syncBuffers.size() * 512, 0);
 }
@@ -87,13 +88,7 @@ void Fixture::fromJson(std::string json)
 void Fixture::toJson(JsonObject& doc)
 {
     m_config.toJson(doc);
-
-    // JsonArray outputs = doc["outputs"].to<JsonArray>();
-    // for (auto o : m_outputs)
-    // {
-    //     JsonObject out = outputs.add<JsonObject>();
-    //     // o->appendBasicInfo(doc);
-    // }
+    doc["footprint"] = m_lastOffset;
 }
 
 JsonDocument Fixture::toJsonDoc()
@@ -117,6 +112,33 @@ JsonDocument Fixture::configJson()
     return doc;
 }
 
+JsonDocument Fixture::outputsJson()
+{
+    std::lock_guard<std::mutex> lock(m_mutex);
+    JsonDocument doc;
+    JsonArray outputs = doc.to<JsonArray>();
+
+    JsonArrayConst groups = m_jsonPresets["groups"].as<JsonArrayConst>();
+
+    for (size_t j = 0; j < m_outputs.size(); j++)
+    {
+        JsonObject entry = outputs.add<JsonObject>();
+        m_outputs[j]->describe(entry);
+
+        // footprint is per-preset: index i holds the footprint under preset i.
+        JsonArray fps = entry["footprint"].to<JsonArray>();
+        for (JsonObjectConst g : groups)
+        {
+            JsonArrayConst settings = g["settings"].as<JsonArrayConst>();
+            JsonDocument s;
+            if (j < settings.size())
+                s.set(settings[j]);
+            fps.add(m_outputs[j]->footprintFor(s));
+        }
+    }
+    return doc;
+}
+
 JsonDocument Fixture::presetsJson()
 {
     JsonDocument doc;
@@ -127,42 +149,40 @@ JsonDocument Fixture::presetsJson()
 
 void Fixture::setAddress(uint16_t new_address)
 {
+    std::lock_guard<std::mutex> lock(m_mutex);
     m_config.address = new_address;
 }
 
 void Fixture::setPreset(uint8_t new_preset)
 {
+    std::lock_guard<std::mutex> lock(m_mutex);
     m_config.selectedPreset = new_preset;
     m_lastOffset = 0;
 
-    JsonArray arr1 = m_jsonPresets["groups"].as<JsonArray>();
-    uint8_t c = 0;
-    bool valid = false;
-
-    for(JsonDocument o : arr1)
+    // Iterate the preset tree by reference (JsonObjectConst/JsonArrayConst) —
+    // binding elements to a JsonDocument would deep-copy each group.
+    JsonArrayConst groups = m_jsonPresets["groups"].as<JsonArrayConst>();
+    if (new_preset >= groups.size())
     {
-        if(c++ == m_config.selectedPreset)
-        {
-            JsonArray presets = o["settings"].as<JsonArray>();
-            uint16_t offset = 0;
-            uint8_t counter = 0;
-            for(JsonDocument d : presets)
-            {
-                if(m_outputs.size() == presets.size())
-                {
-                    auto o = this->m_outputs[counter++];
-                    o->setPreset(d);
-                    m_lastOffset += o->footprint();
-                }
-            }
-            valid = true;
-            break;
-        }
+        Utils::Logger::printf("[FIXTURE] Invalid preset index: %d\n", new_preset);
+        return;
     }
 
-    if(!valid)
+    JsonArrayConst settings = groups[new_preset]["settings"].as<JsonArrayConst>();
+    if (settings.size() != m_outputs.size())
     {
-        Utils::Logger::printf("[FIXTURE] Invalid preset index: %d\n", m_config.selectedPreset);
+        Utils::Logger::printf(
+            "[FIXTURE] Preset %d has %u settings but fixture has %u outputs — ignored\n",
+            new_preset, (unsigned)settings.size(), (unsigned)m_outputs.size());
+        return;
+    }
+
+    for (size_t i = 0; i < m_outputs.size(); i++)
+    {
+        JsonDocument d;
+        d.set(settings[i]);     // interface takes a JsonDocument&; copy just this setting
+        m_outputs[i]->setPreset(d);
+        m_lastOffset += m_outputs[i]->footprint();
     }
 }
 

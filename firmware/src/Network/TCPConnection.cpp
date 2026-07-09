@@ -4,10 +4,15 @@ namespace Network
 {
     TcpConnection::TcpConnection(WiFiClient client)
         : m_client(client)
-    {}
+    {
+        // Without this, readStringUntil() blocks for the 1000 ms Arduino
+        // stream default after the last byte, adding ~1 s latency per request.
+        m_client.setTimeout(50);
+    }
 
     TcpConnection::TcpConnection(const std::string& host, uint16_t port)
     {
+        m_client.setTimeout(50);
         m_client.connect(host.c_str(), port);
     }
 
@@ -21,6 +26,7 @@ namespace Network
         if (m_client.connected())
         {
             m_client.print(data.c_str());
+            m_client.flush();   // push bytes out before the caller closes the socket
         }
     }
 

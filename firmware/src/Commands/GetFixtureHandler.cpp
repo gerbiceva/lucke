@@ -68,6 +68,11 @@ namespace Commands
                 doc["req"] = "presets";
                 doc["val"] = fix->presetsJson();
             }
+            else if (field == "outputs")
+            {
+                doc["req"] = "outputs";
+                doc["val"] = fix->outputsJson();
+            }
             else
             {
                 doc["err"] = "unknown value";

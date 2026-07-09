@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include "Utils/"
 #include <vector>
 #include "Base/LEDGridBase.h"
 #include "Hardware/WS2815.h"

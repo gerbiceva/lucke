@@ -46,9 +46,18 @@ namespace Output
             }
         }
 
+        const char* name() const override { return "LED1D"; }
+
         uint16_t footprint() const override
         {
             return m_numGroups * this->c_numPxls;
+        }
+
+        uint16_t footprintFor(const JsonDocument &setting) const override
+        {
+            uint16_t groups = m_numGroups;
+            Utils::Json::updateElement<uint16_t>(setting, "num_groups", groups);
+            return groups * this->c_numPxls;
         }
 
         void toJson(JsonObject &doc) override
@@ -61,6 +70,9 @@ namespace Output
             doc["hardware_pin"] = this->m_pin;
             doc["num_leds"] = this->m_numLeds;
             doc["num_groups"] = m_numGroups;
+
+            JsonObject desc = doc["description"].to<JsonObject>();
+            this->describe(desc);
         }
     };
 

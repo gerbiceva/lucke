@@ -30,7 +30,7 @@ void Engine::init()
     Utils::Logger::println("Register");
 
     registerCommands();
-    Utils::Logger::println("Spaw3n");
+    Utils::Logger::println("Spawn");
 
     spawnTasks();
 
@@ -40,8 +40,6 @@ void Engine::init()
 std::string Engine::toString()
 {
     JsonDocument doc;
-    // doc["heap_size"] = ESP.getHeapSize();
-	// doc["heap_free"] = ESP.getFreeHeap();
     JsonObject settingsDoc = doc["settings"].to<JsonObject>();
     m_config.toJson(settingsDoc);
 

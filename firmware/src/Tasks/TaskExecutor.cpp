@@ -5,6 +5,7 @@ namespace Tasks
 
     void Manager::suspendTask(uint32_t id)
     {
+        std::lock_guard<std::mutex> lock(m_mutex);
         auto it = find(id);
 
         if (it == m_tasks.end()) 
@@ -18,6 +19,7 @@ namespace Tasks
 
     void Manager::resumeTask(uint32_t id)
     {
+        std::lock_guard<std::mutex> lock(m_mutex);
         auto it = find(id);
 
         if (it == m_tasks.end()) 
@@ -30,6 +32,7 @@ namespace Tasks
     }
 
     void Manager::stopTask(uint32_t id) {
+        std::lock_guard<std::mutex> lock(m_mutex);
         auto it = find(id);
 
         if (it == m_tasks.end()) 
@@ -42,6 +45,7 @@ namespace Tasks
     }
 
     bool Manager::isTaskRunning(uint32_t id) {
+        std::lock_guard<std::mutex> lock(m_mutex);
         auto it = find(id);
 
         if (it == m_tasks.end()) 

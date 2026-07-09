@@ -40,14 +40,6 @@ namespace Utils
             }
         }
 
-        // static void dprint(const char* str)
-        // {
-        //     if(m_level == DEBUG)
-        //     {
-        //         print(String::concat("[D]", str).c_str());
-        //     }
-        // }
-
         static void println(const char* str)
         {
             if(m_enabled)
@@ -55,14 +47,6 @@ namespace Utils
                 Serial.println(str);
             }
         }
-
-        // static void dprintln(const char* str)
-        // {
-        //     if(m_level == DEBUG)
-        //     {
-        //         println(String::concat("[D]", str).c_str());
-        //     }
-        // }
 
         template<typename... Args>
         static void printf(const char* format, Args&&... args)
@@ -72,15 +56,5 @@ namespace Utils
                 Serial.printf(format, args...);
             }
         }
-
-        // template<typename... Args>
-        // static void dprintf(const char* format, Args&&... args)
-        // {
-        //     if(m_level == DEBUG)
-        //     {
-        //         printf(String::concat("[D]", format).c_str(), args...);
-        //     }
-        // }
-
     };
 }
