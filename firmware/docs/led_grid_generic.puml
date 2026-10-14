@@ -1,0 +1,98 @@
+@startuml
+title Generic Grid<T> / VirtualGrid<T> (proposed templated redesign)
+
+class "Range" as Range {
+  +begin: uint16_t
+  +end: uint16_t
+  +contains(idx): bool
+  +size(): uint16_t
+}
+note top of Range
+  Not templated -- pure index
+  math, no dependency on T.
+end note
+
+interface "Device<T>" as Device {
+  +operator[](index): T&
+  +count(): uint16_t
+}
+note right of Device
+  Replaces LEDStrip.
+  Any 1D indexable backing
+  store: LED strip, DMX
+  channel array, servo bank,
+  std::vector<T> for tests...
+end note
+
+class "DeviceMapping<T>" as DeviceMapping {
+  +device: Device<T>*
+  +xRange: Range
+  +yRange: Range
+  +contains(x, y): bool
+  +localIndex(x, y): uint16_t
+}
+
+class "Grid<T>" as Grid {
+  -m_xSize: uint16_t
+  -m_ySize: uint16_t
+  -m_cells: vector<T*>
+  +Grid(xSize, ySize)
+  +addDevice(device, xRange, yRange)
+  +isComplete(): bool
+  +set(x, y, value: T)
+  +at(x, y): T*
+  -toIdx(x, y): uint16_t
+}
+
+class "VirtualGrid<T>" as VirtualGrid {
+  -m_base: Grid<T>&
+  -m_cfg: Config
+  +VirtualGrid(base, cfg)
+  +set(x, y, value: T)
+}
+
+class "VirtualGrid<T>::Config" as VGConfig {
+  +xRange: Range
+  +xStride: uint16_t
+  +yRange: Range
+  +yStride: uint16_t
+}
+
+DeviceMapping "1" o-- "2" Range : xRange / yRange
+DeviceMapping --> Device : device *
+DeviceMapping ..> Grid : used BY addDevice()\n(single source of index math)
+
+Grid "1" o-- "many" Device : addDevice() wires\nm_cells[i] -> &device[localIndex]
+Grid *-- "xSize*ySize" "T" : m_cells entries point\ninto device buffers (no copy)
+
+VirtualGrid "1" o-- "1" Grid : m_base (reference)
+VirtualGrid *-- VGConfig : m_cfg
+VGConfig o-- "2" Range : xRange / yRange
+
+note right of Grid
+  m_cells[x * ySize + y] = T*
+  points directly into a T
+  inside some Device<T>'s buffer.
+  set() writes through the
+  pointer -- no copy, no flush.
+
+  addDevice() now uses
+  DeviceMapping::localIndex()
+  as the single formula for
+  grid-coord -> device-index,
+  fixing the original flat-
+  counter bug.
+end note
+
+note right of VirtualGrid
+  set(x, y, value) fans out to
+  base.set(xRange.begin + x*xStride + i,
+            yRange.begin + y*yStride + j,
+            value)
+  for i in [0,xStride), j in [0,yStride)
+  -- correctly covers a contiguous
+  block per virtual cell (fixes the
+  original x*i / y*j bug).
+end note
+
+@enduml

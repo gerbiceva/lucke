@@ -57,6 +57,7 @@ void Fixture::setSyncBuffers(std::vector<std::shared_ptr<SyncBuffer>> bufs)
 
 void Fixture::setUniverse(uint8_t new_universe)
 {
+    std::lock_guard<std::mutex> lock(m_mutex);
     m_config.universe = new_universe;
 }
 
@@ -231,9 +232,10 @@ const std::string& Fixture::getType() const
     return m_config.type; 
 }
 
-bool& Fixture::getHighlighted()
+void Fixture::toggleHighlight()
 {
-    return m_config.highlighted;
+    std::lock_guard<std::mutex> lock(m_mutex);
+    m_config.highlighted = !m_config.highlighted;
 }
 
 uint16_t Fixture::getFootprint() const

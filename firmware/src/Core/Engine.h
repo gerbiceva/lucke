@@ -4,6 +4,7 @@
 #include "Network/TcpServer.h"
 #include "Network/UdpBroadcaster.h"
 #include "Network/SerialTransport.h"
+#include "Network/BleTransport.h"
 #include "Commands/CommandDispatcher.h"
 #include "Commands/DescribeHandler.h"
 #include "Commands/GetFixtureHandler.h"
@@ -50,6 +51,7 @@ private:
     Network::UdpBroadcaster m_udpHeartbeat;
     Network::UdpBroadcaster m_udpReport;
     Network::SerialTransport m_serial;
+    Network::BleTransport m_ble;
 
     Commands::CommandDispatcher m_dispatcher;
     Commands::DescribeHandler m_describeHandler;

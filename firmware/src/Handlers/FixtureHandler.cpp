@@ -141,7 +141,7 @@ namespace Handler
         Fixture* fix = get(id);
         if (!fix) return false;
 
-        fix->getHighlighted() = !fix->getHighlighted();
+        fix->toggleHighlight();
         return true;
     }
 

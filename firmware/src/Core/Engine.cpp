@@ -21,17 +21,18 @@ void Engine::init()
     Utils::Logger::println("Storage");
     m_storage.setPartition("engine");
     Utils::Logger::println("Config");
-
     loadConfig();
-    Utils::Logger::println("Wifi");
 
+    Utils::Logger::println("Wifi");
     m_wifi.connect(m_config.ssid, m_config.password);
 
     Utils::Logger::println("Register");
-
     registerCommands();
-    Utils::Logger::println("Spawn");
 
+    Utils::Logger::println("BLE");
+    m_ble.begin("Lucke");
+
+    Utils::Logger::println("Spawn");
     spawnTasks();
 
     Utils::Logger::printf("[ENGINE] v%s initialized\n", m_config.version.c_str());
@@ -215,6 +216,20 @@ void Engine::spawnTasks()
             {
                 std::string line = m_serial.readLine();
                 m_dispatcher.dispatch(line, m_serial);
+            }
+            vTaskDelay(10);
+        }
+    }, 1, 8192);
+
+    // BLE command task — same JSON command protocol as serial/TCP, carried
+    // over the Nordic UART Service characteristics.
+    m_tasks.spawnTask("ble_config", [this]() {
+        while (true)
+        {
+            if (m_ble.isAvailable())
+            {
+                std::string line = m_ble.readLine();
+                m_dispatcher.dispatch(line, m_ble);
             }
             vTaskDelay(10);
         }

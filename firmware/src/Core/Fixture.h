@@ -35,6 +35,7 @@ public:
     void setAddress(uint16_t new_address);
     void setPreset(uint8_t new_preset);
     void setName(const std::string& other);
+    void toggleHighlight();
 
     void setId(uint8_t id);
     uint8_t id() const;
@@ -44,7 +45,6 @@ public:
     uint8_t getNumPresets() const;
     const std::string& getName() const;
     const std::string& getType() const;
-    bool& getHighlighted();
     std::vector<Interface::Output*>& getOutputs();
 
 
