@@ -29,8 +29,8 @@ void Engine::init()
     Utils::Logger::println("Register");
     registerCommands();
 
-    Utils::Logger::println("BLE");
-    m_ble.begin("Lucke");
+    // Utils::Logger::println("BLE");
+    // m_ble.begin("Lucke");
 
     Utils::Logger::println("Spawn");
     spawnTasks();
@@ -223,17 +223,17 @@ void Engine::spawnTasks()
 
     // BLE command task — same JSON command protocol as serial/TCP, carried
     // over the Nordic UART Service characteristics.
-    m_tasks.spawnTask("ble_config", [this]() {
-        while (true)
-        {
-            if (m_ble.isAvailable())
-            {
-                std::string line = m_ble.readLine();
-                m_dispatcher.dispatch(line, m_ble);
-            }
-            vTaskDelay(10);
-        }
-    }, 1, 8192);
+    // m_tasks.spawnTask("ble_config", [this]() {
+    //     while (true)
+    //     {
+    //         if (m_ble.isAvailable())
+    //         {
+    //             std::string line = m_ble.readLine();
+    //             m_dispatcher.dispatch(line, m_ble);
+    //         }
+    //         vTaskDelay(10);
+    //     }
+    // }, 1, 8192);
 
     // TCP command task — receive on 8888, respond on RESPONSE_PORT
     m_tasks.spawnTask("tcp_cmd", [this]() {
@@ -249,7 +249,7 @@ void Engine::spawnTasks()
                     if (tc.isAvailable())
                     {
                         std::string line = tc.readLine();
-                        Network::TcpConnection response(remoteIp, RESPONSE_PORT);
+                        Net::TcpConnection response(remoteIp, RESPONSE_PORT);
                         m_dispatcher.dispatch(line, response);
                         response.close();
                     }

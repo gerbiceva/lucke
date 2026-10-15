@@ -6,7 +6,7 @@
 #include "Interfaces/Serializable.h"
 
 
-namespace Network 
+namespace Net 
 {
 class Wifi : public Interface::Serializable
 {

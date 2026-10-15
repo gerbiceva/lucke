@@ -2,7 +2,7 @@
 #include <Arduino.h>
 #include "Interfaces/Transport.h"
 
-namespace Network
+namespace Net
 {
     class SerialTransport : public Interface::Transport
     {

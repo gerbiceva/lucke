@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <string>
 
-namespace Network
+namespace Net
 {
     class UdpBroadcaster
     {

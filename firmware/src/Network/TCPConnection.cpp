@@ -1,6 +1,6 @@
 #include "TCPConnection.h"
 
-namespace Network
+namespace Net
 {
     TcpConnection::TcpConnection(WiFiClient client)
         : m_client(client)

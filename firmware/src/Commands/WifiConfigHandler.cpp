@@ -2,7 +2,7 @@
 
 namespace Commands
 {
-    WifiConfigHandler::WifiConfigHandler(Network::Wifi& wifi, Config::Engine& config, Utils::Storage& storage)
+    WifiConfigHandler::WifiConfigHandler(Net::Wifi& wifi, Config::Engine& config, Utils::Storage& storage)
         : m_wifi(wifi), m_config(config), m_storage(storage)
     {}
 

@@ -1,7 +1,7 @@
 #include "UdpBroadcaster.h"
 #include <WiFi.h>
 
-namespace Network
+namespace Net
 {
     void UdpBroadcaster::begin(uint16_t port)
     {

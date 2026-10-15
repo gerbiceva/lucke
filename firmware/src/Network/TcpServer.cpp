@@ -1,6 +1,6 @@
 #include "TcpServer.h"
 
-namespace Network
+namespace Net
 {
     TcpServer::TcpServer(uint16_t port)
         : m_port(port), m_server(port)

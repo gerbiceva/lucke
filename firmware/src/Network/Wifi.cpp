@@ -4,7 +4,7 @@
 #include <WiFi.h>
 #include <esp_wifi.h>
 
-namespace Network
+namespace Net
 {
     void Wifi::connect(const std::string& ssid, const std::string& pass)
     {

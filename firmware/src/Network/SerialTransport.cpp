@@ -1,6 +1,6 @@
 #include "SerialTransport.h"
 
-namespace Network
+namespace Net
 {
     void SerialTransport::send(const std::string& data)
     {

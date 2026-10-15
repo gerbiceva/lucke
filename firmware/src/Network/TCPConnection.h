@@ -2,7 +2,7 @@
 #include <WiFiClient.h>
 #include "Interfaces/Transport.h"
 
-namespace Network
+namespace Net
 {
     class TcpConnection : public Interface::Transport
     {

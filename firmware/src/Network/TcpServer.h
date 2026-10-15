@@ -4,7 +4,7 @@
 #include "TCPConnection.h"
 #include "Utils/Optional.h"
 
-namespace Network
+namespace Net
 {
     class TcpServer
     {

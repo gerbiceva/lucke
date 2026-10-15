@@ -2,7 +2,7 @@
 
 namespace Commands
 {
-    DescribeHandler::DescribeHandler(Config::Engine& config, Handler::FixtureHandler& fixtures, Handler::InputHandler& inputs, Network::Wifi& wifi)
+    DescribeHandler::DescribeHandler(Config::Engine& config, Handler::FixtureHandler& fixtures, Handler::InputHandler& inputs, Net::Wifi& wifi)
         : m_config(config), m_fixtures(fixtures), m_inputs(inputs), m_wifi(wifi)
     {}
 

@@ -46,12 +46,12 @@ private:
     Utils::Storage m_storage;
     bool m_factoryReset = false;
 
-    Network::Wifi m_wifi;
-    Network::TcpServer m_tcpServer;
-    Network::UdpBroadcaster m_udpHeartbeat;
-    Network::UdpBroadcaster m_udpReport;
-    Network::SerialTransport m_serial;
-    Network::BleTransport m_ble;
+    Net::Wifi m_wifi;
+    Net::TcpServer m_tcpServer;
+    Net::UdpBroadcaster m_udpHeartbeat;
+    Net::UdpBroadcaster m_udpReport;
+    Net::SerialTransport m_serial;
+    // Net::BleTransport m_ble;
 
     Commands::CommandDispatcher m_dispatcher;
     Commands::DescribeHandler m_describeHandler;
