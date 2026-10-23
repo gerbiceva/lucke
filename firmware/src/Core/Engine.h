@@ -15,7 +15,7 @@
 #include "Handlers/FixtureHandler.h"
 #include "Handlers/InputHandler.h"
 #include "Tasks/TaskExecutor.h"
-#include "Utils/Storage.h"
+#include "Services/SettingsStore.h"
 #include "Services/StatusReport.h"
 #include "Services/Telemetry.h"
 #include "Services/CommandSession.h"
@@ -30,12 +30,10 @@ public:
     template<typename TFixture>
     void addFixture()
     {
-        m_fixtures.addFixture<TFixture>(m_factoryReset);
+        m_fixtures.addFixture<TFixture>();
     }
 
 private:
-    void loadConfig();
-    void saveConfig();
     void registerCommands();
     void spawnTasks();
     void onWifiStatus(bool connected);
@@ -43,9 +41,8 @@ private:
     Tasks::TaskId m_fixtureTaskId = Tasks::TaskId::Invalid;
     Tasks::TaskId m_animationTaskId = Tasks::TaskId::Invalid;
 
-    Config::Engine m_config;
-    Utils::Storage m_storage;
-    bool m_factoryReset = false;
+    // First: almost everything below reads settings.
+    Services::SettingsStore m_settings;
 
     Net::Wifi m_wifi;
     Net::SerialTransport m_serial;

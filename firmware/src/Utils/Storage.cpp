@@ -37,6 +37,14 @@ namespace Utils
         return m_Preferences.isKey(key.c_str());
     }
 
+    void Storage::clear()
+    {
+        if(m_inited)
+        {
+            m_Preferences.clear();
+        }
+    }
+
     int8_t Storage::putChar(const std::string& name, int8_t value) {
         if(!m_inited)
         {

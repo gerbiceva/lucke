@@ -7,14 +7,14 @@
 #include "Handlers/InputHandler.h"
 #include "Interfaces/Serializable.h"
 #include "Interfaces/Deserializable.h"
-#include "Utils/Storage.h"
+#include "Services/SettingsStore.h"
 #include "Utils/Logger.h"
 
 namespace Handler
 {
     class FixtureHandler : public Interface::Serializable, public Interface::Deserializable
     {
-        void _addFixture(std::unique_ptr<Fixture> fix, bool factoryReset);
+        void _addFixture(std::unique_ptr<Fixture> fix);
         void persistFixture(uint8_t id);
 
         // Re-derive the universe span from the fixture's current
@@ -24,12 +24,12 @@ namespace Handler
         void resubscribe(Fixture* fix, uint8_t oldBase, uint8_t oldCount);
 
     public:
-        FixtureHandler(InputHandler& inputs);
+        FixtureHandler(InputHandler& inputs, Services::SettingsStore& settings);
 
         template<typename TFixture>
-        void addFixture(bool factoryReset)
+        void addFixture()
         {
-            _addFixture(std::make_unique<TFixture>(), factoryReset);
+            _addFixture(std::make_unique<TFixture>());
         }
 
         [[nodiscard]] Fixture* get(uint8_t id);
@@ -52,8 +52,7 @@ namespace Handler
 
     private:
         InputHandler& m_inputs;
-        Utils::Storage m_storage;
-        bool m_storageReady = false;
+        Services::SettingsStore& m_settings;
         std::vector<std::unique_ptr<Fixture>> m_fixtures;
         uint8_t m_nextId = 0;
     };

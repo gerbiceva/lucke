@@ -1,24 +1,21 @@
 #pragma once
 #include <Arduino.h>
 #include "Interfaces/Command.h"
-#include "Core/Config/EngineConfig.h"
 #include "Services/Telemetry.h"
-#include "Utils/Storage.h"
+#include "Services/SettingsStore.h"
 
 namespace Commands
 {
     class EngineConfigHandler : public Interface::CommandHandler
     {
     public:
-        EngineConfigHandler(Config::Engine& config, Utils::Storage& storage, Services::Telemetry& telemetry);
+        EngineConfigHandler(Services::SettingsStore& settings, Services::Telemetry& telemetry);
         void handle(JsonDocument& req, Interface::Transport& transport) override;
 
     private:
-        Config::Engine& m_config;
-        Utils::Storage& m_storage;
+        Services::SettingsStore& m_settings;
         Services::Telemetry& m_telemetry;
 
-        void save();
         void respond(Interface::Transport& transport, const char* key, bool value);
     };
 }

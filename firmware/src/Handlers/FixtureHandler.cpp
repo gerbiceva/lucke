@@ -4,26 +4,20 @@
 
 namespace Handler
 {
-    FixtureHandler::FixtureHandler(InputHandler& inputs)
-        : m_inputs(inputs)
+    FixtureHandler::FixtureHandler(InputHandler& inputs, Services::SettingsStore& settings)
+        : m_inputs(inputs), m_settings(settings)
     {}
 
-    void FixtureHandler::_addFixture(std::unique_ptr<Fixture> fix, bool factoryReset)
+    void FixtureHandler::_addFixture(std::unique_ptr<Fixture> fix)
     {
-        // Lazily open NVS — must happen in setup() context, not at global
-        // construction time (NVS flash isn't initialized that early).
-        if (!m_storageReady)
-        {
-            m_storage.setPartition("fixtures");
-            m_storageReady = true;
-        }
+        // Fixtures are added from setup(), before Engine::init().
+        m_settings.load();
 
         fix->setId(m_nextId++);
 
-        std::string key = "fixture" + std::to_string(fix->id());
-        if (m_storage.isKey(key) && !factoryReset)
+        if (auto stored = m_settings.loadFixture(fix->id()))
         {
-            fix->fromJson(m_storage.getString(key));
+            fix->fromJson(*stored);
         }
         else
         {
@@ -64,8 +58,7 @@ namespace Handler
         std::string serialized;
         serializeJson(doc, serialized);
 
-        std::string key = "fixture" + std::to_string(id);
-        m_storage.putString(key, serialized);
+        m_settings.saveFixture(id, serialized);
     }
 
     Fixture* FixtureHandler::get(uint8_t id)

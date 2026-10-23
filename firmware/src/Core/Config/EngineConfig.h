@@ -24,7 +24,6 @@ namespace Config
     {
         static constexpr std::string_view version = ENGINE_VERSION;
 
-        bool to_factory_settings = false;
         bool serial_report_task = true;
         bool wireless_report_task = true;
         bool wifi_animation = false;
@@ -37,6 +36,8 @@ namespace Config
 
         void toJson(JsonObject &obj) override;
         JsonDocument toJsonDoc() override;
+        // Overwrites the fields present in obj; missing fields keep their value.
+        void fromJson(JsonVariantConst obj);
         std::string toString();
     };
 

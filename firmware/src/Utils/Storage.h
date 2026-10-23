@@ -20,6 +20,8 @@ namespace Utils
         void setPartition(const std::string& partition);
 
         bool isKey(const std::string& key);
+        // Removes every key in this partition.
+        void clear();
 
         int8_t putChar(const std::string& name, int8_t value);
         uint8_t putUChar(const std::string& name, uint8_t value);

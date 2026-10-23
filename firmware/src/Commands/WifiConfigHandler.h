@@ -1,20 +1,18 @@
 #pragma once
 #include "Interfaces/Command.h"
 #include "Network/Wifi.h"
-#include "Core/Config/EngineConfig.h"
-#include "Utils/Storage.h"
+#include "Services/SettingsStore.h"
 
 namespace Commands
 {
     class WifiConfigHandler : public Interface::CommandHandler
     {
     public:
-        WifiConfigHandler(Net::Wifi& wifi, Config::Engine& config, Utils::Storage& storage);
+        WifiConfigHandler(Net::Wifi& wifi, Services::SettingsStore& settings);
         void handle(JsonDocument& req, Interface::Transport& transport) override;
 
     private:
         Net::Wifi& m_wifi;
-        Config::Engine& m_config;
-        Utils::Storage& m_storage;
+        Services::SettingsStore& m_settings;
     };
 }

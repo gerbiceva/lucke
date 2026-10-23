@@ -1,17 +1,16 @@
 #include "Engine.h"
 #include "Utils/Logger.h"
-#include "Utils/JsonUtils.h"
 
 Engine::Engine()
-    : m_fixtures(m_inputs),
-      m_statusReport(m_config, m_wifi, m_fixtures, m_inputs),
-      m_telemetry(m_config, m_wifi, m_fixtures, m_statusReport, m_tasks),
-      m_describeHandler(m_config, m_fixtures, m_inputs, m_wifi),
+    : m_fixtures(m_inputs, m_settings),
+      m_statusReport(m_settings.engine(), m_wifi, m_fixtures, m_inputs),
+      m_telemetry(m_settings.engine(), m_wifi, m_fixtures, m_statusReport, m_tasks),
+      m_describeHandler(m_settings.engine(), m_fixtures, m_inputs, m_wifi),
       m_getFixtureHandler(m_fixtures),
       m_setFixtureHandler(m_fixtures),
       m_inputsHandler(m_inputs),
-      m_wifiConfigHandler(m_wifi, m_config, m_storage),
-      m_engineConfigHandler(m_config, m_storage, m_telemetry),
+      m_wifiConfigHandler(m_wifi, m_settings),
+      m_engineConfigHandler(m_settings, m_telemetry),
       m_serialSession(m_serial, m_dispatcher, m_tasks, "serial_cmd"),
       m_tcpListener(COMMAND_PORT, RESPONSE_PORT, m_dispatcher, m_tasks)
 {
@@ -21,13 +20,12 @@ Engine::Engine()
 
 void Engine::init()
 {
-    Utils::Logger::println("Storage");
-    m_storage.setPartition("engine");
-    Utils::Logger::println("Config");
-    loadConfig();
+    Utils::Logger::println("Settings");
+    m_settings.load();
+    const Config::Engine& config = m_settings.engine();
 
     Utils::Logger::println("Wifi");
-    m_wifi.connect(m_config.ssid, m_config.password);
+    m_wifi.connect(config.ssid, config.password);
 
     Utils::Logger::println("Register");
     registerCommands();
@@ -38,47 +36,7 @@ void Engine::init()
     Utils::Logger::println("Spawn");
     spawnTasks();
 
-    Utils::Logger::printf("[ENGINE] %.*s initialized\n", static_cast<int>(m_config.version.size()), m_config.version.data());
-}
-
-void Engine::loadConfig()
-{
-    if (m_storage.isKey("settings"))
-    {
-        std::string s = m_storage.getString("settings");
-        JsonDocument doc;
-        DeserializationError err = deserializeJson(doc, s);
-        if(err)
-        {
-            Utils::Logger::println("[ERROR] Engine: read settings json");
-            return;
-        }
-        m_factoryReset = Utils::Json::getElement<bool>(doc, "to_factory_settings", false);
-        if(m_factoryReset)
-        {
-            m_config.to_factory_settings = false;
-            m_storage.putString("settings", m_config.toString());
-            s = m_storage.getString("settings");
-            deserializeJson(doc, s);
-        }
-        Utils::Json::updateElement<bool>(doc, "serial_report_task", m_config.serial_report_task);
-        Utils::Json::updateElement<bool>(doc, "wireless_report_task", m_config.wireless_report_task);
-        Utils::Json::updateElement<bool>(doc, "wifi_animation", m_config.wifi_animation);
-
-        const char* ssid = Utils::Json::getElement<const char*>(doc, "ssid", m_config.ssid.c_str());
-        m_config.ssid = ssid;
-        const char* password = Utils::Json::getElement<const char*>(doc, "password", m_config.password.c_str());
-        m_config.password = password;
-    }
-    else
-    {
-        saveConfig();
-    }
-}
-
-void Engine::saveConfig()
-{
-    m_storage.putString("settings", m_config.toString());
+    Utils::Logger::printf("[ENGINE] %.*s initialized\n", static_cast<int>(config.version.size()), config.version.data());
 }
 
 void Engine::registerCommands()
@@ -109,7 +67,7 @@ void Engine::onWifiStatus(bool connected)
     else
     {
         m_tasks.suspendTask(m_fixtureTaskId);
-        if (m_config.wifi_animation)
+        if (m_settings.engine().wifi_animation)
         {
             m_tasks.resumeTask(m_animationTaskId);
         }

@@ -3,18 +3,18 @@
 
 namespace Commands
 {
-    EngineConfigHandler::EngineConfigHandler(Config::Engine& config, Utils::Storage& storage, Services::Telemetry& telemetry)
-        : m_config(config), m_storage(storage), m_telemetry(telemetry)
+    EngineConfigHandler::EngineConfigHandler(Services::SettingsStore& settings, Services::Telemetry& telemetry)
+        : m_settings(settings), m_telemetry(telemetry)
     {}
 
     void EngineConfigHandler::handle(JsonDocument& req, Interface::Transport& transport)
     {
+        Config::Engine& config = m_settings.engine();
         const char* request = req["request"] | "";
 
         if (strcmp(request, "factory_reset") == 0)
         {
-            m_config.to_factory_settings = true;
-            save();
+            m_settings.factoryReset();
             transport.send("{\"status\":\"factory reset, rebooting\"}");
             delay(1000);
             ESP.restart();
@@ -27,10 +27,10 @@ namespace Commands
             {
                 bool value = req["value"];
                 m_telemetry.setSerialReport(value);
-                m_config.serial_report_task = value;
-                save();
+                config.serial_report_task = value;
+                m_settings.save();
             }
-            respond(transport, "serial_report_task", m_config.serial_report_task);
+            respond(transport, "serial_report_task", config.serial_report_task);
             return;
         }
 
@@ -40,10 +40,10 @@ namespace Commands
             {
                 bool value = req["value"];
                 m_telemetry.setWirelessReport(value);
-                m_config.wireless_report_task = value;
-                save();
+                config.wireless_report_task = value;
+                m_settings.save();
             }
-            respond(transport, "wireless_report_task", m_config.wireless_report_task);
+            respond(transport, "wireless_report_task", config.wireless_report_task);
             return;
         }
 
@@ -51,19 +51,14 @@ namespace Commands
         {
             if (req["value"].is<bool>())
             {
-                m_config.wifi_animation = req["value"];
-                save();
+                config.wifi_animation = req["value"];
+                m_settings.save();
             }
-            respond(transport, "wifi_animation", m_config.wifi_animation);
+            respond(transport, "wifi_animation", config.wifi_animation);
             return;
         }
 
         transport.send("{\"err\":\"unknown setting\"}");
-    }
-
-    void EngineConfigHandler::save()
-    {
-        m_storage.putString("settings", m_config.toString());
     }
 
     void EngineConfigHandler::respond(Interface::Transport& transport, const char* key, bool value)
