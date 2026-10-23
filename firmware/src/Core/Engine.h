@@ -37,11 +37,12 @@ public:
 
 private:
     void registerCommands();
-    void spawnTasks();
+    void startServices();
     void wireConnectivity();
 
     // First: almost everything below reads settings.
     Services::SettingsStore m_settings;
+    Tasks::Manager m_tasks;
 
     Net::Wifi m_wifi;
     Net::SerialTransport m_serial;
@@ -49,7 +50,6 @@ private:
 
     Handler::InputHandler m_inputs;
     Handler::FixtureHandler m_fixtures;
-    Tasks::Manager m_tasks;
 
     // Members are built in declaration order: each one below holds references
     // to members declared above it.

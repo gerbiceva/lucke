@@ -4,6 +4,21 @@
 
 namespace Handler
 {
+    InputHandler::InputHandler(Tasks::Manager& tasks)
+        : m_tasks(tasks)
+    {}
+
+    void InputHandler::start()
+    {
+        m_tasks.spawnTask("input_update", [this]() {
+            while (true)
+            {
+                update();
+                vTaskDelay(1);
+            }
+        }, 3, 30000);
+    }
+
     bool InputHandler::match(uint8_t uni)
     {
         return m_sources.find(uni) != m_sources.end();

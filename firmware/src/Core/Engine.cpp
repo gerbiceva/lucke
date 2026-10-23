@@ -2,7 +2,8 @@
 #include "Utils/Logger.h"
 
 Engine::Engine()
-    : m_fixtures(m_inputs, m_settings),
+    : m_inputs(m_tasks),
+      m_fixtures(m_inputs, m_settings),
       m_render(m_fixtures, m_tasks),
       m_connectivity(m_wifi, m_tasks),
       m_statusReport(m_settings.engine(), m_wifi, m_fixtures, m_inputs),
@@ -36,7 +37,7 @@ void Engine::init()
     // m_ble.begin("Lucke");
 
     Utils::Logger::println("Spawn");
-    spawnTasks();
+    startServices();
 
     Utils::Logger::printf("[ENGINE] %.*s initialized\n", static_cast<int>(config.version.size()), config.version.data());
 }
@@ -81,16 +82,9 @@ void Engine::wireConnectivity()
     });
 }
 
-void Engine::spawnTasks()
+void Engine::startServices()
 {
-    // Input polling task
-    m_tasks.spawnTask("input_update", [this]() {
-        while (true)
-        {
-            m_inputs.update();
-            vTaskDelay(1);
-        }
-    }, 3, 30000);
+    m_inputs.start();
 
     // Animation until wifi first connects, then live DMX (see wireConnectivity)
     m_render.start();
