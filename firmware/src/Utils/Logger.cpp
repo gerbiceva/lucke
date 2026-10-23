@@ -3,5 +3,5 @@
 namespace Utils
 {
     bool Logger::m_enabled = false;
-    Logger::Level Logger::m_level = Logger::INFO;
+    Logger::Level Logger::m_level = Logger::Level::INFO;
 }

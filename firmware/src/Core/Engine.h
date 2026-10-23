@@ -39,8 +39,8 @@ private:
     void spawnTasks();
     void onWifiStatus(bool connected);
 
-    uint32_t m_fixtureTaskId = 0;
-    uint32_t m_animationTaskId = 0;
+    Tasks::TaskId m_fixtureTaskId = Tasks::TaskId::Invalid;
+    Tasks::TaskId m_animationTaskId = Tasks::TaskId::Invalid;
 
     Config::Engine m_config;
     Utils::Storage m_storage;

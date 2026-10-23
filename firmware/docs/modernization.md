@@ -15,7 +15,7 @@ BLE transport.
 | 2 | Raw `new` → RAII ownership | 🟡 |
 | 3 | Raw buffers → `std::span` / `std::array` | ✅ |
 | 4 | Macros → `constexpr` | ✅ |
-| 5 | `enum` → `enum class` | ⬜ |
+| 5 | `enum` → `enum class` | ✅ |
 | 6 | Command dispatch | ⬜ |
 | 7 | Parameters and signatures | 🟡 |
 | 8 | Concurrency | ⬜ |
@@ -133,12 +133,16 @@ Raw `uint8_t*` was passed around with an implied size of 512 or `footprint()`.
   `reset_delay` → `static constexpr uint8_t`, both in the header; out-of-line
   definitions removed.
 
-## 5. `enum` → `enum class` ⬜
-- ⬜ `Logger::Level` (`src/Utils/Logger.h`), `Manager::TaskStatus`
-  (`src/Tasks/TaskExecutor.h`) → `enum class`.
-- ⬜ Task IDs are bare `uint32_t` and `0` means both "unset" and the first real
-  ID → strong `enum class TaskId : uint32_t {}`.
-- ⬜ `std::to_underlying` where the raw value is needed.
+## 5. `enum` → `enum class` ✅
+- ✅ `Logger::Level` (`src/Utils/Logger.h`), `Manager::TaskStatus`
+  (`src/Tasks/TaskExecutor.h`) → `enum class`; enumerator names kept.
+- ✅ Strong `Tasks::TaskId` (`enum class TaskId : uint32_t { Invalid = 0 }`).
+  IDs start at 1, so `Invalid` is never a real task. Before, the first task
+  (`input_update`) had ID 0 — the same value as the "not spawned" default, so a
+  `stopTask` on an unset ID would have killed it. Used in `Manager`, `Engine`,
+  `EngineConfigHandler`.
+- — `std::to_underlying`: not needed yet, nothing prints or stores the raw
+  values.
 
 ## 6. Command dispatch ⬜
 - ⬜ `src/Commands/EngineConfigHandler.cpp` — `strcmp` chain and three

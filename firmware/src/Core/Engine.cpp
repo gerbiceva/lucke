@@ -13,7 +13,7 @@ Engine::Engine()
       m_fixtures(m_inputs)
 {
     Utils::Logger::enable();
-    Utils::Logger::setLevel(Utils::Logger::DEBUG);
+    Utils::Logger::setLevel(Utils::Logger::Level::DEBUG);
 }
 
 void Engine::init()

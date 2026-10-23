@@ -7,7 +7,7 @@ namespace Utils
     class Logger
     {
     public:
-        enum Level
+        enum class Level
         {
             DEBUG,
             INFO

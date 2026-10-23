@@ -24,8 +24,8 @@ namespace Commands
         ReportFn m_serialReportFn;
         ReportFn m_wirelessReportFn;
 
-        uint32_t m_serialReportTaskId = 0;
-        uint32_t m_wirelessReportTaskId = 0;
+        Tasks::TaskId m_serialReportTaskId = Tasks::TaskId::Invalid;
+        Tasks::TaskId m_wirelessReportTaskId = Tasks::TaskId::Invalid;
 
         void save();
         void respond(Interface::Transport& transport, const char* key, bool value);

@@ -9,9 +9,16 @@
 
 namespace Tasks
 {
+// Opaque task handle. Invalid (0) is never handed out, so it is safe as the
+// "not spawned" default.
+enum class TaskId : uint32_t
+{
+    Invalid = 0
+};
+
 class Manager {
 public:
-    enum TaskStatus
+    enum class TaskStatus
     {
         RUNNING,
         SUSPENDED
@@ -20,11 +27,11 @@ public:
     Manager() = default;
 
     template <typename TInvocable>
-    uint32_t spawnTask(std::string taskName, TInvocable invocable, uint8_t priority = 1, uint32_t stackSize = 2000) 
+    TaskId spawnTask(std::string taskName, TInvocable invocable, uint8_t priority = 1, uint32_t stackSize = 2000) 
     {
         std::lock_guard<std::mutex> lock(m_mutex);
 
-        uint32_t id = id_generator++;
+        TaskId id{id_generator++};
         TaskRecord rec;
         rec.id = id;
         rec.name = taskName;
@@ -40,7 +47,7 @@ public:
 
         Utils::Logger::printf("[TASK] Created new task '%s'\n", taskName.c_str());
 
-        rec.status = RUNNING;
+        rec.status = TaskStatus::RUNNING;
         m_tasks.push_back(rec);
 
         TaskRecord& stored = m_tasks.back();
@@ -56,22 +63,22 @@ public:
         return stored.id;
     }
 
-    void suspendTask(uint32_t id);
-    void resumeTask(uint32_t id);
-    void stopTask(uint32_t id);
+    void suspendTask(TaskId id);
+    void resumeTask(TaskId id);
+    void stopTask(TaskId id);
 
-    bool isTaskRunning(uint32_t id);
+    bool isTaskRunning(TaskId id);
 
 private:
     struct TaskRecord {
-        uint32_t id;
+        TaskId id;
         std::string name;
         TaskHandle_t handle;
         std::function<void()> fn;
         TaskStatus status;
     };
 
-    std::list<TaskRecord>::iterator find(uint32_t id);
+    std::list<TaskRecord>::iterator find(TaskId id);
     std::list<TaskRecord>::iterator find(std::string nmae);
 
     static void trampoline(void* fn) 
@@ -82,7 +89,7 @@ private:
     // Guards m_tasks: spawn/suspend/resume/stop are called from several task
     // contexts (e.g. wifi_monitor toggling the fixture/animation tasks).
     std::mutex m_mutex;
-    uint32_t id_generator = 0;
+    uint32_t id_generator = 1;
     std::list<TaskRecord> m_tasks{};
 };
 }

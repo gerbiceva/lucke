@@ -3,7 +3,7 @@
 namespace Tasks
 {
 
-    void Manager::suspendTask(uint32_t id)
+    void Manager::suspendTask(TaskId id)
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         auto it = find(id);
@@ -13,11 +13,11 @@ namespace Tasks
             return;
         }
 
-        it->status = SUSPENDED;
+        it->status = TaskStatus::SUSPENDED;
         vTaskSuspend(it->handle);
     }
 
-    void Manager::resumeTask(uint32_t id)
+    void Manager::resumeTask(TaskId id)
     {
         std::lock_guard<std::mutex> lock(m_mutex);
         auto it = find(id);
@@ -27,11 +27,11 @@ namespace Tasks
             return;
         } 
 
-        it->status = RUNNING;
+        it->status = TaskStatus::RUNNING;
         vTaskResume(it->handle);
     }
 
-    void Manager::stopTask(uint32_t id) {
+    void Manager::stopTask(TaskId id) {
         std::lock_guard<std::mutex> lock(m_mutex);
         auto it = find(id);
 
@@ -44,7 +44,7 @@ namespace Tasks
         m_tasks.erase(it);
     }
 
-    bool Manager::isTaskRunning(uint32_t id) {
+    bool Manager::isTaskRunning(TaskId id) {
         std::lock_guard<std::mutex> lock(m_mutex);
         auto it = find(id);
 
@@ -53,11 +53,11 @@ namespace Tasks
             return false;
         } 
 
-        return it->status == RUNNING;
+        return it->status == TaskStatus::RUNNING;
     }
 
 
-    std::list<Manager::TaskRecord>::iterator Manager::find(uint32_t id) 
+    std::list<Manager::TaskRecord>::iterator Manager::find(TaskId id) 
     {
         return std::find_if(m_tasks.begin(), m_tasks.end(),
             [&](const TaskRecord& r) { return r.id == id; });
