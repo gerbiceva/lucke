@@ -2,10 +2,14 @@
 #include <algorithm>
 #include <span>
 
-#define ADDR_SEQ 111
-#define ADDR_UNI_HI 113
-#define ADDR_UNI_LO 114
-#define ADDR_DMX 126
+namespace
+{
+    // Byte offsets into an E1.31 (sACN) data packet.
+    constexpr size_t ADDR_SEQ = 111;
+    constexpr size_t ADDR_UNI_HI = 113;
+    constexpr size_t ADDR_UNI_LO = 114;
+    constexpr size_t ADDR_DMX = 126;
+}
 
 namespace Utils
 {

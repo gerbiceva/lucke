@@ -14,7 +14,7 @@ BLE transport.
 | 1 | Hand-rolled utilities → standard library | 🟡 |
 | 2 | Raw `new` → RAII ownership | 🟡 |
 | 3 | Raw buffers → `std::span` / `std::array` | ✅ |
-| 4 | Macros → `constexpr` | ⬜ |
+| 4 | Macros → `constexpr` | ✅ |
 | 5 | `enum` → `enum class` | ⬜ |
 | 6 | Command dispatch | ⬜ |
 | 7 | Parameters and signatures | 🟡 |
@@ -121,13 +121,17 @@ Raw `uint8_t*` was passed around with an implied size of 512 or `footprint()`.
 - ⬜ Optional: a debug env with `-D_GLIBCXX_ASSERTIONS` so `span` / `array` /
   `vector` indexing is bounds-checked at runtime.
 
-## 4. Macros → `constexpr` ⬜
-- ⬜ `src/Core/Config/EngineConfig.h` — `ENGINE_VERSION`, default Wi-Fi
-  credentials, ports → `inline constexpr std::string_view` / `uint16_t` in a
-  namespace.
-- ⬜ `src/Utils/SacnParser.cpp` — `ADDR_*` offsets → `constexpr`.
-- ⬜ `src/Hardware/WS2815.cpp` — `timing_bits`, `reset_delay` →
-  `static constexpr std::array` in the header.
+## 4. Macros → `constexpr` ✅
+- ✅ `src/Core/Config/EngineConfig.h` — `ENGINE_VERSION`, `DEFAULT_WIFI_SSID`,
+  `DEFAULT_WIFI_PASSWORD` → `inline constexpr std::string_view`; ports →
+  `inline constexpr uint16_t`. Names kept, so call sites are unchanged.
+  `std::string` members are brace-initialized (the `string_view` constructor is
+  `explicit`).
+- ✅ `src/Utils/SacnParser.cpp` — `ADDR_*` offsets → `constexpr size_t` in an
+  anonymous namespace.
+- ✅ `src/Hardware/WS2815.*` — `timing_bits` → `static constexpr std::array`,
+  `reset_delay` → `static constexpr uint8_t`, both in the header; out-of-line
+  definitions removed.
 
 ## 5. `enum` → `enum class` ⬜
 - ⬜ `Logger::Level` (`src/Utils/Logger.h`), `Manager::TaskStatus`

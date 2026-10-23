@@ -7,15 +7,6 @@
 namespace Core
 {
 
-    const uint16_t WS2815::timing_bits[16] =
-        {
-            0x1111, 0x7111, 0x1711, 0x7711,
-            0x1171, 0x7171, 0x1771, 0x7771,
-            0x1117, 0x7117, 0x1717, 0x7717,
-            0x1177, 0x7177, 0x1777, 0x7777};
-
-    const uint8_t WS2815::reset_delay = 64;
-
     WS2815::~WS2815()
     {
         release();

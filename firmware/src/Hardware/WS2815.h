@@ -1,4 +1,6 @@
 #pragma once
+#include <array>
+#include <cstdint>
 #include <memory>
 #include <span>
 #include <type_traits>
@@ -28,8 +30,13 @@ namespace Core
     // here and released in the destructor or when init() fails.
     class WS2815
     {
-        static const uint16_t timing_bits[16];
-        static const uint8_t reset_delay;
+        // SPI bit patterns for each 4-bit nibble of a color byte (LSB first).
+        static constexpr std::array<uint16_t, 16> timing_bits{
+            0x1111, 0x7111, 0x1711, 0x7711,
+            0x1171, 0x7171, 0x1771, 0x7771,
+            0x1117, 0x7117, 0x1717, 0x7717,
+            0x1177, 0x7177, 0x1777, 0x7777};
+        static constexpr uint8_t reset_delay = 64;
 
         struct HeapCapsFree
         {
