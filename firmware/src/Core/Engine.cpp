@@ -4,13 +4,15 @@
 
 Engine::Engine()
     : m_tcpServer(COMMAND_PORT),
+      m_fixtures(m_inputs),
+      m_statusReport(m_config, m_wifi, m_fixtures, m_inputs),
+      m_telemetry(m_config, m_wifi, m_fixtures, m_statusReport, m_tasks),
       m_describeHandler(m_config, m_fixtures, m_inputs, m_wifi),
       m_getFixtureHandler(m_fixtures),
       m_setFixtureHandler(m_fixtures),
       m_inputsHandler(m_inputs),
       m_wifiConfigHandler(m_wifi, m_config, m_storage),
-      m_engineConfigHandler(m_config, m_storage, m_tasks),
-      m_fixtures(m_inputs)
+      m_engineConfigHandler(m_config, m_storage, m_telemetry)
 {
     Utils::Logger::enable();
     Utils::Logger::setLevel(Utils::Logger::Level::DEBUG);
@@ -36,26 +38,6 @@ void Engine::init()
     spawnTasks();
 
     Utils::Logger::printf("[ENGINE] %.*s initialized\n", static_cast<int>(m_config.version.size()), m_config.version.data());
-}
-
-std::string Engine::toString()
-{
-    JsonDocument doc;
-    JsonObject settingsDoc = doc["settings"].to<JsonObject>();
-    m_config.toJson(settingsDoc);
-
-    JsonObject wifiDoc = doc["wifi"].to<JsonObject>();
-    m_wifi.toJson(wifiDoc);
-
-    JsonObject fixtureDoc = doc["fixture_handler"].to<JsonObject>();
-    m_fixtures.toJson(fixtureDoc);
-
-    JsonObject inputDoc = doc["input_handler"].to<JsonObject>();
-    m_inputs.toJson(inputDoc);
-
-    std::string temp;
-    serializeJson(doc, temp);
-    return temp;
 }
 
 void Engine::loadConfig()
@@ -121,8 +103,6 @@ void Engine::onWifiStatus(bool connected)
         m_tasks.resumeTask(m_fixtureTaskId);
 
         m_tcpServer.begin();
-        m_udpHeartbeat.begin(HEARTBEAT_PORT);
-        m_udpReport.begin(REPORT_PORT);
         m_inputs.reconnect();
     }
     else
@@ -182,31 +162,7 @@ void Engine::spawnTasks()
         }
     }, 1, 3000);
 
-    // Heartbeat task
-    m_tasks.spawnTask("heartbeat", [this]() {
-        std::string cached;
-        while (true)
-        {
-            if (m_wifi.isConnected())
-            {
-                if (cached.empty())
-                {
-                    JsonDocument doc;
-                    doc["version"] = m_config.version;
-                    JsonArray arr = doc["fixtures"].to<JsonArray>();
-                    for (const auto& fix : m_fixtures.all())
-                    {
-                        JsonObject entry = arr.add<JsonObject>();
-                        entry["name"] = fix->getName();
-                        entry["type"] = fix->getType();
-                    }
-                    serializeJson(doc, cached);
-                }
-                m_udpHeartbeat.send(cached);
-            }
-            vTaskDelay(500);
-        }
-    }, 1, 4096);
+    m_telemetry.start();
 
     // Serial command task
     m_tasks.spawnTask("serial_cmd", [this]() {
@@ -259,14 +215,4 @@ void Engine::spawnTasks()
             vTaskDelay(10);
         }
     }, 2, 8192);
-
-    // Report tasks — owned by EngineConfigHandler so it can toggle them
-    m_engineConfigHandler.initTasks(
-        [this]() { return toString(); },
-        [this]() {
-            if (m_wifi.isConnected())
-                m_udpReport.send(m_config.toString());
-            return std::string();
-        }
-    );
 }

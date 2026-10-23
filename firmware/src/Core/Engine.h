@@ -17,6 +17,8 @@
 #include "Handlers/InputHandler.h"
 #include "Tasks/TaskExecutor.h"
 #include "Utils/Storage.h"
+#include "Services/StatusReport.h"
+#include "Services/Telemetry.h"
 
 class Engine
 {
@@ -29,8 +31,6 @@ public:
     {
         m_fixtures.addFixture<TFixture>(m_factoryReset);
     }
-
-    std::string toString();
 
 private:
     void loadConfig();
@@ -48,10 +48,17 @@ private:
 
     Net::Wifi m_wifi;
     Net::TcpServer m_tcpServer;
-    Net::UdpBroadcaster m_udpHeartbeat;
-    Net::UdpBroadcaster m_udpReport;
     Net::SerialTransport m_serial;
     // Net::BleTransport m_ble;
+
+    Handler::InputHandler m_inputs;
+    Handler::FixtureHandler m_fixtures;
+    Tasks::Manager m_tasks;
+
+    // Members are built in declaration order: each one below holds references
+    // to members declared above it.
+    Services::StatusReport m_statusReport;
+    Services::Telemetry m_telemetry;
 
     Commands::CommandDispatcher m_dispatcher;
     Commands::DescribeHandler m_describeHandler;
@@ -61,8 +68,4 @@ private:
     Commands::WifiConfigHandler m_wifiConfigHandler;
     Commands::RebootHandler m_rebootHandler;
     Commands::EngineConfigHandler m_engineConfigHandler;
-
-    Handler::InputHandler m_inputs;
-    Handler::FixtureHandler m_fixtures;
-    Tasks::Manager m_tasks;
 };
