@@ -170,7 +170,7 @@ namespace Handler
         }
     }
 
-    void FixtureHandler::fromJson(std::string json)
+    void FixtureHandler::fromJson(const std::string& json)
     {
         // Handled per-fixture via Fixture::fromJson
     }

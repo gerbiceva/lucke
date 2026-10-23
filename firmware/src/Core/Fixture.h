@@ -31,8 +31,8 @@ public:
     }
 
     void setSyncBuffers(std::vector<std::shared_ptr<SyncBuffer>> bufs);
-    uint16_t getFootprint() const;
-    uint8_t getNumUniverses() const;
+    [[nodiscard]] uint16_t getFootprint() const;
+    [[nodiscard]] uint8_t getNumUniverses() const;
     void setUniverse(uint8_t new_universe);
     void setAddress(uint16_t new_address);
     void setPreset(uint8_t new_preset);
@@ -40,18 +40,18 @@ public:
     void toggleHighlight();
 
     void setId(uint8_t id);
-    uint8_t id() const;
-    uint8_t getUniverse() const;
-    uint16_t getAddress() const;
-    uint8_t getSelectedPreset() const;
-    uint8_t getNumPresets() const;
-    const std::string& getName() const;
-    const std::string& getType() const;
-    std::vector<std::unique_ptr<Interface::Output>>& getOutputs();
+    [[nodiscard]] uint8_t id() const;
+    [[nodiscard]] uint8_t getUniverse() const;
+    [[nodiscard]] uint16_t getAddress() const;
+    [[nodiscard]] uint8_t getSelectedPreset() const;
+    [[nodiscard]] uint8_t getNumPresets() const;
+    [[nodiscard]] const std::string& getName() const;
+    [[nodiscard]] const std::string& getType() const;
+    [[nodiscard]] std::vector<std::unique_ptr<Interface::Output>>& getOutputs();
 
 
     void fromConfig();
-    void fromJson(std::string json) override;
+    void fromJson(const std::string& json) override;
     JsonDocument toJsonDoc() override;
     JsonDocument configJson();
     JsonDocument presetsJson();

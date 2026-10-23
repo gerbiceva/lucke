@@ -35,7 +35,7 @@ void Engine::init()
     Utils::Logger::println("Spawn");
     spawnTasks();
 
-    Utils::Logger::printf("[ENGINE] v%s initialized\n", m_config.version.c_str());
+    Utils::Logger::printf("[ENGINE] %.*s initialized\n", static_cast<int>(m_config.version.size()), m_config.version.data());
 }
 
 std::string Engine::toString()

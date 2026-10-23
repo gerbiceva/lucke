@@ -17,7 +17,7 @@ BLE transport.
 | 4 | Macros → `constexpr` | ✅ |
 | 5 | `enum` → `enum class` | ✅ |
 | 6 | Command dispatch | ⬜ |
-| 7 | Parameters and signatures | 🟡 |
+| 7 | Parameters and signatures | ✅ |
 | 8 | Concurrency | ⬜ |
 | 9 | Small C++20/23 idioms | 🟡 |
 | 10 | Dead code | ⬜ |
@@ -160,21 +160,24 @@ Raw `uint8_t*` was passed around with an implied size of 512 or `footprint()`.
   dispatcher sends and formats errors, replacing hand-written
   `"{\"err\":...}"` strings.
 
-## 7. Parameters and signatures 🟡
-- 🟡 Virtual destructors on interfaces: ✅ `Interface::Output`; ⬜
-  `Serializable`, `Transport`, `CommandHandler`, `Input`.
-- ⬜ Read-only `std::string` by value → `std::string_view` / `const&`:
-  `JsonUtils.h` `name` (×4), `fromJson(std::string)` (`Deserializable.h`,
-  `Fixture.h`, `FixtureHandler.h`), `Manager::spawnTask(std::string)` /
-  `find(std::string)`.
-- ⬜ `src/Utils/JsonUtils.h` — four near-identical overloads → two templates
-  over `JsonVariantConst`.
-- ⬜ `src/Core/Fixture.cpp` constructor copies three strings → take by value and
-  `std::move`.
-- ⬜ `[[nodiscard]]` on getters and on the `bool` returns of
-  `FixtureHandler::set*`.
-- ⬜ `src/Core/Config/EngineConfig.h` — `const std::string version` member makes
-  `Config::Engine` non-assignable → `static constexpr std::string_view`.
+## 7. Parameters and signatures ✅
+- ✅ Virtual destructors on all interfaces: `Output`, `Serializable`,
+  `Deserializable`, `Transport`, `CommandHandler`, `Input`.
+- ✅ `src/Utils/JsonUtils.h` — four overloads → two templates over
+  `JsonVariantConst` with `std::string_view name` (accept documents, objects,
+  variants, const or not). No longer includes `Logger.h`; `Fixture.cpp` now
+  includes it directly.
+- ✅ `fromJson(std::string)` → `fromJson(const std::string&)` (`Deserializable`,
+  `Fixture`, `FixtureHandler`).
+- ✅ `Manager::spawnTask` moves the name and the invocable into the task record;
+  `find(std::string)` → `find(std::string_view)`. Added missing
+  `#include <functional>`.
+- ✅ `Fixture` and `StripWS2815` constructors move their strings.
+- ✅ `[[nodiscard]]` on `Fixture` getters, `FixtureHandler::get/exists/all/set*/highlight`,
+  `Wifi::isConnected/localIP/rssi`. `SetFixtureHandler` now uses the `set*`
+  results (`changed |= ...`) instead of ignoring them.
+- ✅ `Config::Engine::version` → `static constexpr std::string_view`, so
+  `Config::Engine` is assignable again. The boot log prints it with `%.*s`.
 
 ## 8. Concurrency ⬜
 - ⬜ 13× `std::lock_guard<std::mutex> lock(m_mutex)` → `std::scoped_lock`.

@@ -32,20 +32,21 @@ namespace Handler
             _addFixture(std::make_unique<TFixture>(), factoryReset);
         }
 
-        Fixture* get(uint8_t id);
-        const std::vector<std::unique_ptr<Fixture>>& all() const;
-        bool exists(uint8_t id);
+        [[nodiscard]] Fixture* get(uint8_t id);
+        [[nodiscard]] const std::vector<std::unique_ptr<Fixture>>& all() const;
+        [[nodiscard]] bool exists(uint8_t id);
 
-        bool setUniverse(uint8_t id, uint8_t uni);
-        bool setAddress(uint8_t id, uint16_t addr);
-        bool setPreset(uint8_t id, uint8_t preset);
-        bool setName(uint8_t id, const std::string& name);
-        bool highlight(uint8_t id);
+        // Return false if no fixture has this id.
+        [[nodiscard]] bool setUniverse(uint8_t id, uint8_t uni);
+        [[nodiscard]] bool setAddress(uint8_t id, uint16_t addr);
+        [[nodiscard]] bool setPreset(uint8_t id, uint8_t preset);
+        [[nodiscard]] bool setName(uint8_t id, const std::string& name);
+        [[nodiscard]] bool highlight(uint8_t id);
 
         void update();
         void wifiAnimation();
 
-        void fromJson(std::string json) override;
+        void fromJson(const std::string& json) override;
         void toJson(JsonObject& obj) override;
         JsonDocument toJsonDoc() override;
 

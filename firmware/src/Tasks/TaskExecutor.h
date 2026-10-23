@@ -3,7 +3,9 @@
 #include <cstdint>
 #include <list>
 #include <mutex>
+#include <functional>
 #include <string>
+#include <string_view>
 #include "Utils/Logger.h"
 
 
@@ -34,26 +36,25 @@ public:
         TaskId id{id_generator++};
         TaskRecord rec;
         rec.id = id;
-        rec.name = taskName;
+        rec.name = std::move(taskName);
         // Tasks are expected to loop forever. If one ever returns, self-delete
         // so the scheduler doesn't run off the end of the task function. The
         // record is intentionally left in place — a task cannot safely erase
         // its own record (that would destroy this very std::function mid-call).
-        rec.fn = [invocable]()
+        rec.fn = [invocable = std::move(invocable)]()
         {
             invocable();
             vTaskDelete(NULL);
         };
 
-        Utils::Logger::printf("[TASK] Created new task '%s'\n", taskName.c_str());
-
         rec.status = TaskStatus::RUNNING;
-        m_tasks.push_back(rec);
+        m_tasks.push_back(std::move(rec));
 
         TaskRecord& stored = m_tasks.back();
+        Utils::Logger::printf("[TASK] Created new task '%s'\n", stored.name.c_str());
         xTaskCreate(
             Manager::trampoline,
-            taskName.c_str(),
+            stored.name.c_str(),
             stackSize,
             &stored.fn,
             priority | portPRIVILEGE_BIT,
@@ -79,7 +80,7 @@ private:
     };
 
     std::list<TaskRecord>::iterator find(TaskId id);
-    std::list<TaskRecord>::iterator find(std::string nmae);
+    std::list<TaskRecord>::iterator find(std::string_view name);
 
     static void trampoline(void* fn) 
     {

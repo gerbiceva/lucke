@@ -23,7 +23,7 @@ namespace Fixtures
         }
 
         StripWS2815(std::string name, std::string type, std::string presetJson)
-            : Fixture(name, type, presetJson)
+            : Fixture(std::move(name), std::move(type), std::move(presetJson))
         {
             addOutput<Output::WS2815_1D>(N, TPin);
         }

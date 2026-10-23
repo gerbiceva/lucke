@@ -22,7 +22,7 @@ namespace Config
 
     struct Engine : public Interface::Serializable
     {
-        const std::string version{ENGINE_VERSION};
+        static constexpr std::string_view version = ENGINE_VERSION;
 
         bool to_factory_settings = false;
         bool serial_report_task = true;

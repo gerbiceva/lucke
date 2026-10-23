@@ -6,6 +6,7 @@ namespace Interface
 {
     struct CommandHandler
     {
+        virtual ~CommandHandler() = default;
         virtual void handle(JsonDocument& req, Transport& transport) = 0;
     };
 }

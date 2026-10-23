@@ -5,6 +5,7 @@ namespace Interface
 {
     struct Deserializable
     {
-        virtual void fromJson(std::string json) = 0;
+        virtual ~Deserializable() = default;
+        virtual void fromJson(const std::string& json) = 0;
     };
 }

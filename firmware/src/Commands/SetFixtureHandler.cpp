@@ -25,32 +25,27 @@ namespace Commands
 
         if (req["universe"].is<uint8_t>())
         {
-            m_fixtures.setUniverse(id, req["universe"]);
-            changed = true;
+            changed |= m_fixtures.setUniverse(id, req["universe"]);
         }
 
         if (req["address"].is<uint16_t>())
         {
-            m_fixtures.setAddress(id, req["address"]);
-            changed = true;
+            changed |= m_fixtures.setAddress(id, req["address"]);
         }
 
         if (req["presetIndex"].is<uint8_t>())
         {
-            m_fixtures.setPreset(id, req["presetIndex"]);
-            changed = true;
+            changed |= m_fixtures.setPreset(id, req["presetIndex"]);
         }
 
         if (req["name"].is<const char*>())
         {
-            m_fixtures.setName(id, req["name"].as<const char*>());
-            changed = true;
+            changed |= m_fixtures.setName(id, req["name"].as<const char*>());
         }
 
         if (req["highlight"].is<bool>())
         {
-            m_fixtures.highlight(id);
-            changed = true;
+            changed |= m_fixtures.highlight(id);
         }
 
         Fixture* fix = m_fixtures.get(id);

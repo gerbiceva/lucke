@@ -16,9 +16,9 @@ public:
     void reconnect(const std::string& ssid, const std::string& pass);
     void disconnect();
 
-    bool isConnected() const;
-    std::string localIP() const;
-    int rssi() const;
+    [[nodiscard]] bool isConnected() const;
+    [[nodiscard]] std::string localIP() const;
+    [[nodiscard]] int rssi() const;
     // static Wifi& initialize(const char* ssid, const char* password, std::function<void(bool)> connection_status_callback, std::function<void(std::string, std::string)> receive_callback);
     // static Wifi& reinitialize(const char* ssid, const char* password);
     // static Wifi& instance();

@@ -63,7 +63,7 @@ namespace Tasks
             [&](const TaskRecord& r) { return r.id == id; });
     }
 
-    std::list<Manager::TaskRecord>::iterator Manager::find(std::string name) 
+    std::list<Manager::TaskRecord>::iterator Manager::find(std::string_view name) 
     {
         return std::find_if(m_tasks.begin(), m_tasks.end(),
             [&](const TaskRecord& r) { return r.name == name; });

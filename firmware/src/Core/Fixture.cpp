@@ -1,5 +1,6 @@
 #include "Fixture.h"
 #include "Utils/JsonUtils.h"
+#include "Utils/Logger.h"
 #include <algorithm>
 #include <span>
 
@@ -9,8 +10,8 @@ Fixture::Fixture()
 
 Fixture::Fixture(std::string name, std::string type, std::string presets)
 {
-    m_config.name = name;
-    m_config.type = type;
+    m_config.name = std::move(name);
+    m_config.type = std::move(type);
 
     deserializeJson(m_jsonPresets, presets);
     countPresets();
@@ -78,7 +79,7 @@ void Fixture::fromConfig()
     setPreset(m_config.selectedPreset);
 }
 
-void Fixture::fromJson(std::string json)
+void Fixture::fromJson(const std::string& json)
 {
     JsonDocument doc;
     deserializeJson(doc, json);
