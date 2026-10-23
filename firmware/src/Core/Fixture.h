@@ -21,7 +21,7 @@ public:
     void update();
     virtual void wifiAnimation() {};
 
-    template<typename TOutput, typename... Args>
+    template<std::derived_from<Interface::Output> TOutput, typename... Args>
     TOutput& addOutput(Args&&... args)
     {
         auto& out = m_outputs.emplace_back(std::make_unique<TOutput>(std::forward<Args>(args)...));

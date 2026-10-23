@@ -1,5 +1,7 @@
 #pragma once
 #include <Arduino.h>
+#include <array>
+#include <span>
 #include "Core/Fixture.h"
 #include "Utils/PresetMaker.h"
 #include "Output/LED1D.h"
@@ -32,18 +34,18 @@ namespace Fixtures
             m_animBuf[m_animOff == 0 ? (BYTES - 1) : m_animOff - 1] = 0;
             m_animOff = (m_animOff + 1) % BYTES;
 
-            uint8_t *ptr = m_animBuf;
+            std::span<const uint8_t> src{m_animBuf};
             for (auto& o : getOutputs())
             {
-                o->update(ptr);
-                ptr += o->footprint();
+                o->update(src.first(o->footprint()));
+                src = src.subspan(o->footprint());
             }
 
             vTaskDelay(20);
         }
 
     private:
-        uint8_t m_animBuf[BYTES] = {};
+        std::array<uint8_t, BYTES> m_animBuf{};
         uint16_t m_animOff = 0;
     };
 

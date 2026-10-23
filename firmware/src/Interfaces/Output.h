@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <span>
 #include <vector>
 
 #include <FastLED.h>
@@ -23,7 +24,8 @@ namespace Interface
         // Used to project a per-preset footprint. Defaults to the live value.
         virtual uint16_t footprintFor(const JsonDocument& setting) const { return footprint(); }
         virtual void bind() = 0;
-        virtual void update(uint8_t* src) = 0;
+        // src holds exactly this output's slice: src.size() == footprint().
+        virtual void update(std::span<const uint8_t> src) = 0;
         virtual void postupdate() = 0;
         virtual void setPreset(const JsonDocument& doc) = 0;
 

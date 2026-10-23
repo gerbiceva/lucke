@@ -13,7 +13,7 @@ BLE transport.
 |---|------|--------|
 | 1 | Hand-rolled utilities → standard library | 🟡 |
 | 2 | Raw `new` → RAII ownership | 🟡 |
-| 3 | Raw buffers → `std::span` / `std::array` | ⬜ |
+| 3 | Raw buffers → `std::span` / `std::array` | ✅ |
 | 4 | Macros → `constexpr` | ⬜ |
 | 5 | `enum` → `enum class` | ⬜ |
 | 6 | Command dispatch | ⬜ |
@@ -100,17 +100,26 @@ fixture yet — low priority.
 - Allocated in the initializer list, before the pin-in-use check, so `update()`
   never writes through a null buffer (see Bugs).
 
-## 3. Raw buffers → `std::span` / `std::array` ⬜
+## 3. Raw buffers → `std::span` / `std::array` ✅
 
-Raw `uint8_t*` is passed around with an implied size of 512 or `footprint()`.
-- ⬜ `Interface::Output::update(uint8_t*)`, `Interface::Input::poll(uint8_t*)`,
-  `SyncBuffer::read/write`, `SacnParser::dmx` → `std::span<uint8_t>` /
-  `std::span<uint8_t, 512>`.
-- ⬜ `memcpy(..., 512)` in `SyncBuffer.h`, `SacnParser.cpp` → `std::ranges::copy`.
-- ⬜ C arrays `packet[1500]`, `m_buffer[512]` (`SacnParser.h`) and `m_animBuf`
-  (`StripWS2815.h`) → `std::array`.
-- ⬜ `std::queue<uint8_t>` capped at 500 (`SacnParser.h`) → fixed `std::array`
-  ring buffer (no heap churn per packet).
+Raw `uint8_t*` was passed around with an implied size of 512 or `footprint()`.
+- ✅ New `src/Utils/Dmx.h`: `Dmx::c_universeSize`, `Dmx::Universe`
+  (`std::array<uint8_t, 512>`), `Dmx::UniverseView` / `UniverseCView`
+  (fixed-extent `std::span`). A wrong-sized buffer doesn't compile.
+- ✅ `SyncBuffer::read/write`, `Interface::Input::poll`, `SacnSource::poll`,
+  `SacnParser::dmx` take `Dmx::UniverseView` / `UniverseCView`; `memcpy(..., 512)`
+  → `std::ranges::copy`.
+- ✅ `Interface::Output::update` takes `std::span<const uint8_t>` (exactly the
+  output's footprint). `LED1D`, `LEDGridBase` updated.
+- ✅ `Fixture::update` and `StripWS2815::wifiAnimation` slice with
+  `subspan` / `first` instead of `ptr += footprint()`. `Fixture::update` skips the
+  frame if `address + footprint` doesn't fit `m_buffer` (see bug 8).
+- ✅ C arrays → `std::array`: `SacnParser` `m_packet` / `m_buffer`,
+  `StripWS2815::m_animBuf`, `InputHandler::update` `tmp`.
+- ✅ The `std::queue<uint8_t>` of sequence diffs and `getSeqDiffs()` were
+  deleted (it had no readers and allocated per packet).
+- ⬜ Optional: a debug env with `-D_GLIBCXX_ASSERTIONS` so `span` / `array` /
+  `vector` indexing is bounds-checked at runtime.
 
 ## 4. Macros → `constexpr` ⬜
 - ⬜ `src/Core/Config/EngineConfig.h` — `ENGINE_VERSION`, default Wi-Fi
@@ -208,9 +217,11 @@ Not modernization, but found while reading.
 2. ✅ **Null buffer in `LEDBase`.** If the pin was already in use the
    constructor returned before allocating `m_dstBuffer`, and `update()` wrote
    through null. Fixed by 2.6 (plus the `show()` guard in 2.5).
-3. ⬜ **Buffer overflow in `SacnParser::update`.** `m_udp.read(packet, size)`
+3. ✅ **Buffer overflow in `SacnParser::update`.** `m_udp.read(packet, size)`
    uses the packet size unchecked against the 1500-byte buffer, and packets
    shorter than 638 bytes aren't rejected (stale data copied as DMX).
+   Fixed with section 3: packets larger than the buffer or shorter than
+   `ADDR_DMX + 512` are dropped.
 4. ⬜ **Division by zero in `LED1D::update`.** `m_numLeds / m_numGroups` with a
    preset of `num_groups: 0`.
 5. ⬜ **`Pin::toJson` adds nothing.** `doc["used_pins"].as<JsonArray>()` on a
@@ -226,8 +237,14 @@ Not modernization, but found while reading.
    while no constructor uses them, but the initializer list doesn't match
    declaration order.
 
+8. 🟡 **Preset/address change races `Fixture::update`.** `FixtureHandler::setPreset`
+   / `setAddress` change the footprint under the fixture mutex, release it, then
+   `resubscribe()` resizes `m_buffer` under a second lock. In between, the fixture
+   task could read past `m_buffer`. Mitigated in section 3: `update()` skips the
+   frame when the outputs don't fit. Real fix: change and resize under one lock.
+
 ## Suggested next steps
-1. Bugs 3, 4, 6 — small, real defects.
+1. Bugs 4, 6, 8 — small, real defects.
 2. Remaining virtual destructors (7) — cheap, prevents UB.
 3. 1 and 6 — delete the most code.
 4. 3 and 8 — mechanical, low-risk.

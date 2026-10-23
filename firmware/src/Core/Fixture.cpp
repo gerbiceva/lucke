@@ -1,5 +1,7 @@
 #include "Fixture.h"
 #include "Utils/JsonUtils.h"
+#include <algorithm>
+#include <span>
 
 Fixture::Fixture() 
 {
@@ -19,24 +21,37 @@ void Fixture::update()
     std::lock_guard<std::mutex> lock(m_mutex);
     if (m_syncBuffers.empty()) return;
 
+    size_t footprint = 0;
+    for (auto& o : m_outputs)
+    {
+        footprint += o->footprint();
+    }
+
+    // A preset/address change updates the footprint before resubscribe()
+    // resizes m_buffer, so for a moment the outputs may not fit. Skip the
+    // frame rather than read past the end.
+    if (m_config.address + footprint > m_buffer.size()) return;
+
+    std::span<uint8_t> all{m_buffer};
+    std::span<uint8_t> fixture = all.subspan(m_config.address, footprint);
+
     if (m_config.highlighted)
     {
-        memset(&m_buffer[m_config.address], 255, m_lastOffset);
+        std::ranges::fill(fixture, 255);
     }
     else
     {
         for (size_t i = 0; i < m_syncBuffers.size(); i++)
         {
-            m_syncBuffers[i]->read(&m_buffer[i * 512]);
+            m_syncBuffers[i]->read(all.subspan(i * Dmx::c_universeSize).first<Dmx::c_universeSize>());
         }
     }
 
-    uint8_t* buff = m_buffer.data() + m_config.address;
-
+    std::span<const uint8_t> src = fixture;
     for (auto& o : m_outputs)
     {
-        o->update(buff);
-        buff += o->footprint();
+        o->update(src.first(o->footprint()));
+        src = src.subspan(o->footprint());
     }
 }
 
@@ -44,7 +59,7 @@ void Fixture::setSyncBuffers(std::vector<std::shared_ptr<SyncBuffer>> bufs)
 {
     std::lock_guard<std::mutex> lock(m_mutex);
     m_syncBuffers = std::move(bufs);
-    m_buffer.resize(m_syncBuffers.size() * 512, 0);
+    m_buffer.resize(m_syncBuffers.size() * Dmx::c_universeSize, 0);
 }
 
 void Fixture::setUniverse(uint8_t new_universe)

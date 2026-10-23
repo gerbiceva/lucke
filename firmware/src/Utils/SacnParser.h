@@ -1,7 +1,7 @@
 #pragma once
 #include <WiFi.h>
-#include <queue>
-#include <vector>
+#include <array>
+#include "Utils/Dmx.h"
 
 namespace Utils 
 {
@@ -10,13 +10,12 @@ class SacnParser
 {
 	IPAddress m_ip;
 	WiFiUDP m_udp;
-    uint8_t packet[1500];
+    std::array<uint8_t, 1500> m_packet{};
 
-    uint8_t m_seq;
+    uint8_t m_seq = 0U;
 	uint8_t m_seq_prev = 0U;
-	std::queue<uint8_t> m_sequenceDiff;
 
-	uint8_t m_buffer[512];
+	Dmx::Universe m_buffer{};
     uint8_t m_universe = 0;
     bool m_inited = false;
 
@@ -28,11 +27,9 @@ public:
 	void begin(uint8_t universe);
     void stop();
 
-	bool dmx(uint8_t* copyBuffer);
+	bool dmx(Dmx::UniverseView out);
     uint8_t getSeq();
 	uint8_t getSeqDiff() const;
-
-	std::vector<uint8_t> getSeqDiffs();
 };
 
 }

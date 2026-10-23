@@ -102,15 +102,15 @@ namespace Output
 
         void bind() override {}
 
-        void update(uint8_t *src) override
+        void update(std::span<const uint8_t> src) override
         {
-            uint8_t *p = src;
+            size_t i = 0;
             for (auto &v : m_views)
                 for (uint16_t vy = 0; vy < v.vH(); vy++)
                     for (uint16_t vx = 0; vx < v.vW(); vx++)
                     {
-                        GColor c{p[0], p[1], p[2]};
-                        p += 3;
+                        GColor c{src[i], src[i + 1], src[i + 2]};
+                        i += 3;
                         uint16_t bx = v.x.begin + vx * v.cellW;
                         uint16_t by = v.y.begin + vy * v.cellH;
                         for (uint16_t dx = 0; dx < v.cellW; dx++)

@@ -47,7 +47,7 @@ namespace Handler
     void InputHandler::update()
     {
         std::lock_guard<std::mutex> lock(m_mutex);
-        uint8_t tmp[512];
+        Dmx::Universe tmp;
         for(auto& pair : m_sources)
         {
             if (pair.second->poll(tmp))

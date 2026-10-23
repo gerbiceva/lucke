@@ -19,7 +19,7 @@ namespace Output
         {
         }
 
-        void update(uint8_t *srcbuff) override
+        void update(std::span<const uint8_t> src) override
         {
             uint16_t groupSize = this->m_numLeds / m_numGroups;
             uint16_t ledIndex = 0;
@@ -31,7 +31,7 @@ namespace Output
                     for (uint16_t k = 0; k < this->c_numPxls; k++)
                     {
                         uint16_t srcIndex = i * this->c_numPxls + k;
-                        this->m_dstBuffer.get()[ledIndex] = srcbuff[srcIndex];
+                        this->m_dstBuffer.get()[ledIndex] = src[srcIndex];
                         ledIndex++;
                     }
                 }

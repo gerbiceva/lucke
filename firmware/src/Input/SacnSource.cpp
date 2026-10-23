@@ -18,9 +18,9 @@ namespace Input
         m_sacn.stop();
     }
 
-    bool SacnSource::poll(uint8_t* buff)
+    bool SacnSource::poll(Dmx::UniverseView out)
     {
-        return m_sacn.dmx(buff);
+        return m_sacn.dmx(out);
     }
 
     void SacnSource::toJson(JsonObject& obj)

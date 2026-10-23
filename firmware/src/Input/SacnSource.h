@@ -14,7 +14,7 @@ namespace Input
         ~SacnSource();
         void begin(uint8_t universe) override;
         void stop() override;
-        bool poll(uint8_t* buff) override;
+        bool poll(Dmx::UniverseView out) override;
         void toJson(JsonObject& obj) override;
     private:
         uint8_t m_universe = 0;
