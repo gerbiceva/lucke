@@ -22,13 +22,13 @@ namespace Net
         begin();
     }
 
-    Utils::Optional<TcpConnection> TcpServer::accept()
+    std::optional<TcpConnection> TcpServer::accept()
     {
         WiFiClient client = m_server.accept();
         if (client)
         {
             return TcpConnection(client);
         }
-        return Utils::Optional<TcpConnection>();
+        return std::nullopt;
     }
 }

@@ -2,7 +2,7 @@
 #include <WiFiServer.h>
 #include <cstdint>
 #include "TCPConnection.h"
-#include "Utils/Optional.h"
+#include <optional>
 
 namespace Net
 {
@@ -14,7 +14,7 @@ namespace Net
         void begin();
         void stop();
         void restart();
-        Utils::Optional<TcpConnection> accept();
+        std::optional<TcpConnection> accept();
 
     private:
         uint16_t m_port;

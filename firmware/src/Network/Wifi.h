@@ -2,7 +2,6 @@
 // #include <atomic>
 #include <memory>
 #include <functional>
-#include "Utils/Optional.h"
 #include "Interfaces/Serializable.h"
 
 
@@ -29,7 +28,7 @@ public:
     // static void startTasks();
     
     // bool isConnected();
-    // Utils::Optional<std::string> getIP();
+    // std::optional<std::string> getIP();
 
     // void sendUdpPacket(uint16_t port, std::string data);
     // void sendTcpPacket(const std::string& hostip, uint16_t port, std::string data);
