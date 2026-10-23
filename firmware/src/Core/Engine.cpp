@@ -4,6 +4,7 @@
 Engine::Engine()
     : m_fixtures(m_inputs, m_settings),
       m_render(m_fixtures, m_tasks),
+      m_connectivity(m_wifi, m_tasks),
       m_statusReport(m_settings.engine(), m_wifi, m_fixtures, m_inputs),
       m_telemetry(m_settings.engine(), m_wifi, m_fixtures, m_statusReport, m_tasks),
       m_describeHandler(m_settings.engine(), m_fixtures, m_inputs, m_wifi),
@@ -55,23 +56,29 @@ void Engine::registerCommands()
     m_dispatcher.registerHandler("wifi_animation", &m_engineConfigHandler);
 }
 
-void Engine::onWifiStatus(bool connected)
+// Everything that reacts to the wifi link. Listeners run on the
+// Connectivity task, in this order.
+void Engine::wireConnectivity()
 {
-    if (connected)
-    {
-        m_render.setMode(Services::RenderLoop::Mode::Live);
+    m_connectivity.onChange([this](bool connected) {
+        using Mode = Services::RenderLoop::Mode;
+        if (connected)
+            m_render.setMode(Mode::Live);
+        else
+            m_render.setMode(m_settings.engine().wifi_animation ? Mode::Animation : Mode::Off);
+    });
 
-        m_tcpListener.begin();
-        m_inputs.reconnect();
-    }
-    else
-    {
-        m_render.setMode(m_settings.engine().wifi_animation
-                             ? Services::RenderLoop::Mode::Animation
-                             : Services::RenderLoop::Mode::Off);
+    m_connectivity.onChange([this](bool connected) {
+        if (connected)
+            m_tcpListener.begin();
+        else
+            m_tcpListener.stop();
+    });
 
-        m_tcpListener.stop();
-    }
+    m_connectivity.onChange([this](bool connected) {
+        if (connected)
+            m_inputs.reconnect();
+    });
 }
 
 void Engine::spawnTasks()
@@ -85,23 +92,11 @@ void Engine::spawnTasks()
         }
     }, 3, 30000);
 
-    // Animation until wifi first connects, then live DMX (see onWifiStatus)
+    // Animation until wifi first connects, then live DMX (see wireConnectivity)
     m_render.start();
 
-    // Wifi monitor task
-    m_tasks.spawnTask("wifi_monitor", [this]() {
-        bool wasConnected = false;
-        while (true)
-        {
-            bool connected = m_wifi.isConnected();
-            if (connected != wasConnected)
-            {
-                onWifiStatus(connected);
-                wasConnected = connected;
-            }
-            vTaskDelay(50);
-        }
-    }, 1, 3000);
+    wireConnectivity();
+    m_connectivity.start();
 
     m_telemetry.start();
 
