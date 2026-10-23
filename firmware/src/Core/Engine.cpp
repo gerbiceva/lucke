@@ -3,6 +3,7 @@
 
 Engine::Engine()
     : m_fixtures(m_inputs, m_settings),
+      m_render(m_fixtures, m_tasks),
       m_statusReport(m_settings.engine(), m_wifi, m_fixtures, m_inputs),
       m_telemetry(m_settings.engine(), m_wifi, m_fixtures, m_statusReport, m_tasks),
       m_describeHandler(m_settings.engine(), m_fixtures, m_inputs, m_wifi),
@@ -58,19 +59,16 @@ void Engine::onWifiStatus(bool connected)
 {
     if (connected)
     {
-        m_tasks.suspendTask(m_animationTaskId);
-        m_tasks.resumeTask(m_fixtureTaskId);
+        m_render.setMode(Services::RenderLoop::Mode::Live);
 
         m_tcpListener.begin();
         m_inputs.reconnect();
     }
     else
     {
-        m_tasks.suspendTask(m_fixtureTaskId);
-        if (m_settings.engine().wifi_animation)
-        {
-            m_tasks.resumeTask(m_animationTaskId);
-        }
+        m_render.setMode(m_settings.engine().wifi_animation
+                             ? Services::RenderLoop::Mode::Animation
+                             : Services::RenderLoop::Mode::Off);
 
         m_tcpListener.stop();
     }
@@ -87,24 +85,8 @@ void Engine::spawnTasks()
         }
     }, 3, 30000);
 
-    // Fixture update task — starts suspended, resumed on wifi connect
-    m_fixtureTaskId = m_tasks.spawnTask("fixture_update", [this]() {
-        while (true)
-        {
-            m_fixtures.update();
-            vTaskDelay(1);
-        }
-    }, 2, 30000);
-    m_tasks.suspendTask(m_fixtureTaskId);
-
-    // Wifi animation task — runs until first wifi connect
-    m_animationTaskId = m_tasks.spawnTask("wifi_animation", [this]() {
-        while (true)
-        {
-            m_fixtures.wifiAnimation();
-            vTaskDelay(20);
-        }
-    }, 1, 4096);
+    // Animation until wifi first connects, then live DMX (see onWifiStatus)
+    m_render.start();
 
     // Wifi monitor task
     m_tasks.spawnTask("wifi_monitor", [this]() {

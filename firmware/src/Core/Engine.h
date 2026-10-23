@@ -18,6 +18,7 @@
 #include "Services/SettingsStore.h"
 #include "Services/StatusReport.h"
 #include "Services/Telemetry.h"
+#include "Services/RenderLoop.h"
 #include "Services/CommandSession.h"
 #include "Services/TcpListener.h"
 
@@ -38,9 +39,6 @@ private:
     void spawnTasks();
     void onWifiStatus(bool connected);
 
-    Tasks::TaskId m_fixtureTaskId = Tasks::TaskId::Invalid;
-    Tasks::TaskId m_animationTaskId = Tasks::TaskId::Invalid;
-
     // First: almost everything below reads settings.
     Services::SettingsStore m_settings;
 
@@ -54,6 +52,7 @@ private:
 
     // Members are built in declaration order: each one below holds references
     // to members declared above it.
+    Services::RenderLoop m_render;
     Services::StatusReport m_statusReport;
     Services::Telemetry m_telemetry;
 
