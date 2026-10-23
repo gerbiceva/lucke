@@ -15,6 +15,7 @@ namespace Interface
         // std::vector<uint8_t>& getBuffer();
         // uint8_t* getBufferPtr();
         // uint8_t* getSrcBufferPtr();
+        virtual ~Output() = default;
 
         // in question
         virtual uint16_t footprint() const = 0;

@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include <string.h>
+#include <algorithm>
 
 namespace Core
 {
@@ -15,25 +16,22 @@ namespace Core
 
     const uint8_t WS2815::reset_delay = 64;
 
-    WS2815::WS2815(uint16_t num_of_leds, int pin)
-        : n_leds(num_of_leds)
+    WS2815::~WS2815()
     {
-        pixels = new RGB[n_leds];
-        ESP_ERROR_CHECK_WITHOUT_ABORT(initSPI(pin));
+        release();
     }
 
-    void WS2815::init(uint16_t num_of_leds, int pin)
+    void WS2815::init(int pin, std::span<uint8_t> buffer)
     {
-        n_leds = num_of_leds;
-        pixels = new RGB[n_leds];
-        ESP_ERROR_CHECK_WITHOUT_ABORT(initSPI(pin));
-    }
+        release();
+        pixels = {reinterpret_cast<RGB *>(buffer.data()), buffer.size() / sizeof(RGB)};
 
-    void WS2815::init(uint16_t num_of_leds, int pin, uint8_t *buffer)
-    {
-        n_leds = num_of_leds;
-        pixels = reinterpret_cast<RGB *>(buffer);
-        ESP_ERROR_CHECK_WITHOUT_ABORT(initSPI(pin));
+        esp_err_t err = initSPI(pin);
+        if (err != ESP_OK)
+        {
+            ESP_ERROR_CHECK_WITHOUT_ABORT(err);
+            release();
+        }
     }
 
     esp_err_t WS2815::initSPI(int pin)
@@ -41,59 +39,79 @@ namespace Core
         // Serializes show() across tasks (fixture_update / wifi_animation both
         // drive the same SPI device); concurrent spi_device_transmit() trips
         // the "ret_trans == trans_desc" assert in spi_master.c.
-        if (spiMutex == NULL)
+        spiMutex.reset(xSemaphoreCreateMutex());
+        if (!spiMutex)
         {
-            spiMutex = xSemaphoreCreateMutex();
+            return ESP_ERR_NO_MEM;
         }
 
-        spi_settings = spi_settings_t{
-            .host = SPI2_HOST,
-            .dma_chan = SPI_DMA_CH_AUTO,
-            .devcfg =
-                {
-                    .command_bits = 0,
-                    .address_bits = 0,
-                    .mode = 0,                 // SPI mode 0
-                    .clock_speed_hz = 3200000, // Clock out at 3.2 MHz
-                    .spics_io_num = -1,        // CS pin
-                    .flags = SPI_DEVICE_TXBIT_LSBFIRST,
-                    .queue_size = 1,
-                },
-            .buscfg =
-                {
-                    .miso_io_num = -1,
-                    .sclk_io_num = -1,
-                    .quadwp_io_num = -1,
-                    .quadhd_io_num = -1,
-                },
+        spi_device_interface_config_t devcfg{
+            .command_bits = 0,
+            .address_bits = 0,
+            .mode = 0,                 // SPI mode 0
+            .clock_speed_hz = 3200000, // Clock out at 3.2 MHz
+            .spics_io_num = -1,        // CS pin
+            .flags = SPI_DEVICE_TXBIT_LSBFIRST,
+            .queue_size = 1,
         };
 
-        dma_buf_size = (n_leds * 6 + reset_delay * 2) * sizeof(uint16_t);
+        spi_bus_config_t buscfg{
+            .miso_io_num = -1,
+            .sclk_io_num = -1,
+            .quadwp_io_num = -1,
+            .quadhd_io_num = -1,
+        };
 
-        spi_settings.buscfg.mosi_io_num = pin;
-        spi_settings.buscfg.max_transfer_sz = dma_buf_size;
-        esp_err_t err = spi_bus_initialize(spi_settings.host, &spi_settings.buscfg,
-                                           spi_settings.dma_chan);
+        dma_buf_size = (pixels.size() * 6 + reset_delay * 2) * sizeof(uint16_t);
+
+        buscfg.mosi_io_num = pin;
+        buscfg.max_transfer_sz = dma_buf_size;
+
+        // The bus (and its MOSI pin) belongs to SPI2_HOST, so only one WS2815
+        // can own it. A second instance fails here with ESP_ERR_INVALID_STATE.
+        esp_err_t err = spi_bus_initialize(c_host, &buscfg, SPI_DMA_CH_AUTO);
         if (err != ESP_OK)
         {
-            delete[] pixels;
             return err;
         }
-        err = spi_bus_add_device(spi_settings.host, &spi_settings.devcfg,
-                                 &spi_settings.spi);
+        busInitialized = true;
+
+        err = spi_bus_add_device(c_host, &devcfg, &spi);
         if (err != ESP_OK)
         {
-            delete[] pixels;
+            spi = nullptr;
             return err;
         }
+
         // Critical to be DMA memory.
-        dma_buffer = (uint16_t *)(heap_caps_malloc(dma_buf_size, MALLOC_CAP_DMA));
-        if (dma_buffer == NULL)
+        dma_buffer.reset(static_cast<uint16_t *>(heap_caps_malloc(dma_buf_size, MALLOC_CAP_DMA)));
+        if (!dma_buffer)
         {
-            delete[] pixels;
             return ESP_ERR_NO_MEM;
         }
         return ESP_OK;
+    }
+
+    // Releases everything this instance acquired, in reverse order. Safe to
+    // call on a partially initialized or already released object.
+    void WS2815::release()
+    {
+        dma_buffer.reset();
+        dma_buf_size = 0;
+
+        if (spi)
+        {
+            spi_bus_remove_device(spi);
+            spi = nullptr;
+        }
+
+        if (busInitialized)
+        {
+            spi_bus_free(c_host);
+            busInitialized = false;
+        }
+
+        spiMutex.reset();
     }
 
     esp_err_t WS2815::update()
@@ -101,7 +119,7 @@ namespace Core
         esp_err_t err;
         int n = 0;
 
-        memset(dma_buffer, 0, dma_buf_size);
+        memset(dma_buffer.get(), 0, dma_buf_size);
 
         // ---- PRE RESET (CRITICAL) ----
         for (int i = 0; i < reset_delay; i++)
@@ -110,11 +128,11 @@ namespace Core
         }
 
         // ---- LED DATA ----
-        for (int i = 0; i < n_leds; i++)
+        for (const RGB &px : pixels)
         {
-            uint8_t r = pixels[i].r;
-            uint8_t g = pixels[i].g;
-            uint8_t b = pixels[i].b;
+            uint8_t r = px.r;
+            uint8_t g = px.g;
+            uint8_t b = px.b;
 
             // Red
             dma_buffer[n++] = timing_bits[(r >> 4) & 0x0F];
@@ -137,46 +155,49 @@ namespace Core
 
         spi_transaction_t t{};
         t.length = dma_buf_size * 8;
-        t.tx_buffer = dma_buffer;
+        t.tx_buffer = dma_buffer.get();
 
-        err = spi_device_transmit(spi_settings.spi, &t);
+        err = spi_device_transmit(spi, &t);
 
         return err;
     }
 
-    RGB *WS2815::getPixels()
+    std::span<RGB> WS2815::getPixels()
     {
         return pixels;
     }
 
     RGB &WS2815::operator[](int index)
     {
-        return pixels[index % n_leds];
+        return pixels[index % pixels.size()];
     }
 
     uint8_t *WS2815::getRaw() const
     {
-        return reinterpret_cast<uint8_t *>(pixels);
+        return reinterpret_cast<uint8_t *>(pixels.data());
     }
 
     void WS2815::set(RGB color, int i)
     {
-        pixels[i % n_leds] = color;
+        pixels[i % pixels.size()] = color;
     }
 
     void WS2815::fill_all(RGB color)
     {
-        for (int i = 0; i < n_leds; i++)
-        {
-            pixels[i] = color;
-        }
+        std::ranges::fill(pixels, color);
     }
 
     void WS2815::show()
     {
-        xSemaphoreTake(spiMutex, portMAX_DELAY);
+        // init() failed or was never called — nothing to drive.
+        if (!dma_buffer)
+        {
+            return;
+        }
+
+        xSemaphoreTake(spiMutex.get(), portMAX_DELAY);
         ESP_ERROR_CHECK_WITHOUT_ABORT(update());
-        xSemaphoreGive(spiMutex);
+        xSemaphoreGive(spiMutex.get());
     }
 
 }

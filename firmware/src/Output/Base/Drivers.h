@@ -40,7 +40,7 @@ namespace Output
 
         void init(uint16_t num_leds, uint8_t *buffer, int pin)
         {
-            dev.init(num_leds, pin, buffer);
+            dev.init(pin, {buffer, num_leds * 3u});
         }
 
         void show() { dev.show(); }

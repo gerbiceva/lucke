@@ -14,14 +14,6 @@ Fixture::Fixture(std::string name, std::string type, std::string presets)
     countPresets();
 }
 
-void Fixture::_addOutput(Interface::Output* output)
-{
-    m_outputs.push_back(output);
-    m_outputs.back()->bind();
-
-    m_lastOffset += m_outputs.back()->footprint();
-}
-
 void Fixture::update()
 {
     std::lock_guard<std::mutex> lock(m_mutex);
@@ -41,7 +33,7 @@ void Fixture::update()
 
     uint8_t* buff = m_buffer.data() + m_config.address;
 
-    for(auto o : m_outputs)
+    for (auto& o : m_outputs)
     {
         o->update(buff);
         buff += o->footprint();
@@ -61,7 +53,7 @@ void Fixture::setUniverse(uint8_t new_universe)
     m_config.universe = new_universe;
 }
 
-std::vector<Interface::Output*>& Fixture::getOutputs()
+std::vector<std::unique_ptr<Interface::Output>>& Fixture::getOutputs()
 {
     return m_outputs;
 }
@@ -105,7 +97,7 @@ JsonDocument Fixture::configJson()
     JsonDocument doc = m_config.toJsonDoc();
     doc["footprint"] = m_lastOffset;
     JsonArray outputs = doc["outputs"].to<JsonArray>();
-    for (auto o : m_outputs)
+    for (auto& o : m_outputs)
     {
         JsonObject entry = outputs.add<JsonObject>();
         o->toJson(entry);

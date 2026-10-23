@@ -12,7 +12,6 @@
 
 class Fixture : public Interface::Serializable, public Interface::Deserializable
 {
-    void _addOutput(Interface::Output* output);
     void countPresets();
 public:
     Fixture();
@@ -23,9 +22,12 @@ public:
     virtual void wifiAnimation() {};
 
     template<typename TOutput, typename... Args>
-    void addOutput(Args&&... args)
+    TOutput& addOutput(Args&&... args)
     {
-        _addOutput(new TOutput(std::forward<Args>(args)...));
+        auto& out = m_outputs.emplace_back(std::make_unique<TOutput>(std::forward<Args>(args)...));
+        out->bind();
+        m_lastOffset += out->footprint();
+        return static_cast<TOutput&>(*out);
     }
 
     void setSyncBuffers(std::vector<std::shared_ptr<SyncBuffer>> bufs);
@@ -45,7 +47,7 @@ public:
     uint8_t getNumPresets() const;
     const std::string& getName() const;
     const std::string& getType() const;
-    std::vector<Interface::Output*>& getOutputs();
+    std::vector<std::unique_ptr<Interface::Output>>& getOutputs();
 
 
     void fromConfig();
@@ -64,7 +66,7 @@ private:
     Config::Fixture m_config;
     std::vector<std::shared_ptr<SyncBuffer>> m_syncBuffers;
     std::vector<uint8_t> m_buffer;
-    std::vector<Interface::Output*> m_outputs;
+    std::vector<std::unique_ptr<Interface::Output>> m_outputs;
     JsonDocument m_jsonPresets;
 
     uint16_t m_lastOffset = 0;

@@ -1,5 +1,6 @@
 #include "FixtureHandler.h"
 #include "Utils/Logger.h"
+#include <algorithm>
 
 namespace Handler
 {
@@ -7,7 +8,7 @@ namespace Handler
         : m_inputs(inputs)
     {}
 
-    void FixtureHandler::_addFixture(Fixture* fix, bool factoryReset)
+    void FixtureHandler::_addFixture(std::unique_ptr<Fixture> fix, bool factoryReset)
     {
         // Lazily open NVS — must happen in setup() context, not at global
         // construction time (NVS flash isn't initialized that early).
@@ -31,10 +32,11 @@ namespace Handler
 
         // Subscribe to all universes this fixture spans. No prior span
         // exists yet (oldCount = 0), so nothing is unsubscribed.
-        resubscribe(fix, fix->getUniverse(), 0);
+        resubscribe(fix.get(), fix->getUniverse(), 0);
 
-        m_fixtures.push_back(fix);
-        persistFixture(fix->id());
+        uint8_t id = fix->id();
+        m_fixtures.push_back(std::move(fix));
+        persistFixture(id);
     }
 
     void FixtureHandler::resubscribe(Fixture* fix, uint8_t oldBase, uint8_t oldCount)
@@ -68,14 +70,11 @@ namespace Handler
 
     Fixture* FixtureHandler::get(uint8_t id)
     {
-        for (auto fix : m_fixtures)
-        {
-            if (fix->id() == id) return fix;
-        }
-        return nullptr;
+        auto it = std::ranges::find(m_fixtures, id, &Fixture::id);
+        return it != m_fixtures.end() ? it->get() : nullptr;
     }
 
-    std::vector<Fixture*>& FixtureHandler::all()
+    const std::vector<std::unique_ptr<Fixture>>& FixtureHandler::all() const
     {
         return m_fixtures;
     }
@@ -147,11 +146,11 @@ namespace Handler
 
     void FixtureHandler::update()
     {
-        for (auto fix : m_fixtures)
+        for (auto& fix : m_fixtures)
         {
             fix->update();
 
-            for (auto o : fix->getOutputs())
+            for (auto& o : fix->getOutputs())
             {
                 o->postupdate();
             }
@@ -160,11 +159,11 @@ namespace Handler
 
     void FixtureHandler::wifiAnimation()
     {
-        for (auto fix : m_fixtures)
+        for (auto& fix : m_fixtures)
         {
             fix->wifiAnimation();
 
-            for (auto o : fix->getOutputs())
+            for (auto& o : fix->getOutputs())
             {
                 o->postupdate();
             }
@@ -179,7 +178,7 @@ namespace Handler
     void FixtureHandler::toJson(JsonObject& obj)
     {
         JsonArray arr = obj["fixtures"].to<JsonArray>();
-        for (auto fix : m_fixtures)
+        for (auto& fix : m_fixtures)
         {
             JsonObject entry = arr.add<JsonObject>();
             fix->toJson(entry);

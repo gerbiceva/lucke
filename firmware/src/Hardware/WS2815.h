@@ -1,6 +1,10 @@
 #pragma once
+#include <memory>
+#include <span>
+#include <type_traits>
 #include "driver/gpio.h"
 #include "driver/spi_master.h"
+#include "esp_heap_caps.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
 
@@ -18,39 +22,51 @@ namespace Core
         };
     };
 
-    // template<uint16_t TLedNum>
+    // Drives a WS2815 strip over SPI. The pixel buffer is borrowed — the
+    // caller (LEDBase) owns it and must keep it alive for this object's
+    // lifetime. Everything else (SPI bus/device, DMA buffer, mutex) is owned
+    // here and released in the destructor or when init() fails.
     class WS2815
     {
         static const uint16_t timing_bits[16];
         static const uint8_t reset_delay;
 
-        struct spi_settings_t
+        struct HeapCapsFree
         {
-            spi_host_device_t host;
-            spi_device_handle_t spi;
-            int dma_chan;
-            spi_device_interface_config_t devcfg;
-            spi_bus_config_t buscfg;
+            void operator()(void *p) const { heap_caps_free(p); }
         };
 
-        portMUX_TYPE myMux = portMUX_INITIALIZER_UNLOCKED;
-        SemaphoreHandle_t spiMutex = NULL;
+        struct SemaphoreDelete
+        {
+            void operator()(SemaphoreHandle_t s) const { vSemaphoreDelete(s); }
+        };
 
-        spi_settings_t spi_settings;
-        uint16_t *dma_buffer;
-        RGB *pixels;
-        int n_leds, dma_buf_size;
+        static constexpr spi_host_device_t c_host = SPI2_HOST;
+
+        std::unique_ptr<std::remove_pointer_t<SemaphoreHandle_t>, SemaphoreDelete> spiMutex;
+        std::unique_ptr<uint16_t[], HeapCapsFree> dma_buffer;
+        size_t dma_buf_size = 0;
+
+        spi_device_handle_t spi = nullptr;
+        bool busInitialized = false;
+
+        std::span<RGB> pixels;
 
         esp_err_t initSPI(int pin);
         esp_err_t update();
+        void release();
 
     public:
         WS2815() = default;
-        WS2815(uint16_t num_of_leds, int pin);
-        void init(uint16_t num_of_leds, int pin);
-        void init(uint16_t num_of_leds, int pin, uint8_t *pixels);
+        ~WS2815();
 
-        RGB *getPixels();
+        WS2815(const WS2815 &) = delete;
+        WS2815 &operator=(const WS2815 &) = delete;
+
+        // buffer: num_leds * 3 bytes of RGB, owned by the caller.
+        void init(int pin, std::span<uint8_t> buffer);
+
+        std::span<RGB> getPixels();
         RGB &operator[](int index);
         uint8_t *getRaw() const;
 

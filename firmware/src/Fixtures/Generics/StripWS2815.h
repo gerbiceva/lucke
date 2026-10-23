@@ -33,7 +33,7 @@ namespace Fixtures
             m_animOff = (m_animOff + 1) % BYTES;
 
             uint8_t *ptr = m_animBuf;
-            for (auto o : getOutputs())
+            for (auto& o : getOutputs())
             {
                 o->update(ptr);
                 ptr += o->footprint();

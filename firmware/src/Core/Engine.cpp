@@ -194,7 +194,7 @@ void Engine::spawnTasks()
                     JsonDocument doc;
                     doc["version"] = m_config.version;
                     JsonArray arr = doc["fixtures"].to<JsonArray>();
-                    for (auto fix : m_fixtures.all())
+                    for (const auto& fix : m_fixtures.all())
                     {
                         JsonObject entry = arr.add<JsonObject>();
                         entry["name"] = fix->getName();
