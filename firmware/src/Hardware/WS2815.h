@@ -71,7 +71,9 @@ namespace Core
         WS2815 &operator=(const WS2815 &) = delete;
 
         // buffer: num_leds * 3 bytes of RGB, owned by the caller.
-        void init(int pin, std::span<uint8_t> buffer);
+        // Returns ESP_OK, or the SPI/alloc error (ESP_ERR_INVALID_STATE when
+        // another instance already owns the SPI bus).
+        esp_err_t init(int pin, std::span<uint8_t> buffer);
 
         std::span<RGB> getPixels();
         RGB &operator[](int index);

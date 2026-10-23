@@ -12,7 +12,7 @@ namespace Core
         release();
     }
 
-    void WS2815::init(int pin, std::span<uint8_t> buffer)
+    esp_err_t WS2815::init(int pin, std::span<uint8_t> buffer)
     {
         release();
         pixels = {reinterpret_cast<RGB *>(buffer.data()), buffer.size() / sizeof(RGB)};
@@ -23,6 +23,7 @@ namespace Core
             ESP_ERROR_CHECK_WITHOUT_ABORT(err);
             release();
         }
+        return err;
     }
 
     esp_err_t WS2815::initSPI(int pin)
