@@ -3,8 +3,7 @@
 #include "Utils/JsonUtils.h"
 
 Engine::Engine()
-    : m_tcpServer(COMMAND_PORT),
-      m_fixtures(m_inputs),
+    : m_fixtures(m_inputs),
       m_statusReport(m_config, m_wifi, m_fixtures, m_inputs),
       m_telemetry(m_config, m_wifi, m_fixtures, m_statusReport, m_tasks),
       m_describeHandler(m_config, m_fixtures, m_inputs, m_wifi),
@@ -12,7 +11,9 @@ Engine::Engine()
       m_setFixtureHandler(m_fixtures),
       m_inputsHandler(m_inputs),
       m_wifiConfigHandler(m_wifi, m_config, m_storage),
-      m_engineConfigHandler(m_config, m_storage, m_telemetry)
+      m_engineConfigHandler(m_config, m_storage, m_telemetry),
+      m_serialSession(m_serial, m_dispatcher, m_tasks, "serial_cmd"),
+      m_tcpListener(COMMAND_PORT, RESPONSE_PORT, m_dispatcher, m_tasks)
 {
     Utils::Logger::enable();
     Utils::Logger::setLevel(Utils::Logger::Level::DEBUG);
@@ -102,7 +103,7 @@ void Engine::onWifiStatus(bool connected)
         m_tasks.suspendTask(m_animationTaskId);
         m_tasks.resumeTask(m_fixtureTaskId);
 
-        m_tcpServer.begin();
+        m_tcpListener.begin();
         m_inputs.reconnect();
     }
     else
@@ -113,7 +114,7 @@ void Engine::onWifiStatus(bool connected)
             m_tasks.resumeTask(m_animationTaskId);
         }
 
-        m_tcpServer.stop();
+        m_tcpListener.stop();
     }
 }
 
@@ -164,55 +165,6 @@ void Engine::spawnTasks()
 
     m_telemetry.start();
 
-    // Serial command task
-    m_tasks.spawnTask("serial_cmd", [this]() {
-        while (true)
-        {
-            if (m_serial.isAvailable())
-            {
-                std::string line = m_serial.readLine();
-                m_dispatcher.dispatch(line, m_serial);
-            }
-            vTaskDelay(10);
-        }
-    }, 1, 8192);
-
-    // BLE command task — same JSON command protocol as serial/TCP, carried
-    // over the Nordic UART Service characteristics.
-    // m_tasks.spawnTask("ble_config", [this]() {
-    //     while (true)
-    //     {
-    //         if (m_ble.isAvailable())
-    //         {
-    //             std::string line = m_ble.readLine();
-    //             m_dispatcher.dispatch(line, m_ble);
-    //         }
-    //         vTaskDelay(10);
-    //     }
-    // }, 1, 8192);
-
-    // TCP command task — receive on 8888, respond on RESPONSE_PORT
-    m_tasks.spawnTask("tcp_cmd", [this]() {
-        while (true)
-        {
-            auto conn = m_tcpServer.accept();
-            if (conn.has_value())
-            {
-                auto& tc = conn.value();
-                std::string remoteIp = tc.remoteAddress();
-                while (tc.isConnected())
-                {
-                    if (tc.isAvailable())
-                    {
-                        std::string line = tc.readLine();
-                        Net::TcpConnection response(remoteIp, RESPONSE_PORT);
-                        m_dispatcher.dispatch(line, response);
-                        response.close();
-                    }
-                    vTaskDelay(10);
-                }
-            }
-            vTaskDelay(10);
-        }
-    }, 2, 8192);
+    m_serialSession.start();
+    m_tcpListener.start();
 }

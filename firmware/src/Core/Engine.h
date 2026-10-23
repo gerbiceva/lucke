@@ -1,7 +1,6 @@
 #pragma once
 #include "Config/EngineConfig.h"
 #include "Network/Wifi.h"
-#include "Network/TcpServer.h"
 #include "Network/UdpBroadcaster.h"
 #include "Network/SerialTransport.h"
 #include "Network/BleTransport.h"
@@ -19,6 +18,8 @@
 #include "Utils/Storage.h"
 #include "Services/StatusReport.h"
 #include "Services/Telemetry.h"
+#include "Services/CommandSession.h"
+#include "Services/TcpListener.h"
 
 class Engine
 {
@@ -47,7 +48,6 @@ private:
     bool m_factoryReset = false;
 
     Net::Wifi m_wifi;
-    Net::TcpServer m_tcpServer;
     Net::SerialTransport m_serial;
     // Net::BleTransport m_ble;
 
@@ -68,4 +68,8 @@ private:
     Commands::WifiConfigHandler m_wifiConfigHandler;
     Commands::RebootHandler m_rebootHandler;
     Commands::EngineConfigHandler m_engineConfigHandler;
+
+    // Hold references to m_dispatcher, so they come after it.
+    Services::CommandSession m_serialSession;
+    Services::TcpListener m_tcpListener;
 };
