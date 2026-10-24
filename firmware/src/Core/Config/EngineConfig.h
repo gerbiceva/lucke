@@ -5,7 +5,7 @@
 #include <string_view>
 #include <ArduinoJson.h>
 
-inline constexpr std::string_view ENGINE_VERSION = "v0.98";
+inline constexpr std::string_view ENGINE_VERSION = "0.99";
 inline constexpr std::string_view DEFAULT_WIFI_SSID = "Ledique";
 inline constexpr std::string_view DEFAULT_WIFI_PASSWORD = "dasenebipovezau";
 
