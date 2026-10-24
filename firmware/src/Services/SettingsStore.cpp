@@ -6,6 +6,8 @@ namespace
 {
     // How often the save task checks for queued records.
     constexpr TickType_t c_checkInterval = pdMS_TO_TICKS(200);
+
+    constexpr Utils::Log s_log{"SETTINGS"};
 }
 
 namespace Services
@@ -29,7 +31,7 @@ namespace Services
         DeserializationError err = deserializeJson(doc, m_engineNvs.getString(c_settingsKey));
         if (err)
         {
-            Utils::Logger::printf("[SETTINGS] stored settings unreadable (%s), using defaults\n", err.c_str());
+            s_log.warn("stored settings unreadable ({}), using defaults", err.c_str());
             return;
         }
         m_engine.fromJson(doc.as<JsonVariantConst>());
@@ -86,7 +88,7 @@ namespace Services
         m_pendingFixtures.clear();
         m_engineNvs.clear();
         m_fixtureNvs.clear();
-        Utils::Logger::println("[SETTINGS] factory reset: NVS cleared");
+        s_log.info("factory reset: NVS cleared");
     }
 
     void SettingsStore::saveLoop()
@@ -105,6 +107,8 @@ namespace Services
 
     void SettingsStore::writePending()
     {
+        if (m_pendingFixtures.empty()) return;
+        s_log.info("saving {} fixture record(s)", m_pendingFixtures.size());
         for (const auto& [id, json] : m_pendingFixtures)
         {
             m_fixtureNvs.putString(fixtureKey(id), json);

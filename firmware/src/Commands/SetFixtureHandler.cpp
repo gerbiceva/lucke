@@ -1,5 +1,11 @@
 #include "SetFixtureHandler.h"
 #include "Input/SacnReceiver.h"
+#include "Utils/Logger.h"
+
+namespace
+{
+    constexpr Utils::Log s_log{"CMD"};
+}
 
 namespace Commands
 {
@@ -53,6 +59,13 @@ namespace Commands
         if (req["highlight"].is<bool>())
         {
             changed |= m_fixtures.highlight(id);
+        }
+
+        if (changed)
+        {
+            std::string request;
+            serializeJson(req, request);
+            s_log.info("fixture {} changed via {}: {}", id, transport.remoteAddress(), request);
         }
 
         Fixture* fix = m_fixtures.get(id);

@@ -1,6 +1,11 @@
 #include "EngineConfigHandler.h"
 #include "Utils/Logger.h"
 
+namespace
+{
+    constexpr Utils::Log s_log{"CMD"};
+}
+
 namespace Commands
 {
     EngineConfigHandler::EngineConfigHandler(Services::SettingsStore& settings, Services::Telemetry& telemetry)
@@ -13,6 +18,7 @@ namespace Commands
 
         if (strcmp(request, "factory_reset") == 0)
         {
+            s_log.warn("factory reset requested via {}", transport.remoteAddress());
             m_settings.factoryReset();
             transport.send("{\"status\":\"factory reset, rebooting\"}");
             delay(1000);
@@ -25,6 +31,7 @@ namespace Commands
             if (req["value"].is<bool>())
             {
                 bool value = req["value"];
+                s_log.info("serial_report_task set to {} via {}", value, transport.remoteAddress());
                 m_telemetry.setSerialReport(value);
                 m_settings.update([value](Config::Engine& c) { c.serial_report_task = value; });
             }
@@ -37,6 +44,7 @@ namespace Commands
             if (req["value"].is<bool>())
             {
                 bool value = req["value"];
+                s_log.info("wireless_report_task set to {} via {}", value, transport.remoteAddress());
                 m_telemetry.setWirelessReport(value);
                 m_settings.update([value](Config::Engine& c) { c.wireless_report_task = value; });
             }
@@ -49,6 +57,7 @@ namespace Commands
             if (req["value"].is<bool>())
             {
                 bool value = req["value"];
+                s_log.info("wifi_animation set to {} via {}", value, transport.remoteAddress());
                 m_settings.update([value](Config::Engine& c) { c.wifi_animation = value; });
             }
             respond(transport, "wifi_animation", m_settings.snapshot().wifi_animation);

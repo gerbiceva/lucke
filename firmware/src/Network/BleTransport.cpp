@@ -18,12 +18,12 @@
 //     public:
 //         void onConnect(BLEServer* server) override
 //         {
-//             Utils::Logger::println("[BLE] Central connected");
+//             s_log.info("central connected");
 //         }
 //
 //         void onDisconnect(BLEServer* server) override
 //         {
-//             Utils::Logger::println("[BLE] Central disconnected, resuming advertising");
+//             s_log.info("central disconnected, resuming advertising");
 //             server->getAdvertising()->start();
 //         }
 //     };
@@ -77,7 +77,7 @@
 //         advertising->setScanResponse(true);
 //         advertising->start();
 //
-//         Utils::Logger::printf("[BLE] Advertising as '%s'\n", deviceName.c_str());
+//         s_log.info("advertising as '{}'", deviceName);
 //     }
 //
 //     void BleTransport::onLineChunk(const std::string& chunk)

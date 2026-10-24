@@ -6,6 +6,8 @@ namespace
 {
     // Safety net: re-check the link this often even without an event.
     constexpr TickType_t c_recheckTicks = 1000;
+
+    constexpr Utils::Log s_log{"CONN"};
 }
 
 namespace Services
@@ -24,7 +26,7 @@ namespace Services
         m_wake.reset(xSemaphoreCreateBinary());
         if (!m_wake)
         {
-            Utils::Logger::println("[CONN] out of memory, wifi changes will be missed");
+            s_log.error("out of memory, wifi changes will be missed");
             return;
         }
         // Check once right away: the link may have come up before the
@@ -64,7 +66,8 @@ namespace Services
             if (connected == wasConnected) continue;
             wasConnected = connected;
 
-            Utils::Logger::printf("[CONN] wifi %s\n", connected ? "up" : "down");
+            if (connected) s_log.info("wifi up, ip {}", m_wifi.localIP());
+            else s_log.warn("wifi down");
             for (auto& listener : m_listeners)
             {
                 listener(connected);

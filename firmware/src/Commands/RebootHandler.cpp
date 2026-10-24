@@ -1,4 +1,10 @@
 #include "RebootHandler.h"
+#include "Utils/Logger.h"
+
+namespace
+{
+    constexpr Utils::Log s_log{"CMD"};
+}
 
 namespace Commands
 {
@@ -8,6 +14,7 @@ namespace Commands
 
     void RebootHandler::handle(JsonDocument& req, Interface::Transport& transport)
     {
+        s_log.info("reboot requested via {}", transport.remoteAddress());
         // Fixture records are written with a delay; don't lose the last change.
         m_settings.flush();
         transport.send("{\"status\":\"rebooting\"}");

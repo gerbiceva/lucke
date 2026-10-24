@@ -33,13 +33,14 @@ namespace Drivers
     struct FastLed
     {
         static constexpr const char* kind = "FastLED";
+        static constexpr Utils::Log s_log{"FASTLED"};
 
         template <uint8_t Pin>
         static std::unique_ptr<Output::Driver> make(std::span<Core::RGB> pixels)
         {
             if (!Handler::Pin::available(Pin))
             {
-                Utils::Logger::printf("[FASTLED] pin %d already used\n", Pin);
+                s_log.error("pin {} already used", Pin);
                 return nullptr;
             }
 

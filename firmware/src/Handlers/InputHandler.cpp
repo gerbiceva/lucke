@@ -7,6 +7,12 @@ namespace
     // Longest the input task blocks waiting for packets, so a reconnect
     // request is picked up within this time even with no traffic.
     constexpr uint32_t c_waitMs = 100;
+
+    // E1.31 6.7.1: a source is lost after 2.5 s without data.
+    constexpr TickType_t c_lossTimeout = pdMS_TO_TICKS(2500);
+    constexpr TickType_t c_lossCheckInterval = pdMS_TO_TICKS(250);
+
+    constexpr Utils::Log s_log{"INPUT"};
 }
 
 namespace Handler
@@ -60,7 +66,7 @@ namespace Handler
         m_sacn.close();
         if (!m_sacn.open())
         {
-            Utils::Logger::println("[INPUT] sACN socket failed to open");
+            s_log.error("sACN socket failed to open");
             return;
         }
         // Memberships don't survive the link going down, and universes
@@ -74,6 +80,7 @@ namespace Handler
     void InputHandler::update()
     {
         if (m_reopen.exchange(false)) reopen();
+        checkLoss();
         if (!m_sacn.isOpen())
         {
             vTaskDelay(pdMS_TO_TICKS(c_waitMs));
@@ -96,10 +103,33 @@ namespace Handler
             e.lastSeq = pkt->sequence;
             e.seen = true;
             e.packets++;
+            e.lastPacket = xTaskGetTickCount();
+            if (!e.active)
+            {
+                e.active = true;
+                s_log.info("universe {} receiving", pkt->universe);
+            }
 
             Dmx::Universe frame{};   // slots the sender didn't send read as 0
             std::ranges::copy(pkt->slots, frame.begin());
             e.buffer->write(frame);
+        }
+    }
+
+    void InputHandler::checkLoss()
+    {
+        const TickType_t now = xTaskGetTickCount();
+        if (now - m_lastLossCheck < c_lossCheckInterval) return;
+        m_lastLossCheck = now;
+
+        std::scoped_lock lock(m_mutex);
+        for (auto& [uni, e] : m_universes)
+        {
+            if (!e.active || now - e.lastPacket <= c_lossTimeout) continue;
+            e.active = false;
+            // A returning sender may start at any sequence number.
+            e.seen = false;
+            s_log.warn("universe {} lost (no data for 2.5 s)", uni);
         }
     }
 

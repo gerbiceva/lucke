@@ -56,17 +56,33 @@ public:
         );
         if (created != pdPASS)
         {
-            Utils::Logger::printf("[TASK] Failed to create task '%s' (stack %u)\n",
-                                  rec.name.c_str(), static_cast<unsigned>(stackSize));
+            s_log.error("failed to create task '{}' (stack {})", rec.name, stackSize);
             m_tasks.pop_back();
             return TaskId::Invalid;
         }
 
-        Utils::Logger::printf("[TASK] Created new task '%s'\n", rec.name.c_str());
+        s_log.debug("created task '{}'", rec.name);
         return rec.id;
     }
 
+    // Logs (debug) the stack each task has never touched, in bytes. Near
+    // zero means it is close to overflowing. Assumes no task has returned:
+    // a returned task deleted itself and its handle is gone.
+    void logStackHeadroom()
+    {
+        std::scoped_lock lock(m_mutex);
+        std::string line;
+        for (const TaskRecord& rec : m_tasks)
+        {
+            if (!line.empty()) line += ", ";
+            line += rec.name + " " + std::to_string(uxTaskGetStackHighWaterMark(rec.handle));
+        }
+        s_log.debug("stack free: {}", line);
+    }
+
 private:
+    static constexpr Utils::Log s_log{"TASK"};
+
     struct TaskRecord {
         TaskId id = TaskId::Invalid;
         std::string name;

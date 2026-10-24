@@ -4,6 +4,11 @@
 #include <algorithm>
 #include <span>
 
+namespace
+{
+    constexpr Utils::Log s_log{"FIXTURE"};
+}
+
 Fixture::Fixture() 
 {
 }
@@ -179,16 +184,15 @@ void Fixture::setPreset(uint8_t new_preset)
     JsonArrayConst groups = m_jsonPresets["groups"].as<JsonArrayConst>();
     if (new_preset >= groups.size())
     {
-        Utils::Logger::printf("[FIXTURE] Invalid preset index: %d\n", new_preset);
+        s_log.warn("invalid preset index: {}", new_preset);
         return;
     }
 
     JsonArrayConst settings = groups[new_preset]["settings"].as<JsonArrayConst>();
     if (settings.size() != m_outputs.size())
     {
-        Utils::Logger::printf(
-            "[FIXTURE] Preset %d has %u settings but fixture has %u outputs — ignored\n",
-            new_preset, (unsigned)settings.size(), (unsigned)m_outputs.size());
+        s_log.warn("preset {} has {} settings but fixture has {} outputs — ignored",
+                   new_preset, settings.size(), m_outputs.size());
         return;
     }
 

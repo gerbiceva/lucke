@@ -17,6 +17,8 @@ namespace Handler
     {
         void update();
         void reopen();
+        // Logs universes whose sender went quiet. Input task only.
+        void checkLoss();
     public:
         explicit InputHandler(Tasks::Manager& tasks);
 
@@ -39,6 +41,8 @@ namespace Handler
             uint8_t lastSeq = 0;
             bool seen = false;
             uint32_t packets = 0;
+            bool active = false;        // data within the loss timeout
+            TickType_t lastPacket = 0;
         };
 
         Tasks::Manager& m_tasks;
@@ -51,5 +55,6 @@ namespace Handler
         // the wifi task could pull it out from under a blocked receive().
         Input::SacnReceiver m_sacn;
         std::atomic<bool> m_reopen{false};
+        TickType_t m_lastLossCheck = 0;   // input task only
     };
 }

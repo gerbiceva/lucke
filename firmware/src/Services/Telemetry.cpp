@@ -2,6 +2,11 @@
 #include <ArduinoJson.h>
 #include "Utils/Logger.h"
 
+namespace
+{
+    constexpr Utils::Log s_log{"HEALTH"};
+}
+
 namespace Services
 {
     Telemetry::Telemetry(const Config::Engine& config, const Net::Wifi& wifi, const Handler::FixtureHandler& fixtures,
@@ -38,15 +43,26 @@ namespace Services
 
     void Telemetry::reportLoop()
     {
+        uint32_t cycles = 0;
         while (true)
         {
             if (m_serialReport.load())
             {
-                Utils::Logger::println(m_report.build().c_str());
+                std::string report = m_report.build();
+                report += "\r\n";
+                Utils::Log::raw(report);
             }
             if (m_wirelessReport.load() && m_wifi.isConnected())
             {
                 m_udpReport.send(m_report.settings());
+            }
+            // Once a minute: memory headroom, to catch a leak or a task
+            // running out of stack before it crashes.
+            if (++cycles % 6 == 0 && Utils::Log::enabled(Utils::Level::Debug))
+            {
+                s_log.debug("heap free {} (min {}, largest block {})",
+                            ESP.getFreeHeap(), ESP.getMinFreeHeap(), ESP.getMaxAllocHeap());
+                m_tasks.logStackHeadroom();
             }
             vTaskDelay(10000);
         }

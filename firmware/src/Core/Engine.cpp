@@ -1,5 +1,40 @@
 #include "Engine.h"
+#include <esp_system.h>
 #include "Utils/Logger.h"
+
+namespace
+{
+    constexpr Utils::Log s_log{"ENGINE"};
+
+    // Why the chip last restarted. A crash, watchdog or brownout mid-show
+    // shows up here on the next boot.
+    void logResetReason()
+    {
+        const char* name = "unknown";
+        bool abnormal = true;
+        switch (esp_reset_reason())
+        {
+            case ESP_RST_POWERON:    name = "power on"; abnormal = false; break;
+            case ESP_RST_EXT:        name = "external pin"; abnormal = false; break;
+            case ESP_RST_SW:         name = "software restart"; abnormal = false; break;
+            case ESP_RST_USB:        name = "USB"; abnormal = false; break;
+            case ESP_RST_JTAG:       name = "JTAG"; abnormal = false; break;
+            case ESP_RST_DEEPSLEEP:  name = "deep sleep wake"; abnormal = false; break;
+            case ESP_RST_PANIC:      name = "crash (panic)"; break;
+            case ESP_RST_INT_WDT:    name = "interrupt watchdog"; break;
+            case ESP_RST_TASK_WDT:   name = "task watchdog"; break;
+            case ESP_RST_WDT:        name = "watchdog"; break;
+            case ESP_RST_BROWNOUT:   name = "brownout (supply voltage dropped)"; break;
+            case ESP_RST_PWR_GLITCH: name = "power glitch"; break;
+            case ESP_RST_CPU_LOCKUP: name = "CPU lockup"; break;
+            case ESP_RST_EFUSE:      name = "efuse error"; break;
+            case ESP_RST_SDIO:       name = "SDIO"; abnormal = false; break;
+            default: break;
+        }
+        if (abnormal) s_log.warn("reset reason: {}", name);
+        else s_log.info("reset reason: {}", name);
+    }
+}
 
 Engine::Engine()
     : m_inputs(m_tasks),
@@ -18,29 +53,31 @@ Engine::Engine()
       m_serialSession(m_serial, m_dispatcher, m_tasks, "serial_cmd"),
       m_tcpListener(COMMAND_PORT, m_dispatcher, m_tasks)
 {
-    Utils::Logger::enable();
-    Utils::Logger::setLevel(Utils::Logger::Level::DEBUG);
+    Utils::Log::begin();
+    Utils::Log::setLevel(Utils::Level::Debug);
 }
 
 void Engine::init()
 {
-    Utils::Logger::println("Settings");
+    logResetReason();
+
+    s_log.debug("loading settings");
     m_settings.load();
     const Config::Engine& config = m_settings.engine();
 
-    Utils::Logger::println("Wifi");
+    s_log.debug("connecting wifi");
     m_wifi.connect(config.ssid, config.password);
 
-    Utils::Logger::println("Register");
+    s_log.debug("registering commands");
     registerCommands();
 
-    // Utils::Logger::println("BLE");
+    // s_log.debug("starting BLE");
     // m_ble.begin("Lucke");
 
-    Utils::Logger::println("Spawn");
+    s_log.debug("starting services");
     startServices();
 
-    Utils::Logger::printf("[ENGINE] %.*s initialized\n", static_cast<int>(config.version.size()), config.version.data());
+    s_log.info("{} initialized", config.version);
 }
 
 void Engine::registerCommands()

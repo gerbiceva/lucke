@@ -1,4 +1,10 @@
 #include "WifiConfigHandler.h"
+#include "Utils/Logger.h"
+
+namespace
+{
+    constexpr Utils::Log s_log{"CMD"};
+}
 
 namespace Commands
 {
@@ -23,6 +29,8 @@ namespace Commands
 
         if (dirty)
         {
+            s_log.info("wifi settings changed via {}, ssid '{}'", transport.remoteAddress(), config.ssid);
+
             JsonDocument doc;
             JsonObject obj = doc.to<JsonObject>();
             obj["status"] = "ok";

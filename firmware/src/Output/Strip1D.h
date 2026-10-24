@@ -50,7 +50,7 @@ namespace Output
             if (!Utils::Json::updateElement<uint16_t>(doc, "num_groups", groups) ||
                 groups == 0 || m_numLeds % groups != 0)
             {
-                Utils::Logger::println("[STRIP] invalid 'num_groups'");
+                s_log.warn("invalid 'num_groups'");
                 return;
             }
             m_numGroups = groups;
@@ -91,6 +91,8 @@ namespace Output
         }
 
     private:
+        static constexpr Utils::Log s_log{"STRIP"};
+
         uint16_t m_numLeds;
         uint16_t m_numGroups;
         // Declared before m_driver: the driver borrows this buffer.

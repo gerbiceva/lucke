@@ -1,6 +1,11 @@
 #include "CommandDispatcher.h"
 #include "Utils/Logger.h"
 
+namespace
+{
+    constexpr Utils::Log s_log{"CMD"};
+}
+
 namespace Commands
 {
     void CommandDispatcher::registerHandler(const std::string& cmd, Interface::CommandHandler* handler)
@@ -15,7 +20,7 @@ namespace Commands
         DeserializationError err = deserializeJson(doc, data);
         if (err)
         {
-            Utils::Logger::printf("[CMD] JSON parse error: %s\n", err.c_str());
+            s_log.warn("JSON parse error: {}", err.c_str());
             transport.send("{\"err\":\"invalid json\"}");
             return;
         }
@@ -23,7 +28,7 @@ namespace Commands
         const char* cmd = doc["request"] | "";
         if (cmd[0] == '\0')
         {
-            Utils::Logger::println("[CMD] Missing 'cmd' field");
+            s_log.warn("missing 'request' field");
             transport.send("{\"err\":\"missing cmd\"}");
             return;
         }
@@ -31,7 +36,7 @@ namespace Commands
         auto it = m_handlers.find(cmd);
         if (it == m_handlers.end())
         {
-            Utils::Logger::printf("[CMD] Unknown command: %s\n", cmd);
+            s_log.warn("unknown command: {}", cmd);
             transport.send("{\"err\":\"unknown cmd\"}");
             return;
         }

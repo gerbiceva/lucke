@@ -34,13 +34,14 @@ namespace Drivers
     struct Ws2815
     {
         static constexpr const char* kind = "WS2815";
+        static constexpr Utils::Log s_log{"WS2815"};
 
         template <uint8_t Pin>
         static std::unique_ptr<Output::Driver> make(std::span<Core::RGB> pixels)
         {
             if (!Handler::Pin::available(Pin))
             {
-                Utils::Logger::printf("[WS2815] pin %d already used\n", Pin);
+                s_log.error("pin {} already used", Pin);
                 return nullptr;
             }
 
@@ -48,7 +49,7 @@ namespace Drivers
             if (!dev->init(pixels))
             {
                 // The lib owns SPI2_HOST, so a second strip lands here.
-                Utils::Logger::printf("[WS2815] init on pin %d failed (only one WS2815 strip is supported)\n", Pin);
+                s_log.error("init on pin {} failed (only one WS2815 strip is supported)", Pin);
                 return nullptr;
             }
             return dev;

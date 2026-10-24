@@ -5,6 +5,8 @@ namespace
 {
     // Drop a client that has sent nothing for this long.
     constexpr TickType_t c_idleTimeout = pdMS_TO_TICKS(10000);
+
+    constexpr Utils::Log s_log{"TCP"};
 }
 
 namespace Services
@@ -44,6 +46,9 @@ namespace Services
 
     void TcpListener::serve(Net::TcpConnection& conn)
     {
+        const std::string addr = conn.remoteAddress();
+        s_log.info("client {} connected", addr);
+
         TickType_t lastActivity = xTaskGetTickCount();
         while (conn.isConnected())
         {
@@ -67,11 +72,12 @@ namespace Services
 
             if (xTaskGetTickCount() - lastActivity > c_idleTimeout)
             {
-                Utils::Logger::printf("[TCP] %s idle, closing\n", conn.remoteAddress().c_str());
+                s_log.info("client {} idle, closing", addr);
                 break;
             }
             vTaskDelay(10);
         }
         conn.close();
+        s_log.info("client {} disconnected", addr);
     }
 }

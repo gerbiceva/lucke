@@ -4,6 +4,11 @@
 #include <WiFi.h>
 #include <esp_wifi.h>
 
+namespace
+{
+    constexpr Utils::Log s_log{"WIFI"};
+}
+
 namespace Net
 {
     void Wifi::connect(const std::string& ssid, const std::string& pass)
@@ -11,7 +16,7 @@ namespace Net
         m_ssid = ssid;
         m_password = pass;
 
-        Utils::Logger::printf("[WIFI] Connecting to '%s'\n", m_ssid.c_str());
+        s_log.info("connecting to '{}'", m_ssid);
 
         WiFi.setScanMethod(WIFI_FAST_SCAN);
         WiFi.mode(WIFI_STA);
@@ -22,7 +27,7 @@ namespace Net
 
     void Wifi::reconnect(const std::string& ssid, const std::string& pass)
     {
-        Utils::Logger::printf("[WIFI] Reconnecting to '%s'\n", ssid.c_str());
+        s_log.info("reconnecting to '{}'", ssid);
 
         WiFi.disconnect(true);
         WiFi.mode(WIFI_OFF);
