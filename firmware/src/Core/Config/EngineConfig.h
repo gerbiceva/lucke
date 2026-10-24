@@ -12,6 +12,9 @@ inline constexpr std::string_view DEFAULT_WIFI_PASSWORD = "dasenebipovezau";
 inline constexpr uint16_t COMMAND_PORT = 8888;
 inline constexpr uint16_t HEARTBEAT_PORT = 12343;
 inline constexpr uint16_t REPORT_PORT = 12344;
+inline constexpr uint16_t OTA_PORT = 3232;
+// Must match --auth in the *_ota env in platformio.ini.
+inline constexpr std::string_view OTA_PASSWORD = "lucke-ota";
 
 namespace Config
 {

@@ -41,7 +41,8 @@ Engine::Engine()
       m_connectivity(m_wifi, m_tasks),
       m_statusReport(m_settings, m_wifi, m_fixtures, m_inputs),
       m_telemetry(m_settings.engine(), m_wifi, m_fixtures, m_statusReport, m_tasks),
-      m_api(m_settings, m_fixtures, m_inputs, m_wifi, m_telemetry),
+      m_ota(m_render, m_wifi, m_tasks),
+      m_api(m_settings, m_fixtures, m_inputs, m_wifi, m_telemetry, m_ota),
       m_describeHandler(m_api),
       m_getFixtureHandler(m_api),
       m_setFixtureHandler(m_api),
@@ -50,6 +51,7 @@ Engine::Engine()
       m_rebootHandler(m_api),
       m_engineConfigHandler(m_api),
       m_logsHandler(m_api),
+      m_otaHandler(m_api),
       m_serialSession(m_serial, m_dispatcher, m_tasks, "serial_cmd"),
       m_tcpListener(COMMAND_PORT, m_dispatcher, m_tasks)
 {
@@ -87,6 +89,7 @@ void Engine::registerCommands()
     m_dispatcher.registerHandler("getfixture", &m_getFixtureHandler);
     m_dispatcher.registerHandler("setfixture", &m_setFixtureHandler);
     m_dispatcher.registerHandler("logs", &m_logsHandler);
+    m_dispatcher.registerHandler("ota", &m_otaHandler);
     m_dispatcher.registerHandler("inputs", &m_inputsHandler);
     m_dispatcher.registerHandler("wifi", &m_wifiConfigHandler);
     m_dispatcher.registerHandler("reboot", &m_rebootHandler);
@@ -133,6 +136,7 @@ void Engine::startServices()
     m_connectivity.start();
 
     m_telemetry.start();
+    m_ota.start();
 
     m_serialSession.start();
     m_tcpListener.start();

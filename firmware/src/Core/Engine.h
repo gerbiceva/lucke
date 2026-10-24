@@ -13,6 +13,7 @@
 #include "Commands/RebootHandler.h"
 #include "Commands/EngineConfigHandler.h"
 #include "Commands/LogsHandler.h"
+#include "Commands/OtaHandler.h"
 #include "Handlers/FixtureHandler.h"
 #include "Handlers/InputHandler.h"
 #include "Tasks/TaskExecutor.h"
@@ -23,6 +24,7 @@
 #include "Services/Connectivity.h"
 #include "Services/CommandSession.h"
 #include "Services/TcpListener.h"
+#include "Services/OtaService.h"
 #include "API/API.h"
 
 class Engine
@@ -59,6 +61,7 @@ private:
     Services::Connectivity m_connectivity;
     Services::StatusReport m_statusReport;
     Services::Telemetry m_telemetry;
+    Services::OtaService m_ota;
     API m_api;
 
     Commands::CommandDispatcher m_dispatcher;
@@ -70,6 +73,7 @@ private:
     Commands::RebootHandler m_rebootHandler;
     Commands::EngineConfigHandler m_engineConfigHandler;
     Commands::LogsHandler m_logsHandler;
+    Commands::OtaHandler m_otaHandler;
 
     // Hold references to m_dispatcher, so they come after it.
     Services::CommandSession m_serialSession;

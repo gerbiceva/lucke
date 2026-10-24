@@ -46,8 +46,9 @@ void LogsInfo::toJson(JsonObject& obj)
 }
 
 API::API(Services::SettingsStore& settings, Handler::FixtureHandler& fixtures, Handler::InputHandler& inputs,
-         Net::Wifi& wifi, Services::Telemetry& telemetry)
-    : m_settings(settings), m_fixtures(fixtures), m_inputs(inputs), m_wifi(wifi), m_telemetry(telemetry)
+         Net::Wifi& wifi, Services::Telemetry& telemetry, Services::OtaService& ota)
+    : m_settings(settings), m_fixtures(fixtures), m_inputs(inputs), m_wifi(wifi), m_telemetry(telemetry),
+      m_ota(ota)
 {}
 
 DeviceInfo API::describe() const
@@ -200,6 +201,13 @@ void API::reboot(Origin from, uint32_t delayMs)
     // Fixture records are written with a delay; don't lose the last change.
     m_settings.flush();
     runLater(delayMs, [] { ESP.restart(); });
+}
+
+void API::enableOta(uint32_t minutes, Origin from)
+{
+    s_log.warn("OTA enabled for %lu min via %.*s", static_cast<unsigned long>(minutes),
+               static_cast<int>(from.size()), from.data());
+    m_ota.enable(minutes);
 }
 
 void API::factoryReset(Origin from, uint32_t delayMs)

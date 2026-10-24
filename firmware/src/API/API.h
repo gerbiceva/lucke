@@ -18,6 +18,7 @@
 #include "Network/Wifi.h"
 #include "Services/SettingsStore.h"
 #include "Services/Telemetry.h"
+#include "Services/OtaService.h"
 
 enum class ApiError : uint8_t
 {
@@ -75,7 +76,7 @@ class API
 {
 public:
     API(Services::SettingsStore& settings, Handler::FixtureHandler& fixtures, Handler::InputHandler& inputs,
-        Net::Wifi& wifi, Services::Telemetry& telemetry);
+        Net::Wifi& wifi, Services::Telemetry& telemetry, Services::OtaService& ota);
 
     // Reads
     [[nodiscard]] DeviceInfo describe() const;
@@ -103,6 +104,8 @@ public:
     // Actions. Both restart after delayMs, so the caller can still reply.
     void reboot(Origin from, uint32_t delayMs = 1000);
     void factoryReset(Origin from, uint32_t delayMs = 1000);
+    // Accepts a firmware update over WiFi for the next `minutes`.
+    void enableOta(uint32_t minutes, Origin from);
 
 private:
     // Runs fn on a short-lived task after delayMs.
@@ -113,4 +116,5 @@ private:
     Handler::InputHandler& m_inputs;
     Net::Wifi& m_wifi;
     Services::Telemetry& m_telemetry;
+    Services::OtaService& m_ota;
 };
