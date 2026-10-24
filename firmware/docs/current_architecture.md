@@ -116,7 +116,7 @@ transport (TCP 8888 or serial). See [`api.md`](./api.md).
   command at a time** (a mutex), so serial and TCP handlers never race each
   other.
 - `TcpListener` serves one client at a time, buffers into lines (max 4096
-  bytes), and drops a client after 10 s without data.
+  bytes), and drops a client after 2 s without data.
 - Handlers: `describe`, `fixtures`/`getfixture`, `setfixture`, `inputs`,
   `wifi`, `reboot`, `factory_reset`, `serial_report_task`,
   `wireless_report_task`, `wifi_animation`.
@@ -175,10 +175,8 @@ Each line (`I   12.345 [WIFI] message`) is formatted once, then:
 - Only one WS2815 strip (SPI2); more strips must use FastLED.
 - sACN: one source per universe, no priority merge. Source loss is detected
   and logged, but LEDs still hold the last frame.
-- `highlight` toggles regardless of the value sent.
 - Serialization overlaps: `toJson` / `describe` / `configJson` /
-  `outputsJson` emit overlapping fields. `describe`'s `num_leds` on an
-  output is really the group count.
+  `outputsJson` emit overlapping fields.
 
 ## 10. Other diagrams in this folder
 

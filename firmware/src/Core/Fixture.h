@@ -52,7 +52,7 @@ public:
     void setAddress(uint16_t new_address);
     void setPreset(uint8_t new_preset);
     void setName(const std::string& other);
-    void toggleHighlight();
+    void setHighlight(bool on);
     // Takes effect on the next boot; see FixtureHandler::setLedCount.
     void setLedCount(uint16_t numLeds);
     [[nodiscard]] uint16_t ledCount() const;

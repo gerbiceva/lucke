@@ -23,6 +23,7 @@ void DeviceInfo::toJson(JsonObject& obj)
 {
     settings.toJson(obj);
     obj.remove("password");
+    obj["protocol"] = PROTOCOL_VERSION;
 
     JsonObject wifiObj = obj["wifi"].to<JsonObject>();
     wifi.toJson(wifiObj);
@@ -147,7 +148,7 @@ std::expected<FixtureUpdate, ApiError> API::setFixture(uint8_t id, const Fixture
     if (patch.address) changed |= m_fixtures.setAddress(id, *patch.address);
     if (patch.preset) changed |= m_fixtures.setPreset(id, *patch.preset);
     if (patch.name) changed |= m_fixtures.setName(id, *patch.name);
-    if (patch.highlight) changed |= m_fixtures.highlight(id);
+    if (patch.highlight) changed |= m_fixtures.setHighlight(id, *patch.highlight);
 
     // The strip is built with its count at boot, so a new one needs a restart.
     bool rebooting = false;

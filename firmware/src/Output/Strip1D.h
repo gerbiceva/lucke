@@ -71,7 +71,8 @@ namespace Output
         void describe(JsonObject& desc) override
         {
             Base::describe(desc);
-            desc["num_leds"] = footprint() / 3;
+            desc["num_leds"] = m_numLeds;
+            desc["num_groups"] = m_numGroups;
         }
 
         // Same fields as LED1D, so client tools see no change.

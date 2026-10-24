@@ -141,7 +141,7 @@ record.
 3. ✅ **Buffer overflow in the sACN parser**: unchecked packet size.
 4. ✅ **Division by zero** with `num_groups: 0` — `Strip1D` rejects 0 and
    non-divisors.
-5. ⬜ **`Pin::toJson` adds nothing**: `.as<JsonArray>()` on a missing key →
+5. ✅ **`Pin::toJson` adds nothing** (removed): `.as<JsonArray>()` on a missing key →
    should be `.to<JsonArray>()`. Unused.
 6. ✅ **`setPreset` zeroed the footprint before validating** — an invalid
    preset now leaves preset and footprint unchanged.
@@ -166,9 +166,9 @@ record.
     nothing read it (HWCDC retries 20 × 100 ms).
 17. ✅ **Every `setfixture` wrote flash** — fixture records are now written
     1 s after the last change.
-18. ⬜ **`highlight` toggles whatever value is sent** (`"highlight": false`
+18. ✅ **`highlight` toggles whatever value is sent** (`"highlight": false`
     turns it on).
-19. ⬜ **`describe()`'s `num_leds` is the group count**, not the LED count
+19. ✅ **`describe()`'s `num_leds` is the group count**, not the LED count
     (`Strip1D::describe` uses `footprint() / 3`).
 
 ## Suggested next steps

@@ -76,7 +76,7 @@ namespace Handler
         [[nodiscard]] bool setAddress(uint8_t id, uint16_t addr);
         [[nodiscard]] bool setPreset(uint8_t id, uint8_t preset);
         [[nodiscard]] bool setName(uint8_t id, const std::string& name);
-        [[nodiscard]] bool highlight(uint8_t id);
+        [[nodiscard]] bool setHighlight(uint8_t id, bool on);
         // Saves a new LED count and resets the preset to 0. Applied after a reboot.
         [[nodiscard]] bool setLedCount(uint8_t id, uint16_t leds);
 
