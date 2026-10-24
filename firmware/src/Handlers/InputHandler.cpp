@@ -8,7 +8,7 @@ namespace
     // request is picked up within this time even with no traffic.
     constexpr uint32_t c_waitMs = 100;
 
-    // E1.31 6.7.1: a source is lost after 2.5 s without data.
+    // E1.31 6.7.1 data loss timeout
     constexpr TickType_t c_lossTimeout = pdMS_TO_TICKS(2500);
     constexpr TickType_t c_lossCheckInterval = pdMS_TO_TICKS(250);
 
@@ -127,7 +127,6 @@ namespace Handler
         {
             if (!e.active || now - e.lastPacket <= c_lossTimeout) continue;
             e.active = false;
-            // A returning sender may start at any sequence number.
             e.seen = false;
             s_log.warn("universe {} lost (no data for 2.5 s)", uni);
         }

@@ -56,8 +56,7 @@ namespace Services
             {
                 m_udpReport.send(m_report.settings());
             }
-            // Once a minute: memory headroom, to catch a leak or a task
-            // running out of stack before it crashes.
+            // Every minute
             if (++cycles % 6 == 0 && Utils::Log::enabled(Utils::Level::Debug))
             {
                 s_log.debug("heap free {} (min {}, largest block {})",

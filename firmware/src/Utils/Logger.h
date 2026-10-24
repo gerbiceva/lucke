@@ -18,10 +18,7 @@ namespace Utils
         Error
     };
 
-    // The most recent log lines, oldest dropped first, so the console can
-    // show what happened before anyone was looking. Lines are stored whole
-    // (length-prefixed) and numbered, so a reader can tell when lines it
-    // hasn't seen yet were overwritten.
+    // Recent log lines, numbered; oldest dropped first.
     class LogHistory
     {
     public:
@@ -30,16 +27,12 @@ namespace Utils
 
         void append(std::string_view line);
 
-        // Copies the first stored line numbered >= seq into out and sets seq
-        // to that line's number. nullopt when there is no such line yet.
+        // First line numbered >= seq; seq is set to its number.
         std::optional<std::string_view> read(uint32_t& seq, std::span<char> out) const;
 
-        // Number the next appended line will get.
         uint32_t nextSeq() const;
 
     private:
-        // Positions only ever grow; Capacity divides 2^32, so % stays
-        // consistent when they wrap.
         std::array<uint8_t, Capacity> m_buf{};
         uint32_t m_head = 0;      // where the next line is written
         uint32_t m_tail = 0;      // oldest stored line
@@ -48,14 +41,6 @@ namespace Utils
         mutable portMUX_TYPE m_lock = portMUX_INITIALIZER_UNLOCKED;
     };
 
-    // One per module, holding its tag:
-    //   namespace { constexpr Utils::Log s_log{"WIFI"}; }
-    //   s_log.info("connecting to '{}'", ssid);
-    //
-    // A call below the current level costs one comparison. Otherwise the
-    // line is formatted once, kept in the history (Info and up) and written
-    // to serial without blocking: when no host is plugged in or the TX
-    // buffer is full, the serial copy is skipped.
     class Log
     {
     public:
@@ -85,8 +70,6 @@ namespace Utils
             if (enabled(Level::Error)) write(Level::Error, fmt.get(), std::make_format_args(args...));
         }
 
-        // Starts serial output. Lines logged before this are still kept in
-        // the history.
         static void begin(uint32_t baudrate = 9600);
 
         static void setLevel(Level level) { s_level.store(level, std::memory_order_relaxed); }
@@ -95,9 +78,7 @@ namespace Utils
 
         static const LogHistory& history() { return s_history; }
 
-        // Writes text to serial as is: no prefix, not kept in the history.
-        // For console output that isn't a log line, like the telemetry
-        // report. Never blocks, same as log lines.
+        // Unprefixed serial output, not kept in history. Never blocks.
         static void raw(std::string_view text);
 
     private:

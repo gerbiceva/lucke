@@ -6,8 +6,6 @@ namespace
 {
     constexpr Utils::Log s_log{"ENGINE"};
 
-    // Why the chip last restarted. A crash, watchdog or brownout mid-show
-    // shows up here on the next boot.
     void logResetReason()
     {
         const char* name = "unknown";

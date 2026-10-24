@@ -4,8 +4,7 @@
 
 namespace
 {
-    // Output iterator into a fixed buffer. Writes past the end are dropped
-    // but still counted, so the caller can tell the text was cut.
+    // Fixed-buffer output iterator; counts what didn't fit.
     struct BoundedOut
     {
         using difference_type = std::ptrdiff_t;
@@ -105,12 +104,7 @@ namespace Utils
     {
         if (s_serialReady.load()) return;
 #if ARDUINO_USB_CDC_ON_BOOT && ARDUINO_USB_MODE
-        // USB serial (HWCDC). When the cable is in but nothing on the host
-        // reads, each write retries 20x the TX timeout (100 ms default)
-        // before giving up. raw() checks for room first so that path is
-        // rare; a short timeout bounds it when two tasks race for the last
-        // space. The buffer fits a whole report or reply. Both must be set
-        // before begin().
+        // Short TX timeout so a stalled host can't block a task. Set before begin().
         Serial.setTxBufferSize(4096);
         Serial.setTxTimeoutMs(2);
 #endif
@@ -122,11 +116,9 @@ namespace Utils
     {
         if (!s_serialReady.load(std::memory_order_relaxed)) return;
 #if ARDUINO_USB_CDC_ON_BOOT && ARDUINO_USB_MODE
-        // No host on the cable: nobody to show it to, the history has it.
         if (!Serial.isPlugged()) return;
 #endif
-        // A host that stopped reading leaves the TX buffer full; skip
-        // instead of waiting for room, and say so once it drains.
+        // Host not reading: drop instead of waiting.
         if (Serial.availableForWrite() < static_cast<int>(text.size()))
         {
             s_dropped.fetch_add(1, std::memory_order_relaxed);
@@ -144,7 +136,7 @@ namespace Utils
 
     void Log::write(Level level, std::string_view fmt, std::format_args args) const
     {
-        // "I   12.345 [WIFI] message", cut at MaxLine, then "\r\n".
+        // "I   12.345 [WIFI] message\r\n"
         char line[LogHistory::MaxLine + 2];
         BoundedOut out{line, LogHistory::MaxLine};
         const uint32_t ms = millis();

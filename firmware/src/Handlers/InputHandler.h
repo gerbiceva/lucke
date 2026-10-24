@@ -17,7 +17,6 @@ namespace Handler
     {
         void update();
         void reopen();
-        // Logs universes whose sender went quiet. Input task only.
         void checkLoss();
     public:
         explicit InputHandler(Tasks::Manager& tasks);

@@ -65,9 +65,7 @@ public:
         return rec.id;
     }
 
-    // Logs (debug) the stack each task has never touched, in bytes. Near
-    // zero means it is close to overflowing. Assumes no task has returned:
-    // a returned task deleted itself and its handle is gone.
+    // Debug: unused stack per task. Assumes no task has returned.
     void logStackHeadroom()
     {
         std::scoped_lock lock(m_mutex);
