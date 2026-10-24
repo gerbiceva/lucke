@@ -11,15 +11,15 @@ More information about PlatformIO Unit Testing:
 - https://docs.platformio.org/en/latest/advanced/unit-testing/index.html
 
 
-request:
+request (full reference with examples: docs/api.md):
  - describe
  - fixtures
  - inputs
  - reboot
  - factory_reset
- - print_task
+ - serial_report_task
    - value[bool]
- - auto_report_task
+ - wireless_report_task
    - value[bool]
  - wifi_animation
    - value[bool]
@@ -34,4 +34,4 @@ request:
      - address[number]
      - presetIndex[number]
      - name[string]
-     - highlight, value[bool]
+     - highlight[bool] (toggles, whatever the value)

@@ -1,0 +1,24 @@
+#include "FixtureConfig.h"
+
+using namespace Config;
+
+void Fixture::toJson(JsonObject& obj)
+{
+    obj["id"] = m_ID;
+    obj["name"] = name;
+    obj["type"] = type;
+    obj["universe"] = universe;
+    obj["address"] = address;
+    obj["presetIndex"] = selectedPreset;
+    obj["numPresets"] = numPresets;
+    obj["highlighted"] = highlighted;
+    obj["num_leds"] = numLeds;
+}
+
+JsonDocument Fixture::toJsonDoc() 
+{
+    JsonDocument doc;
+    JsonObject obj = doc.to<JsonObject>();
+    toJson(obj);
+    return doc;
+}

@@ -1,517 +1,143 @@
 #include "Engine.h"
+#include <esp_system.h>
 #include "Utils/Logger.h"
-#include "Utils/Wifi.h"
-#include "Utils/JsonUtils.h"
 
-using namespace Utils::Json;
-
-Engine::Engine ()
-    : m_storage(Utils::Storage("engine")), m_inputHandler(Handler::InputHandler::instance())
+namespace
 {
+    constexpr Utils::Log s_log{"ENGINE"};
 
-    Utils::Logger::enable();
-    Utils::Logger::setLevel(Utils::Logger::DEBUG);
-    // sleep(5);
-    readSettings();
-
-    Utils::Wifi::initialize(m_settings.ssid.c_str(), m_settings.password.c_str(), [this](bool is_connected) 
+    void logResetReason()
     {
-        this->m_taskExecutor.suspendTask(this->m_inputTaskID);        
-        this->wifiStatus();        
-        this->m_taskExecutor.resumeTask(this->m_inputTaskID);
-        
-        this->clearSrcBuffers();
-    }, [this](std::string data)
-    {
-        this->parseConfig(data);
-    });
-}
-
-void Engine::readSettings()
-{
-    // Utils::Logger::dprintln("[ENGINE] Reading settings");
-    if(m_storage.isKey("settings"))
-    {
-        std::string s = m_storage.getString("settings");
-        JsonDocument doc;
-        deserializeJson(doc, s);
-        factoryReset = getElement<bool>(doc, "to_factory_settings", false);
-        if(factoryReset)
+        const char* name = "unknown";
+        bool abnormal = true;
+        switch (esp_reset_reason())
         {
-            m_settings.to_factory_settings = false;
-            m_storage.putString("settings", m_settings.toString());
-            s = m_storage.getString("settings");
-            deserializeJson(doc, s);
-            // return;
+            case ESP_RST_POWERON:    name = "power on"; abnormal = false; break;
+            case ESP_RST_EXT:        name = "external pin"; abnormal = false; break;
+            case ESP_RST_SW:         name = "software restart"; abnormal = false; break;
+            case ESP_RST_USB:        name = "USB"; abnormal = false; break;
+            case ESP_RST_JTAG:       name = "JTAG"; abnormal = false; break;
+            case ESP_RST_DEEPSLEEP:  name = "deep sleep wake"; abnormal = false; break;
+            case ESP_RST_PANIC:      name = "crash (panic)"; break;
+            case ESP_RST_INT_WDT:    name = "interrupt watchdog"; break;
+            case ESP_RST_TASK_WDT:   name = "task watchdog"; break;
+            case ESP_RST_WDT:        name = "watchdog"; break;
+            case ESP_RST_BROWNOUT:   name = "brownout (supply voltage dropped)"; break;
+            case ESP_RST_PWR_GLITCH: name = "power glitch"; break;
+            case ESP_RST_CPU_LOCKUP: name = "CPU lockup"; break;
+            case ESP_RST_EFUSE:      name = "efuse error"; break;
+            case ESP_RST_SDIO:       name = "SDIO"; abnormal = false; break;
+            default: break;
         }
-
-        updateElement<bool>(doc, "print_task", m_settings.print_task);
-        updateElement<bool>(doc, "auto_report_task", m_settings.report_task);
-        updateElement<bool>(doc, "wifi_animation", m_settings.wifi_animation);
-
-        const char* ssid = getElement<const char*>(doc, "ssid", m_settings.ssid.c_str());
-        m_settings.ssid = ssid;
-        const char* password = getElement<const char*>(doc, "password", m_settings.password.c_str());
-        m_settings.password = password;
+        if (abnormal) s_log.warn("reset reason: %s", name);
+        else s_log.info("reset reason: %s", name);
     }
-    else 
-    {
-        m_storage.putString("settings", m_settings.toString());
-    }
-
 }
 
-Engine& Engine::instance()
+Engine::Engine()
+    : m_inputs(m_tasks),
+      m_fixtures(m_inputs, m_settings),
+      m_render(m_fixtures, m_tasks),
+      m_connectivity(m_wifi, m_tasks),
+      m_statusReport(m_settings, m_wifi, m_fixtures, m_inputs),
+      m_telemetry(m_settings.engine(), m_wifi, m_fixtures, m_statusReport, m_tasks),
+      m_ota(m_render, m_wifi, m_tasks),
+      m_api(m_settings, m_fixtures, m_inputs, m_wifi, m_telemetry, m_ota),
+      m_describeHandler(m_api),
+      m_getFixtureHandler(m_api),
+      m_setFixtureHandler(m_api),
+      m_inputsHandler(m_api),
+      m_wifiConfigHandler(m_api),
+      m_rebootHandler(m_api),
+      m_engineConfigHandler(m_api),
+      m_logsHandler(m_api),
+      m_otaHandler(m_api),
+      m_serialSession(m_serial, m_dispatcher, m_tasks, "serial_cmd"),
+      m_tcpListener(COMMAND_PORT, m_dispatcher, m_tasks)
 {
-    static Engine engine;
-    return engine;
+    Utils::Log::begin();
+    Utils::Log::setLevel(Utils::Level::Debug);
 }
 
 void Engine::init()
 {
-    if(!inited)
-    {        
-        // Utils::Logger::dprintln("[ENGINE] Creating tasks");
-        Utils::Wifi::startTasks();
-        m_inputTaskID = m_taskExecutor.spawnTask("DMX Input", [this]()
-        {
-            this->m_inputHandler.update();
-        },
-        3, 20000);
+    logResetReason();
 
-        m_taskExecutor.spawnTask("Output", [this]()
-        {
-            this->m_fixtureHandler.update();
-        },
-        3, 20000);
+    s_log.debug("loading settings");
+    m_settings.load();
+    const Config::Engine& config = m_settings.engine();
 
-        if(m_settings.print_task)
-        {
-            m_taskExecutor.spawnTask("Print Report", [this]()
-            {
-                this->printReport();
-            }, 
-            1, 10000);
-        }
+    s_log.debug("connecting wifi");
+    m_wifi.connect(config.ssid, config.password);
 
-        // choose different port for this
-        if(m_settings.report_task)
-        {
-            m_taskExecutor.spawnTask("Send report", [this]()
-            {
-                this->sendReport();
-            }, 
-            1, 10000);
-        }
+    s_log.debug("registering commands");
+    registerCommands();
 
-        m_taskExecutor.spawnTask("Read serial", [this]()
-        {
-            this->readSerial();
-        }, 
-        1, 10000);
+    // s_log.debug("starting BLE");
+    // m_ble.begin("Lucke");
 
+    s_log.debug("starting services");
+    startServices();
 
-        inited = true;
-    }
+    s_log.info("%.*s initialized", static_cast<int>(config.version.size()), config.version.data());
 }
 
-void Engine::wifiStatus()
+void Engine::registerCommands()
 {
-    static bool firstTime = true;
-    Utils::Logger::println("[WIFI] Disconnected...");
-
-    uint32_t animationHandle;
-    if(this->m_settings.wifi_animation || firstTime)
-    {
-        animationHandle = this->m_taskExecutor.spawnTask("Wifi animation", [this]()
-        {
-            this->clearSrcBuffers();
-            while(true)
-            {
-                if(this->wifiAnimation != nullptr)
-                {
-                    this->wifiAnimation();
-                }
-                vTaskDelay(20);
-            }
-        }, 1, 1000);
-
-    }
-
-    while(!Utils::Wifi::instance().isConnected())
-    {
-        vTaskDelay(10);
-    }
-    
-    Utils::Logger::println("[WIFI] Connected...");
-    if(this->m_settings.wifi_animation || firstTime)
-    {
-        this->m_taskExecutor.stopTask(animationHandle);
-    }
-
-    firstTime = false;
+    m_dispatcher.registerHandler("describe", &m_describeHandler);
+    m_dispatcher.registerHandler("fixtures", &m_getFixtureHandler);
+    m_dispatcher.registerHandler("getfixture", &m_getFixtureHandler);
+    m_dispatcher.registerHandler("setfixture", &m_setFixtureHandler);
+    m_dispatcher.registerHandler("logs", &m_logsHandler);
+    m_dispatcher.registerHandler("ota", &m_otaHandler);
+    m_dispatcher.registerHandler("inputs", &m_inputsHandler);
+    m_dispatcher.registerHandler("wifi", &m_wifiConfigHandler);
+    m_dispatcher.registerHandler("reboot", &m_rebootHandler);
+    m_dispatcher.registerHandler("factory_reset", &m_engineConfigHandler);
+    m_dispatcher.registerHandler("serial_report_task", &m_engineConfigHandler);
+    m_dispatcher.registerHandler("wireless_report_task", &m_engineConfigHandler);
+    m_dispatcher.registerHandler("wifi_animation", &m_engineConfigHandler);
 }
 
-
-void Engine::parseConfig(const std::string& data, bool serial)
+// Everything that reacts to the wifi link. Listeners run on the
+// Connectivity task, in this order.
+void Engine::wireConnectivity()
 {
-    JsonDocument doc;
-    deserializeJson(doc, data);
-    
-    std::string response;
-    std::string status = "OK";
+    m_connectivity.onChange([this](bool connected) {
+        using Mode = Services::RenderLoop::Mode;
+        if (connected)
+            m_render.setMode(Mode::Live);
+        else
+            m_render.setMode(m_settings.snapshot().wifi_animation ? Mode::Animation : Mode::Off);
+    });
 
-    auto sendResponse = [&response, &status, serial]() 
-    {
-        JsonDocument json;
-        json["status"] = status.c_str();
-        json["response"] = response.c_str();
+    m_connectivity.onChange([this](bool connected) {
+        if (connected)
+            m_tcpListener.begin();
+        else
+            m_tcpListener.stop();
+    });
 
-        std::string s;
-        serializeJson(json, s);
-        if(serial)
-        {
-            // Serial.println(s.c_str());
-            Utils::Logger::print("\nResponse: ");
-            Utils::Logger::println(s.c_str());
-            return;
-        }
-        Utils::Wifi::instance().sendUdpPacket(12345, s);
-    };
-    
-
-    JsonDocument jsonTemp;
-    const char* req = doc["request"];
-
-    if(strcmp(req, "describe") == 0)
-    {
-        response = Engine::instance().toString();
-        // Utils::Logger::dprintln("Describe engine request");
-    }
-    else if(strcmp(req, "fixtures") == 0)
-    {
-        JsonObject obj = jsonTemp["fixture_handler"].to<JsonObject>();
-        m_fixtureHandler.toJsonFull(obj);
-        serializeJson(jsonTemp, response);
-        // Utils::Logger::dprintln("Describe fix handler request");
-    }
-    else if(strcmp(req, "inputs") == 0)
-    {
-        JsonObject obj = jsonTemp["input_handler"].to<JsonObject>();
-        m_inputHandler.toJson(obj);
-        serializeJson(jsonTemp, response);
-        // Utils::Logger::dprintln("Describe input handler request");
-    }
-    else if(strcmp(req, "reboot") == 0)
-    {
-        response = "Rebooting in 1 second";
-        // Utils::Logger::dprintln("Reboot request");
-        sendResponse();
-        sleep(1);
-        ESP.restart();
-    }
-    else if(strcmp(req, "factory_reset") == 0)
-    {
-        std::string s = m_storage.getString("settings");
-        JsonDocument doc;
-        deserializeJson(doc, s);
-        m_settings.to_factory_settings = true;
-        m_storage.putString("settings", m_settings.toString());
-        ESP.restart();
-        return;
-    }
-    else if(strcmp(req, "print_task") == 0)
-    {
-        if(doc["value"].is<bool>())
-        {
-            bool value = doc["value"];
-            m_settings.print_task = value;
-            m_storage.putString("settings", m_settings.toString());
-            response = Utils::String::concat("Set print task enabled to ", value);
-        }
-        else 
-        {
-            Utils::Logger::println("[REQUEST] Invalid json, missing field value");
-            response = "Missing field value in print_task";
-            status = "ERROR";
-        }
-    }
-    else if(strcmp(req, "auto_report_task") == 0)
-    {
-        if(doc["value"].is<bool>())
-        {
-            bool value = doc["value"];
-            m_settings.report_task = value;
-            m_storage.putString("settings", m_settings.toString());
-            response = Utils::String::concat("Set auto report task enabled to ", value);
-        }
-        else 
-        {
-            Utils::Logger::println("[REQUEST] Invalid json, missing field value");
-            response = "Missing field value in auto_report_task";
-            status = "ERROR";
-        }
-    }
-    else if(strcmp(req, "wifi_animation") == 0)
-    {
-        if(doc["value"].is<bool>())
-        {
-            bool value = doc["value"];
-            m_settings.wifi_animation = value;
-            m_storage.putString("settings", m_settings.toString());
-            response = Utils::String::concat("Set wifi animation enabled to ", value);
-        }
-        else 
-        {
-            Utils::Logger::println("[REQUEST] Invalid json, missing field value");
-            response = "Missing field value in wifi animation";
-            status = "ERROR";
-        }
-    }
-
-    else if(strcmp(req, "wifi") == 0)
-    {
-        bool dirty = false;
-        if(doc["ssid"].is<const char*>())
-        {
-            const char* ssid = doc["ssid"];
-            m_settings.ssid = ssid;
-            response = Utils::String::concat("Set ssid to '", ssid, "'");
-            dirty = true;
-            // Utils::Logger::dprintln("Set ssid request");
-        }
-        if(doc["password"].is<const char*>())
-        {
-            const char* password = doc["password"];
-            m_settings.password = password;
-
-            if(response.size() != 0)
-            {
-                response = Utils::String::concat(response, " and set password to '", password, "'");
-            }
-            else
-            {
-                response = Utils::String::concat("Set wifi password to '", password, "'");
-            }
-
-            dirty = true;
-            // Utils::Logger::dprintln("Set password request");
-        }
-
-        if(dirty)
-        {
-            m_storage.putString("settings", m_settings.toString());
-            sendResponse();
-            // Utils::Wifi::reinitialize(settings.ssid.c_str(), settings.password.c_str());
-            
-            JsonObject obj = jsonTemp["wifi"].to<JsonObject>();
-            Utils::Wifi::instance().toJson(obj);
-            serializeJson(jsonTemp, response);
-            // temp
-            ESP.restart();
-        }
-    }    
-    else if(strcmp(req, "getfixture") == 0)
-    {
-        if(doc["id"].is<uint8_t>())
-        {
-            uint8_t id = doc["id"];
-            Fixture* fix = m_fixtureHandler.get(id);
-            if(fix)
-            {
-                JsonObject o = jsonTemp["fixture"].to<JsonObject>();
-                fix->toJsonFull(o);
-                // Utils::Logger::dprintln("Get fixture");
-                serializeJson(jsonTemp, response);
-            }
-            else
-            {
-                Utils::Logger::printf("[REQUEST] Could not find fixture with id %d\n", id);
-                response = "Could not find selected fixture";
-                status = "ERROR";
-            }
-        }
-        else 
-        {
-            Utils::Logger::printf("[REQUEST] Get fixture json does not containd 'id' field!\n");
-            response = "Invalid json";
-            status = "ERROR";
-        }
-    }
-    else if(strcmp(req, "setfixture") == 0)
-    {
-        if(doc["id"].is<uint8_t>())
-        {    
-            uint8_t id = doc["id"];
-            Fixture* fix = m_fixtureHandler.get(id);
-            if(fix)
-            {
-                //Utils::Logger::dprintf("Set fixture %d\n", id);
-                bool set = false;
-                if (doc["universe"].is<uint8_t>())
-                {
-                    uint8_t universe = doc["universe"];
-                    fix->setUniverse(universe);
-                    response = Utils::String::concat("Set universe of fixture '", fix->getName(), "'[", fix->id(), "] to ", universe);
-                    set = true;
-                }
-                if (doc["address"].is<uint16_t>())
-                {
-                    uint16_t address = doc["address"];
-                    fix->setAddress(address);
-                    response = Utils::String::concat("Set address of fixture '", fix->getName(), "'[", fix->id(), "] to ", address);
-                    set = true;
-                }
-                if (doc["presetIndex"].is<uint8_t>())
-                {
-                    uint8_t presetIndex = doc["presetIndex"];
-                    fix->setPreset(presetIndex);
-                    response = Utils::String::concat("Set preset of fixture '", fix->getName(), "'[", fix->id(), "] to ", presetIndex);
-                    set = true;
-                }
-                if (doc["name"].is<const char*>())
-                {
-                    const char* name = doc["name"];
-                    fix->setName(name);
-                    response = Utils::String::concat("Set name of fixture '", fix->getName(), "'[", fix->id(), "] to ", name);
-                    set = true;
-                }
-                if (doc["highlight"].is<bool>())
-                {
-                    bool highlight = doc["highlight"];
-                    m_fixtureHandler.highlightFixture(id);
-                    response = Utils::String::concat("Toggled highlight for fixture '", fix->getName(), "'[", fix->id(), "] to ", highlight);
-                }
-
-                if(set)
-                {
-                    fix->updatePresets();
-
-                    std::string key = "fixture" + std::to_string(id);
-                    std::string store;
-
-                    // TODO: make with Optional
-                    serializeJson(fix->toJsonDoc(), store);
-                    this->m_storage.putString(key, store);
-                }
-            }
-            else
-            {
-                Utils::Logger::printf("[REQUEST] Could not find fixture with id %d\n", id);
-                response = Utils::String::concat("Fixture with id '", id, "' does not exist");
-                status = "ERROR";
-            }
-        }
-        else 
-        {
-            Utils::Logger::printf("[REQUEST] Set fixture json does not containd 'id' field!\n");
-            response = "Invalid json";
-            status = "ERROR";
-        }
-    }
-
-    // Utils::Logger::dprintf("[REQUEST] %s\n", response);
-    //Utils::Logger::dprintln(response.c_str());
-    sendResponse();
+    m_connectivity.onChange([this](bool connected) {
+        if (connected)
+            m_inputs.reconnect();
+    });
 }
 
-void Engine::addButton(Input::Button&& button)
+void Engine::startServices()
 {
-    static bool enabled = false;
-    if(!enabled) 
-    {
-        m_taskExecutor.spawnTask("Button Input", [this]()
-        {
-            this->m_buttonManager.update();
-        }, 2);
-        enabled = true;
-    }
+    m_settings.start(m_tasks);
+    m_inputs.start();
 
-    //Utils::Logger::dprintf("Added new button '%s' on pin %d\n", button.getName().c_str(), button.getPin());
-    m_buttonManager.add(std::move(button));
-}
+    // Animation until wifi first connects, then live DMX (see wireConnectivity)
+    m_render.start();
 
-std::shared_ptr<Traits::InputInterface> Engine::getDMXInput(uint8_t universe, uint8_t old_universe)
-{
-    return m_inputHandler.interface(universe, old_universe);
-}
+    wireConnectivity();
+    m_connectivity.start();
 
-// Traits::InputInterface* Engine::getDMXInput(uint8_t universe)
-// {
-//     return m_inputHandler.interface(universe);
-// }
+    m_telemetry.start();
+    m_ota.start();
 
-
-void Engine::clearSrcBuffers()
-{
-    m_inputHandler.clearSrcBuffers();
-}
-
-void Engine::toJson(JsonObject& doc)
-{
-    // doc["heap_size"] = ESP.getHeapSize();
-	// doc["heap_free"] = ESP.getFreeHeap();
-    doc["version"] = ENGINE_VERSION;
-
-    JsonObject settingsDoc = doc["settings"].to<JsonObject>();
-    m_settings.toJson(settingsDoc);
-
-    JsonObject wifiDoc = doc["wifi"].to<JsonObject>();
-    Utils::Wifi::instance().toJson(wifiDoc);
-
-    JsonObject fixtureDoc = doc["fixture_handler"].to<JsonObject>();
-    m_fixtureHandler.toJson(fixtureDoc);
-
-    JsonObject inputDoc = doc["input_handler"].to<JsonObject>();
-    m_inputHandler.toJson(inputDoc);
-}
-
-std::string Engine::toString()
-{
-    JsonDocument doc;
-    JsonObject engineObj = doc["engine"].to<JsonObject>();
-    toJson(engineObj);
-
-    std::string ret;
-    serializeJson(doc, ret);
-    return ret;
-}
-
-void Engine::sendReport()
-{
-    std::string temp;
-    while(true)
-    {
-        // JsonDocument doc;
-        // JsonObject wifiDoc = doc["wifi"].to<JsonObject>();
-        // Utils::Wifi::instance().toJson(wifiDoc);
-        // serializeJson(doc, temp);
-        std::string temp = toString().c_str();
-        Utils::Wifi::instance().sendUdpPacket(12344, temp);
-
-        vTaskDelay(10000);
-    }
-}
-
-void Engine::printReport()
-{
-    while(true)
-    {
-        Utils::Logger::println(toString().c_str());
-        vTaskDelay(10000);
-    }
-}
-
-void Engine::readSerial()
-{
-    while(true)
-    {
-        if(Serial.available())
-        {
-            auto v = Serial.readStringUntil('\n');
-            parseConfig(std::string(v.c_str()), true);
-        }
-
-        vTaskDelay(100);
-    }
+    m_serialSession.start();
+    m_tcpListener.start();
 }

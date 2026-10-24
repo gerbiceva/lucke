@@ -1,166 +1,151 @@
 #include "InputHandler.h"
-#include "Input/SACN.h"
+#include <algorithm>
 #include "Utils/Logger.h"
-#include <utility>
+
+namespace
+{
+    // Longest the input task blocks waiting for packets, so a reconnect
+    // request is picked up within this time even with no traffic.
+    constexpr uint32_t c_waitMs = 100;
+
+    // E1.31 6.7.1 data loss timeout
+    constexpr TickType_t c_lossTimeout = pdMS_TO_TICKS(2500);
+    constexpr TickType_t c_lossCheckInterval = pdMS_TO_TICKS(250);
+
+    constexpr Utils::Log s_log{"INPUT"};
+}
 
 namespace Handler
 {
-    using Traits::InputInterface;
+    InputHandler::InputHandler(Tasks::Manager& tasks)
+        : m_tasks(tasks)
+    {}
 
-    // std::vector<InputInterface*> InputHandler::m_inputs;
-    // TaskHandle_t InputHandler::m_handle;
-
-    // std::unordered_map<uint8_t, Traits::InputInterface*> InputHandler::m_inputs;
-    // std::vector<std::pair<uint8_t, Traits::InputInterface*>> InputHandler::m_vecInputs;
-    
-    // InputInterface* InputHandler::find(uint8_t universe)
-    // {
-    //     for(InputInterface* p : m_inputs)
-    //     {
-    //         if(p && p->getUniverse() == universe)
-    //         {
-    //             return p;
-    //         }
-    //     }
-    //
-    //     return nullptr;
-    // }
-
-    Utils::Optional<InputHandler::Counter*> InputHandler::find(uint8_t universe) {
-        if (m_inputs.find(universe) != m_inputs.end()) {
-            return &m_inputs[universe];
-        }
-
-        return {};
+    void InputHandler::start()
+    {
+        // No delay in the loop: receive() blocks until traffic arrives.
+        m_tasks.spawnTask("input_update", [this]() {
+            while (true)
+            {
+                update();
+            }
+        }, 3, 30000);
     }
 
-    void InputHandler::iterateInputs(std::function<void(std::shared_ptr<Traits::InputInterface>)> callback) {
-        for (auto& it : m_inputs) {
-            callback(it.second.interface);
+    std::shared_ptr<SyncBuffer> InputHandler::subscribe(uint16_t uni)
+    {
+        std::scoped_lock lock(m_mutex);
+        auto [it, inserted] = m_universes.try_emplace(uni);
+        // Before the socket is open this fails; reopen() joins it later.
+        if (inserted) m_sacn.join(uni);
+        ++it->second.refcount;
+        return it->second.buffer;
+    }
+
+    void InputHandler::unsubscribe(uint16_t uni)
+    {
+        std::scoped_lock lock(m_mutex);
+        auto it = m_universes.find(uni);
+        if (it == m_universes.end()) return;
+
+        if (--it->second.refcount == 0)
+        {
+            m_sacn.leave(uni);
+            m_universes.erase(it);
         }
     }
 
+    void InputHandler::reconnect()
+    {
+        m_reopen.store(true);
+    }
 
-    void InputHandler::unsubscribe(uint8_t universe) {
-        auto iface = find(universe);
-        if (!iface) {
+    void InputHandler::reopen()
+    {
+        std::scoped_lock lock(m_mutex);
+        m_sacn.close();
+        if (!m_sacn.open())
+        {
+            s_log.error("sACN socket failed to open");
             return;
         }
-
-        auto& c = iface.value()->count;
-        c--;
-        if (c == 0) {
-            m_inputs.erase(universe);
+        // Memberships don't survive the link going down, and universes
+        // subscribed before wifi was up were never joined.
+        for (auto& [uni, entry] : m_universes)
+        {
+            m_sacn.join(uni);
         }
     }
-
-    std::shared_ptr<Traits::InputInterface> InputHandler::subscribe(uint8_t universe) {
-        auto iface = find(universe);
-        if (!iface) {
-            Counter c;
-            c.count = 1;
-            c.interface = std::make_shared<Input::Sacn>(universe);
-            m_inputs[universe] = std::move(c);
-        }
-        else {
-            iface.value()->count++;
-        }
-
-        return m_inputs[universe].interface;
-    }
-
-    std::shared_ptr<Traits::InputInterface> InputHandler::newInterface(uint8_t universe, Traits::InputInterface::InputType type) {
-        return subscribe(universe);
-    }
-
-
-    std::shared_ptr<InputInterface> InputHandler::interface(uint8_t universe, uint8_t old_universe, InputInterface::InputType type)
-    {
-        unsubscribe(old_universe);
-        return subscribe(universe);
-    }
-
-    // void InputHandler::canUpdate(bool b)
-    // {
-    //     // static bool m_inited = false;
-    //
-    //     // if(!m_inited)
-    //     // {
-    //     //     if(b)
-    //     //     {
-    //     //         xTaskCreate(InputHandler::updateTask, "DMX", 5000, NULL, 3 | portPRIVILEGE_BIT, &m_handle);
-    //     //         m_inited = true;
-    //     //     }
-    //
-    //     //     return;
-    //     // }
-    //
-    //     if(b)
-    //     {
-    //         vTaskResume(m_handle);
-    //     }
-    //     else
-    //     {
-    //         vTaskSuspend(m_handle);
-    //     }
-    // }
-
 
     void InputHandler::update()
     {
-
-        while(true)
+        if (m_reopen.exchange(false)) reopen();
+        checkLoss();
+        if (!m_sacn.isOpen())
         {
-            // iterateInputs([this](std::shared_ptr<InputInterface> iface) {
-            //     iface->update();
-            // })
-            for (auto& it : m_inputs) {
-                it.second.interface->update();
+            vTaskDelay(pdMS_TO_TICKS(c_waitMs));
+            return;
+        }
+
+        // Waits here, without the lock, until traffic arrives; then drains
+        // the queue.
+        for (auto pkt = m_sacn.receive(c_waitMs); pkt; pkt = m_sacn.receive(0))
+        {
+            std::scoped_lock lock(m_mutex);
+            auto it = m_universes.find(pkt->universe);
+            if (it == m_universes.end()) continue;   // not a universe we use
+
+            Entry& e = it->second;
+            // E1.31 6.7.2: drop late/duplicate packets, but accept a big
+            // jump back (the sender restarted).
+            int8_t diff = static_cast<int8_t>(pkt->sequence - e.lastSeq);
+            if (e.seen && diff <= 0 && diff > -20) continue;
+            e.lastSeq = pkt->sequence;
+            e.seen = true;
+            e.packets++;
+            e.lastPacket = xTaskGetTickCount();
+            if (!e.active)
+            {
+                e.active = true;
+                s_log.info("universe %u receiving", pkt->universe);
             }
-            // for(InputInterface* p : m_inputs)
-            // {
-            //     p->update();
-            // }
-            vTaskDelay(20);
-        }
-    }
-    
-    void InputHandler::clearSrcBuffers()
-    {
-        for (auto& it : m_inputs) {
-            it.second.interface->clearSrcBuffer();
+
+            Dmx::Universe frame{};   // slots the sender didn't send read as 0
+            std::ranges::copy(pkt->slots, frame.begin());
+            e.buffer->write(frame);
         }
     }
 
-    void InputHandler::fromJson(std::string json)
+    void InputHandler::checkLoss()
     {
-        // TODO: does nothing
-        JsonDocument doc;
-        deserializeJson(doc, json);
+        const TickType_t now = xTaskGetTickCount();
+        if (now - m_lastLossCheck < c_lossCheckInterval) return;
+        m_lastLossCheck = now;
 
-        JsonArray arr = doc["inputs"].as<JsonArray>();
-        for(JsonDocument a : arr)
+        std::scoped_lock lock(m_mutex);
+        for (auto& [uni, e] : m_universes)
         {
-            uint8_t universe = static_cast<uint8_t>(a["universe"]);   // extract value
-            // interface(universe);
+            if (!e.active || now - e.lastPacket <= c_lossTimeout) continue;
+            e.active = false;
+            e.seen = false;
+            s_log.warn("universe %u lost (no data for 2.5 s)", uni);
         }
     }
 
-    
-    void InputHandler::toJson(JsonObject& doc)
+    InputsInfo InputHandler::inputs()
     {
-        doc["num_inputs"] = m_inputs.size();
-        doc["inputs"] = JsonDocument();
-        JsonArray arr = doc["inputs"].to<JsonArray>();
-
-        for (auto& it : m_inputs) {
-            JsonObject entry = arr.add<JsonObject>();
-            it.second.interface->toJson(entry);
+        std::scoped_lock lock(m_mutex);
+        InputsInfo info;
+        info.inputs.reserve(m_universes.size());
+        for (auto& [uni, entry] : m_universes)
+        {
+            info.inputs.push_back({uni, entry.packets, entry.active});
         }
-        // for(Traits::InputInterface* i : m_inputs)
-        // {
-        //     JsonObject entry = arr.add<JsonObject>();
-        //     i->toJson(entry);
-        // }
+        return info;
+    }
+
+    void InputHandler::toJson(JsonObject& obj)
+    {
+        inputs().toJson(obj);
     }
 }

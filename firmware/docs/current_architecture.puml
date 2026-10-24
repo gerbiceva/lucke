@@ -1,0 +1,199 @@
+@startuml current_architecture
+title Lucke Firmware — current architecture (branch: cpp23)
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam linetype ortho
+hide empty members
+
+' Companion to current_architecture.md. Ownership = composition (*--),
+' borrowed references = plain arrows.
+
+package "Interfaces" #DDEBF7 {
+  interface Output {
+    +footprint() : uint16_t
+    +footprintFor(setting) : uint16_t
+    +update(span<const uint8_t>)
+    +postupdate()
+    +setPreset(json)
+    +toJson(JsonObject&)
+    +describe(JsonObject&)
+  }
+  interface Transport {
+    +send(string)
+    +readLine() : string
+    +isAvailable() : bool
+    +remoteAddress() : string
+    +close()
+  }
+  interface CommandHandler {
+    +handle(JsonDocument&, Transport&)
+  }
+}
+
+class Engine <<composition root>> {
+  +addFixture<TFixture>()
+  +init()
+  -registerCommands()
+  -startServices()
+  -wireConnectivity()
+}
+
+package "Services" #E2F0D9 {
+  class SettingsStore {
+    +load()
+    +start(Tasks)
+    +snapshot() : Config::Engine
+    +update(fn)
+    +loadFixture(id) : optional<string>
+    +saveFixture(id, json)  ' queued, 1 s delay
+    +flush()
+    +factoryReset()
+    --
+    task settings_save
+  }
+  class RenderLoop {
+    +setMode(Live | Animation | Off)
+    --
+    task render (prio 2)
+  }
+  class Connectivity {
+    +onChange(listener)
+    --
+    task wifi_monitor
+  }
+  class StatusReport {
+    +build() : string
+    +settings() : string
+  }
+  class Telemetry {
+    +setSerialReport(bool)
+    +setWirelessReport(bool)
+    --
+    tasks heartbeat, report
+  }
+  class CommandSession {
+    task serial_cmd
+  }
+  class TcpListener {
+    -serve(TcpConnection&)  ' 10 s idle timeout
+    --
+    task tcp_cmd
+  }
+}
+
+package "Handlers" #FFF2CC {
+  class FixtureHandler {
+    +addFixture<T>()
+    +setUniverse/Address/Preset/Name(id, v)
+    +highlight(id)
+    +update()
+    -resubscribe(fix, oldBase, oldCount)
+  }
+  class InputHandler {
+    +subscribe(uni) : shared_ptr<SyncBuffer>
+    +unsubscribe(uni)
+    +reconnect()  ' sets a flag
+    -m_universes : map<uint16_t, Entry>
+    --
+    task input_update (prio 3)
+  }
+}
+
+package "Input" #FCE4D6 {
+  class SacnReceiver {
+    +open() / close()
+    +join(uni) / leave(uni)
+    +receive(timeoutMs) : optional<Packet>
+  }
+}
+
+class SyncBuffer {
+  +write(UniverseCView)
+  +read(UniverseView)
+}
+
+package "Core" #EDEDED {
+  class Fixture {
+    +update()
+    +lock() : unique_lock<recursive_mutex>
+    +addOutput<TOutput>(args)
+    +setSyncBuffers(bufs)
+    +setPreset(i)
+    -m_config : Config::Fixture
+  }
+  class "Fixtures::Strip<Type, TDriver, N, Pin>" as Strip
+}
+
+package "Output" #DDEBF7 {
+  class "Strip1D<TDriver, Pin>" as Strip1D
+  interface Driver {
+    +show()
+    +kind()
+    +pin()
+  }
+  class Ws2815Device
+  class FastLedDevice
+}
+
+package "Commands" #F4CCCC {
+  class CommandDispatcher {
+    +registerHandler(name, handler)
+    +dispatch(line, transport)  ' one at a time
+  }
+  class "Describe / GetFixture / SetFixture /\nInputs / WifiConfig / Reboot / EngineConfig" as Handlers
+}
+
+package "Net" #E2F0D9 {
+  class Wifi
+  class TcpConnection
+  class SerialTransport
+}
+
+' --- ownership
+Engine *-- SettingsStore
+Engine *-- Wifi
+Engine *-- InputHandler
+Engine *-- FixtureHandler
+Engine *-- RenderLoop
+Engine *-- Connectivity
+Engine *-- StatusReport
+Engine *-- Telemetry
+Engine *-- CommandDispatcher
+Engine *-- Handlers
+Engine *-- CommandSession
+Engine *-- TcpListener
+InputHandler *-- SacnReceiver
+InputHandler *-- "N" SyncBuffer
+FixtureHandler *-- "N" Fixture
+Fixture *-- "N" Output
+Strip1D *-- Driver
+
+' --- types
+Strip --|> Fixture
+Strip1D ..|> Output
+Ws2815Device ..|> Driver
+FastLedDevice ..|> Driver
+TcpConnection ..|> Transport
+SerialTransport ..|> Transport
+Handlers ..|> CommandHandler
+
+' --- references
+Fixture --> "span" SyncBuffer : reads
+FixtureHandler --> InputHandler : subscribe
+FixtureHandler --> SettingsStore : saveFixture
+RenderLoop --> FixtureHandler : update()
+Connectivity --> Wifi
+Telemetry --> StatusReport
+CommandSession --> CommandDispatcher
+TcpListener --> CommandDispatcher
+TcpListener ..> TcpConnection : creates per client
+CommandDispatcher --> Handlers
+Handlers --> FixtureHandler
+Handlers --> SettingsStore
+
+note bottom of Connectivity
+  on link change, in order:
+  RenderLoop mode, TcpListener begin/stop,
+  InputHandler.reconnect()
+end note
+@enduml

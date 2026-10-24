@@ -2,9 +2,9 @@
 
 namespace Handler
 {
-    std::set<uint8_t> PinHandler::m_usedPins;
+    std::set<uint8_t> Pin::m_usedPins;
     
-    bool PinHandler::available(uint8_t pin)
+    bool Pin::available(uint8_t pin)
     {
         if(m_usedPins.find(pin) == m_usedPins.end())
         {
@@ -17,7 +17,7 @@ namespace Handler
         }
     }
     
-    void PinHandler::toJson(JsonObject& doc)
+    void Pin::toJson(JsonObject& doc)
     {
         JsonArray arr = doc["used_pins"].as<JsonArray>();
     

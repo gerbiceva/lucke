@@ -1,0 +1,43 @@
+#pragma once
+#include <cstdint>
+#include <vector>
+
+#include <FastLED.h>
+#include <ArduinoJson.h>
+#include "Traits/Deserializable.h"
+
+namespace Traits
+{
+
+    class OutputInterface : public Deserializable
+    {
+        static uint16_t s_uuid;
+    protected:
+        // std::vector<uint8_t> m_dstBuffer;
+        uint16_t m_uuid = 0;
+        uint8_t* m_dstBuffer;
+        uint8_t* m_srcBuffer;
+        uint16_t m_size;
+
+    public:
+        OutputInterface(uint16_t buffer_size);
+
+        void setSrcBuffer(uint8_t* src_buffer);
+    
+        std::vector<uint8_t>& getBuffer();
+        uint8_t* getBufferPtr();
+        uint8_t* getSrcBufferPtr();
+        
+        // in question
+        virtual uint16_t getSize() const;
+        virtual void bind() = 0;
+        virtual void update() {}
+        virtual void postupdate() {}
+        virtual void clear() {}
+        virtual void applyDimmer(float perctentage) {}
+        virtual void setPreset(const JsonDocument& doc) = 0;
+
+        virtual void appendBasicInfo(JsonDocument& doc) {};
+    };
+
+}

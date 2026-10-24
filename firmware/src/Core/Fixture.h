@@ -1,76 +1,96 @@
 #pragma once
-#include <vector>
-#include "Traits/Outputs.h"
-#include "Traits/Inputs.h"
-#include "Traits/Serializable.h"
-#include "Traits/Deserializable.h"
+#include "Config/FixtureConfig.h"
+#include "Utils/SyncBuffer.h"
+#include "Interfaces/Output.h"
+#include "Interfaces/Serializable.h"
+#include "Interfaces/Deserializable.h"
 #include <memory>
+#include <vector>
+#include <cstring>
+#include <mutex>
 
-class Fixture : public Traits::Serializable, public Traits::Deserializable
+// Snapshot of a fixture, safe to hand to another task.
+struct FixtureInfo
 {
-    struct Config
+    Config::Fixture config;
+    uint16_t footprint = 0;
+
+    void toJson(JsonObject& obj)
     {
-        uint8_t universe = 8U;
-        uint16_t address = 0U;
-        uint8_t selectedPreset = 0U;
+        config.toJson(obj);
+        obj["footprint"] = footprint;
+    }
+};
 
-        std::string name = "name";
-        std::string type = "type";
-    };
-
-    static uint8_t s_ID;
-    uint8_t m_ID;
-
-    Config m_config;
-    std::shared_ptr<Traits::InputInterface> m_dmxIn;
-    std::vector<Traits::OutputInterface*> m_outputs;
-    
-    uint8_t* m_srcBuffer;
-    uint16_t m_lastOffset = 0U;
-    JsonDocument jsonPreset;
-
-    void obtainSrcBuffer();
-    
+class Fixture : public Interface::Serializable, public Interface::Deserializable
+{
+    void countPresets();
 public:
     Fixture();
     Fixture(std::string name, std::string type, std::string presets);
-
     virtual ~Fixture() = default;
 
-    void updatePresets();
+    void update();
+    virtual void wifiAnimation() {};
 
-    template<typename TOutput, typename... Args>
-    void addOutput(Args&&... args)
+    template<std::derived_from<Interface::Output> TOutput, typename... Args>
+    TOutput& addOutput(Args&&... args)
     {
-        m_outputs.push_back(new TOutput(args...));
-        m_outputs.back()->bind();
-
-        m_outputs.back()->setSrcBuffer(m_srcBuffer + m_config.address + m_lastOffset);
-        m_lastOffset += m_outputs.back()->getSize();
-        updatePresets();
+        auto& out = m_outputs.emplace_back(std::make_unique<TOutput>(std::forward<Args>(args)...));
+        m_lastOffset += out->footprint();
+        return static_cast<TOutput&>(*out);
     }
 
-    uint8_t* getSrcBuffer();
-    uint8_t* getOffsetSrcBuffer();
-    uint8_t id() const;
-    const std::string& getName() const;
+    // Holds the fixture lock across several calls, so a change and the
+    // resubscribe it needs look like one step to the render task.
+    [[nodiscard]] std::unique_lock<std::recursive_mutex> lock();
 
-    void setUniverse(uint8_t new_universe);
+    void setSyncBuffers(std::vector<std::shared_ptr<SyncBuffer>> bufs);
+    [[nodiscard]] uint16_t getFootprint() const;
+    [[nodiscard]] uint8_t getNumUniverses() const;
+    void setUniverse(uint16_t new_universe);
     void setAddress(uint16_t new_address);
     void setPreset(uint8_t new_preset);
     void setName(const std::string& other);
+    void toggleHighlight();
+    // Takes effect on the next boot; see FixtureHandler::setLedCount.
+    void setLedCount(uint16_t numLeds);
+    [[nodiscard]] uint16_t ledCount() const;
+
+    void setId(uint8_t id);
+    [[nodiscard]] uint8_t id() const;
+    [[nodiscard]] uint16_t getUniverse() const;
+    [[nodiscard]] uint16_t getAddress() const;
+    [[nodiscard]] uint8_t getSelectedPreset() const;
+    [[nodiscard]] uint8_t getNumPresets() const;
+    [[nodiscard]] std::string getName() const;
+    [[nodiscard]] const std::string& getType() const;
+    [[nodiscard]] std::vector<std::unique_ptr<Interface::Output>>& getOutputs();
 
 
-    virtual void update();
-    virtual void wifiAnimation() = 0;
-    virtual void highlight() {};
-
-    std::string getSelectedPresetName();
-    void fromJson(std::string json) override;
-
+    void fromConfig();
+    void fromJson(const std::string& json) override;
     JsonDocument toJsonDoc() override;
+    JsonDocument configJson();
+    JsonDocument presetsJson();
+    JsonDocument outputsJson();
     void toJson(JsonObject& doc) override;
-    void toJsonFull(JsonObject& doc) override;
 
-    bool m_isHighlighted = false;
+    FixtureInfo info() const
+    {
+        std::scoped_lock lock(m_mutex);
+        return {m_config, m_lastOffset};
+    }
+
+private:
+    // Guards buffers, outputs and config between the render, command and report
+    // tasks. Recursive so lock() can be held around the setters.
+    mutable std::recursive_mutex m_mutex;
+    Config::Fixture m_config;
+    std::vector<std::shared_ptr<SyncBuffer>> m_syncBuffers;
+    std::vector<uint8_t> m_buffer;
+    std::vector<std::unique_ptr<Interface::Output>> m_outputs;
+    JsonDocument m_jsonPresets;
+
+    uint16_t m_lastOffset = 0;
 };

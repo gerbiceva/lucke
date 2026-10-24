@@ -1,118 +1,82 @@
 #pragma once
-// #include "Fixtures.h"
-#include <string>
-#include <functional>
-
+#include "Config/EngineConfig.h"
+#include "Network/Wifi.h"
+#include "Network/UdpBroadcaster.h"
+#include "Network/SerialTransport.h"
+#include "Network/BleTransport.h"
+#include "Commands/CommandDispatcher.h"
+#include "Commands/DescribeHandler.h"
+#include "Commands/GetFixtureHandler.h"
+#include "Commands/SetFixtureHandler.h"
+#include "Commands/InputsHandler.h"
+#include "Commands/WifiConfigHandler.h"
+#include "Commands/RebootHandler.h"
+#include "Commands/EngineConfigHandler.h"
+#include "Commands/LogsHandler.h"
+#include "Commands/OtaHandler.h"
 #include "Handlers/FixtureHandler.h"
 #include "Handlers/InputHandler.h"
-#include "Handlers/ButtonManager.h"
-#include "Handlers/PinHandler.h"
-#include "Utils/TaskExecutor.h"
-#include "Utils/Storage.h"
-#include "Traits/Serializable.h"
+#include "Tasks/TaskExecutor.h"
+#include "Services/SettingsStore.h"
+#include "Services/StatusReport.h"
+#include "Services/Telemetry.h"
+#include "Services/RenderLoop.h"
+#include "Services/Connectivity.h"
+#include "Services/CommandSession.h"
+#include "Services/TcpListener.h"
+#include "Services/OtaService.h"
+#include "API/API.h"
 
-#include "EngineSettings.h"
-
-// #define DEFAULT_WIFI_SSID "lasportiva5"
-// #define DEFAULT_WIFI_PASSWORD "GregorJeCar!56"
-
-class Engine : public Traits::Deserializable
+class Engine
 {
-    Engine ();
-    void readSettings();
-    
-    void wifiStatus();
-    void parseConfig(const std::string& data, bool serial = false);
-    
-    void sendReport();
-    void printReport();
-    void readSerial();
-
-    bool factoryReset = false;
-    
 public:
-    static Engine& instance();
+    Engine();
     void init();
 
-    template<typename TFixture>
-    Fixture* addFixture(bool animateWifiConnecting = false)
+    // Strips take their default LED count: addFixture<StripWS2815<5>>(60).
+    template<typename TFixture, typename... Args>
+    void addFixture(Args... args)
     {
-        Fixture* fix = m_fixtureHandler.addFixture<TFixture>();
-        if(animateWifiConnecting)
-        {
-            wifiAnimation = [fix]() 
-            {
-                fix->wifiAnimation();
-            };
-        }
-
-        std::string key = "fixture" + std::to_string(fix->id());
-        if(m_storage.isKey(key) && !factoryReset)
-        {
-            fix->fromJson(m_storage.getString(key));
-        }
-
-        fix->updatePresets();
-
-        JsonDocument doc = fix->toJsonDoc();
-        std::string serialized;
-        serializeJson(doc, serialized);
-        m_storage.putString(key, serialized);
-
-        // Utils::Logger::dprintf("[ENGINE] Added new fixture %s", fix->getName().c_str());
-        return fix;
+        m_fixtures.addFixture<TFixture>(args...);
     }
-
-    template<typename TFixture>
-    Fixture* addFixture(std::string name, bool animateWifiConnecting = false)
-    {
-        Fixture* fix = m_fixtureHandler.addFixture<TFixture>();
-        if(animateWifiConnecting)
-        {
-            wifiAnimation = [fix]() 
-            {
-                fix->wifiAnimation();
-            };
-        }
-
-        std::string key = "fixture" + std::to_string(fix->id());
-        if(m_storage.isKey(key) && !factoryReset)
-        {
-            fix->fromJson(m_storage.getString(key));
-        }
-
-        fix->updatePresets();
-
-        JsonDocument doc = fix->toJsonDoc();
-        std::string serialized;
-        serializeJson(doc, serialized);
-        m_storage.putString(key, serialized);
-
-        // Utils::Logger::dprintf("[ENGINE] Added new fixture %s", fix->getName().c_str());
-        return fix;
-    }
-
-    void addButton(Input::Button&& button);
-
-    std::shared_ptr<Traits::InputInterface> getDMXInput(uint8_t universe, uint8_t old_universe);
-    void clearSrcBuffers();
-    
-    void toJson(JsonObject& doc) override;
-    std::string toString();
 
 private:
-    EngineSettings m_settings;
+    void registerCommands();
+    void startServices();
+    void wireConnectivity();
 
-    Utils::Storage m_storage;
-    Utils::TaskExecutor m_taskExecutor;
+    // First: almost everything below reads settings.
+    Services::SettingsStore m_settings;
+    Tasks::Manager m_tasks;
 
-    Handler::FixtureHandler m_fixtureHandler;
-    Handler::InputHandler& m_inputHandler;
-    Handler::ButtonManager m_buttonManager;
-    Handler::PinHandler m_pinManager;
-    
-    uint32_t m_inputTaskID;
-    std::function<void()> wifiAnimation;
-    
-    bool inited = false;
+    Net::Wifi m_wifi;
+    Net::SerialTransport m_serial;
+    // Net::BleTransport m_ble;
+
+    Handler::InputHandler m_inputs;
+    Handler::FixtureHandler m_fixtures;
+
+    // Members are built in declaration order: each one below holds references
+    // to members declared above it.
+    Services::RenderLoop m_render;
+    Services::Connectivity m_connectivity;
+    Services::StatusReport m_statusReport;
+    Services::Telemetry m_telemetry;
+    Services::OtaService m_ota;
+    API m_api;
+
+    Commands::CommandDispatcher m_dispatcher;
+    Commands::DescribeHandler m_describeHandler;
+    Commands::GetFixtureHandler m_getFixtureHandler;
+    Commands::SetFixtureHandler m_setFixtureHandler;
+    Commands::InputsHandler m_inputsHandler;
+    Commands::WifiConfigHandler m_wifiConfigHandler;
+    Commands::RebootHandler m_rebootHandler;
+    Commands::EngineConfigHandler m_engineConfigHandler;
+    Commands::LogsHandler m_logsHandler;
+    Commands::OtaHandler m_otaHandler;
+
+    // Hold references to m_dispatcher, so they come after it.
+    Services::CommandSession m_serialSession;
+    Services::TcpListener m_tcpListener;
 };

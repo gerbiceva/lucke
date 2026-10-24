@@ -1,0 +1,414 @@
+@startuml proposed_architecture
+skinparam classAttributeIconSize 0
+skinparam packageStyle rectangle
+skinparam linetype ortho
+hide empty members
+
+' ─────────────────────────────────────────
+'  INTERFACES  (pure abstractions, no state)
+' ─────────────────────────────────────────
+package "Interfaces" #DDEBF7 {
+
+  interface ISerializable {
+    +fromJson(json : string) = 0
+  }
+
+  interface IDeserializable {
+    +toJson(doc : JsonObject&) = 0
+    +toJsonDoc() : JsonDocument
+  }
+
+  interface ITransport {
+    +send(data : string) = 0
+    +readLine() : string = 0
+    +isAvailable() : bool = 0
+    +remoteAddress() : string = 0
+    +close() = 0
+  }
+
+  interface ICommandHandler {
+    +handle(req : JsonDocument&,\n         transport : ITransport&) = 0
+  }
+
+  interface IInputSource {
+    +begin(universe : uint8_t) = 0
+    +stop() = 0
+    +poll(dst : uint8_t*) : bool = 0
+    +universe() : uint8_t = 0
+  }
+
+  interface IOutputSink {
+    +bind() = 0
+    +write(src : uint8_t*, size : uint16_t) = 0
+    +flush() = 0
+    +footprint() : uint16_t = 0
+    +setPreset(doc : JsonDocument&) = 0
+    +appendInfo(doc : JsonDocument&) = 0
+  }
+}
+
+' ─────────────────────────────────────────
+'  CONFIG  (pure data, no logic)
+' ─────────────────────────────────────────
+package "Config" #FFF9E6 {
+
+  class FixtureConfig {
+    +id           : uint8_t
+    +name         : string
+    +type         : string
+    +universe     : uint8_t
+    +address      : uint16_t
+    +preset       : uint8_t
+    +numPresets   : uint8_t
+    +highlighted  : bool
+    --
+    +toJson(obj : JsonObject&)
+    +fromJson(obj : JsonObject&)
+  }
+
+  class AppConfig {
+    +ssid               : string
+    +password           : string
+    +version            : string
+    +serialReportTask   : bool
+    +wirelessReportTask : bool
+    +wifiAnimation      : bool
+    +toFactorySettings  : bool
+    --
+    +toJson(obj : JsonObject&)
+    +fromJson(obj : JsonObject&)
+    +toString() : string
+  }
+
+  note bottom of FixtureConfig
+    Pure data bag.
+    No singleton, no s_ID.
+    ID assigned externally
+    by FixtureRegistry.
+  end note
+}
+
+' ─────────────────────────────────────────
+'  NETWORK
+' ─────────────────────────────────────────
+package "Network" #EBF5EB {
+
+  class WiFiManager {
+    -m_ssid         : string
+    -m_password     : string
+    -m_onStatus     : function<void(bool)>
+    --
+    +connect(ssid, password)
+    +reconnect(ssid, password)
+    +disconnect()
+    +isConnected() : bool
+    +localIP() : string
+    +rssi() : int
+    +toJson(doc : JsonObject&)
+    -eventTask()
+    note: uses WiFi event callbacks,\nnot polling
+  }
+
+  class TcpServer {
+    -m_port   : uint16_t
+    -m_server : WiFiServer
+    --
+    +begin()
+    +stop()
+    +restart()
+    +accept() : optional<TcpConnection>
+  }
+
+  class TcpConnection {
+    -m_client : WiFiClient
+    --
+    +send(data : string)
+    +readLine() : string
+    +flush()
+    +remoteAddress() : string
+    +isConnected() : bool
+    +close()
+  }
+
+  class UdpBroadcaster {
+    -m_udp  : WiFiUDP
+    -m_port : uint16_t
+    --
+    +begin(port : uint16_t)
+    +send(data : string)
+    note: persistent socket,\nnot created per call
+  }
+
+  class SerialTransport {
+    --
+    +send(data : string)
+    +readLine() : string
+    +isAvailable() : bool
+    +remoteAddress() : string
+    +close()
+  }
+
+  TcpConnection  ..|> ITransport
+  SerialTransport ..|> ITransport
+
+  TcpServer "1" ..> "0..*" TcpConnection : creates
+}
+
+' ─────────────────────────────────────────
+'  COMMANDS
+' ─────────────────────────────────────────
+package "Commands" #FCE4D6 {
+
+  class CommandDispatcher {
+    -m_handlers : map<string, ICommandHandler*>
+    --
+    +registerHandler(cmd : string,\n                  h : ICommandHandler*)
+    +dispatch(data : string,\n            transport : ITransport&)
+    note: replaces Engine::parseConfig.\nEach handler is self-contained.
+  }
+
+  class DescribeHandler {
+    -m_registry : FixtureRegistry&
+    -m_inputs   : InputManager&
+  }
+  class GetFixtureHandler {
+    -m_registry : FixtureRegistry&
+  }
+  class SetFixtureHandler {
+    -m_registry : FixtureRegistry&
+  }
+  class InputsHandler {
+    -m_inputs : InputManager&
+  }
+  class WiFiConfigHandler {
+    -m_wifi    : WiFiManager&
+    -m_config  : AppConfig&
+    -m_storage : Storage&
+  }
+  class RebootHandler {}
+  class ReportTaskHandler {
+    -m_executor : TaskManager&
+  }
+
+  DescribeHandler    ..|> ICommandHandler
+  GetFixtureHandler  ..|> ICommandHandler
+  SetFixtureHandler  ..|> ICommandHandler
+  InputsHandler      ..|> ICommandHandler
+  WiFiConfigHandler  ..|> ICommandHandler
+  RebootHandler      ..|> ICommandHandler
+  ReportTaskHandler  ..|> ICommandHandler
+
+  CommandDispatcher o--> "many" ICommandHandler
+}
+
+' ─────────────────────────────────────────
+'  INPUT
+' ─────────────────────────────────────────
+package "Input" #F2EFFF {
+
+  class SyncBuffer {
+    -m_buf   : array<uint8_t, 512>
+    -m_mutex : SemaphoreHandle_t
+    --
+    +write(src : uint8_t*)
+    +read(dst : uint8_t*)
+    note: single mutex-protected buffer.\nWriter: InputManager task.\nReader: Fixture::update().
+  }
+
+  class SacnParser {
+    -m_udp    : WiFiUDP
+    -m_seq    : uint8_t
+    --
+    +begin(universe : uint8_t)
+    +stop()
+    +poll(dst : uint8_t*) : bool
+    note: validates universe field\nat bytes 113-114 of E1.31 packet
+  }
+
+  class SacnSource {
+    -m_universe : uint8_t
+    -m_parser   : SacnParser
+    --
+    +begin(universe : uint8_t)
+    +stop()
+    +poll(dst : uint8_t*) : bool
+    +universe() : uint8_t
+  }
+
+  class HwDmxSource {
+    -m_universe : uint8_t
+    --
+    +begin(universe : uint8_t)
+    +stop()
+    +poll(dst : uint8_t*) : bool
+    +universe() : uint8_t
+  }
+
+  class InputManager {
+    -m_sources : map<uint8_t,\n  shared_ptr<IInputSource>>
+    -m_buffers : map<uint8_t,\n  shared_ptr<SyncBuffer>>
+    -m_refcount: map<uint8_t, int>
+    --
+    +{static} instance() : InputManager&
+    +subscribe(uni : uint8_t) : shared_ptr<SyncBuffer>
+    +unsubscribe(uni : uint8_t)
+    +update()
+    +reconnect()
+    +toJson(doc : JsonObject&)
+    note: subscribe() is ref-counted.\nunsubscribe() only removes source\nwhen refcount reaches 0.
+  }
+
+  SacnSource  ..|> IInputSource
+  HwDmxSource ..|> IInputSource
+
+  SacnSource  *--> SacnParser
+  InputManager "1" *--> "0..*" IInputSource : m_sources
+  InputManager "1" *--> "0..*" SyncBuffer   : m_buffers
+}
+
+' ─────────────────────────────────────────
+'  OUTPUT
+' ─────────────────────────────────────────
+package "Output" #E2EFDA {
+
+  abstract class OutputBase {
+    #m_dstBuffer : uint8_t*
+    #m_size      : uint16_t
+    #m_uuid      : uint16_t
+    --
+    +footprint() : uint16_t
+    +bind() {abstract}
+    +write(src : uint8_t*, size : uint16_t) {abstract}
+    +flush() {abstract}
+    +setPreset(doc : JsonDocument&) {abstract}
+  }
+
+  class HardwareLED1D {
+    -m_numLeds   : uint16_t
+    -m_numGroups : uint16_t
+    -m_numPxls   : uint8_t
+    -m_cled      : CLEDController*
+    --
+    +bind()
+    +write(src : uint8_t*, size : uint16_t)
+    +flush()
+    +setPreset(doc : JsonDocument&)
+    +appendInfo(doc : JsonDocument&)
+  }
+
+  OutputBase    ..|> IOutputSink
+  HardwareLED1D --|> OutputBase
+}
+
+' ─────────────────────────────────────────
+'  FIXTURE
+' ─────────────────────────────────────────
+package "Fixture" #F5E6FF {
+
+  class Fixture {
+    -m_config    : FixtureConfig
+    -m_buffer    : shared_ptr<SyncBuffer>
+    -m_outputs   : vector<IOutputSink*>
+    -m_localBuf  : array<uint8_t, 512>
+    -m_lastOffset: uint16_t
+    --
+    +update()
+    +setUniverse(uni : uint8_t)
+    +setAddress(addr : uint16_t)
+    +setPreset(preset : uint8_t)
+    +setName(name : string)
+    +fromConfig()
+    +fromJson(json : string)
+    +toJson(doc : JsonObject&)
+    +wifiAnimation() {abstract}
+    +highlight() {abstract}
+    #addOutput<TOutput>(args...)
+    note: m_localBuf is a local snapshot\ncopied from SyncBuffer each frame.\nOutputs read from m_localBuf only.
+  }
+
+  class FixtureRegistry {
+    -m_fixtures  : vector<Fixture*>
+    -m_storage   : Storage&
+    --
+    +add<TFixture>(factoryReset) : Fixture*
+    +get(id : uint8_t) : Fixture*
+    +all() : vector<Fixture*>&
+    +exists(id : uint8_t) : bool
+    +setUniverse(id, uni) : bool
+    +setAddress(id, addr) : bool
+    +setPreset(id, preset) : bool
+    +setName(id, name) : bool
+    +highlight(id) : bool
+    +update()
+    +toJson(doc : JsonObject&)
+    -persistFixture(id : uint8_t)
+    note: assigns IDs externally.\nstores/loads each fixture\nfrom NVS independently.
+  }
+
+  Fixture *--> Config.FixtureConfig          : config (value)
+  Fixture "1" o--> "0..1" Input.SyncBuffer   : m_buffer\n(shared_ptr)
+  Fixture "1" *--> "1..*" IOutputSink        : m_outputs
+
+  FixtureRegistry "1" *--> "0..*" Fixture
+  FixtureRegistry --> Input.InputManager     : subscribe /\nunsubscribe
+}
+
+' ─────────────────────────────────────────
+'  TASKS
+' ─────────────────────────────────────────
+package "Tasks" #FDEBD0 {
+
+  class TaskManager {
+    -m_tasks : list<TaskRecord>
+    --
+    +spawn(name, fn, priority, stack) : uint32_t
+    +suspend(id : uint32_t)
+    +resume(id : uint32_t)
+    +stop(id : uint32_t)
+    +isRunning(id : uint32_t) : bool
+    note: all tasks go through here,\nincluding WiFi tasks
+  }
+}
+
+' ─────────────────────────────────────────
+'  APPLICATION  (thin orchestrator only)
+' ─────────────────────────────────────────
+class Application {
+  -m_config     : AppConfig
+  -m_wifi       : WiFiManager
+  -m_tcpServer  : TcpServer
+  -m_udp        : UdpBroadcaster
+  -m_serial     : SerialTransport
+  -m_dispatcher : CommandDispatcher
+  -m_registry   : FixtureRegistry
+  -m_tasks      : TaskManager
+  -m_storage    : Storage
+  --
+  +{static} instance() : Application&
+  +init()
+  +addFixture<TFixture>(args...) : Fixture*
+  -registerCommands()
+  -spawnTasks()
+  -onWifiStatus(connected : bool)
+  note: owns all subsystems.\nno command logic here —\nonly wiring and task lifecycle.
+}
+
+Application *--> Config.AppConfig
+Application *--> Network.WiFiManager
+Application *--> Network.TcpServer
+Application *--> Network.UdpBroadcaster
+Application *--> Network.SerialTransport
+Application *--> Commands.CommandDispatcher
+Application *--> Fixture.FixtureRegistry
+Application *--> Tasks.TaskManager
+Application ..> Input.InputManager  : uses singleton
+
+' Command handlers reference domain objects
+Commands.DescribeHandler   ..> Fixture.FixtureRegistry
+Commands.DescribeHandler   ..> Input.InputManager
+Commands.GetFixtureHandler ..> Fixture.FixtureRegistry
+Commands.SetFixtureHandler ..> Fixture.FixtureRegistry
+Commands.InputsHandler     ..> Input.InputManager
+Commands.WiFiConfigHandler ..> Network.WiFiManager
+
+@enduml
