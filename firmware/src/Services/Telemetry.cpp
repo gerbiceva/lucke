@@ -85,6 +85,7 @@ namespace Services
     {
         JsonDocument doc;
         doc["version"] = ENGINE_VERSION;
+        doc["protocol"] = PROTOCOL_VERSION;
         JsonArray arr = doc["fixtures"].to<JsonArray>();
         for (const auto& fix : m_fixtures.all())
         {

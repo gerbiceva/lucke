@@ -25,6 +25,19 @@ to reading the same connection; see `helper/sender2.py`.
 
 ---
 
+## Versions
+
+Two numbers, in the heartbeat and in `describe`:
+
+- `version`: the firmware build (`"0.99"`). Changes every release.
+- `protocol`: the command API (`1`). Bumped only for a breaking change: a
+  removed or renamed field or command, or a field whose meaning changed.
+  Added fields and commands don't bump it; clients ignore what they don't
+  know. Firmware without `protocol` is the old API (0.96: replies on a
+  connection back to port 12345, wrapped in `{"status","response"}`).
+
+Clients should pick their behaviour by `protocol`, not by `version`.
+
 ## Response keys
 
 | Key      | Meaning                        |
@@ -42,8 +55,8 @@ Settings (never the wifi password), wifi, fixtures and inputs in one reply.
 
 ```
 -> {"request": "describe"}
-<- {"version": "v0.98", "serial_report_task": true, "wireless_report_task": true,
-    "wifi_animation": false, "ssid": "Ledique",
+<- {"version": "0.99", "serial_report_task": true, "wireless_report_task": true,
+    "wifi_animation": false, "ssid": "Ledique", "protocol": 1,
     "wifi": {"rssi": -55, "local_ip": "192.168.0.140", "connected": true},
     "fixtures": {"fixtures": [{"id": 0, "name": "miza", "type": "StripWS2815", "universe": 10,
                                "address": 0, "presetIndex": 0, "numPresets": 12,
@@ -135,8 +148,8 @@ Any combination of `universe`, `address`, `presetIndex`, `name`, `highlight`,
   the device reboots after 1 s to rebuild the strip. Until a count is set, a
   fixture uses the default from `main.cpp`. Reported as `num_leds`.
 - Changes are saved to flash 1 s after the last change; `reboot` saves first.
-- `highlight` **toggles** all of the fixture's LEDs to white, whatever value is
-  sent — `"highlight": true` again turns it off. Not saved across reboots.
+- `highlight`: `true` lights all of the fixture's LEDs white, `false` goes back
+  to DMX. Not saved across reboots. (Before protocol 1 any value toggled it.)
 
 Errors:
 
@@ -277,7 +290,7 @@ their last frame.
 Sent while wifi is connected.
 
 ```
-{"version": "v0.98", "fixtures": [{"name": "miza", "type": "StripWS2815"}]}
+{"version": "0.99", "protocol": 1, "fixtures": [{"name": "miza", "type": "StripWS2815"}]}
 ```
 
 ## Wireless report (UDP broadcast, port 12344, every 10 s)

@@ -155,12 +155,12 @@ namespace Handler
         return true;
     }
 
-    bool FixtureHandler::highlight(uint8_t id)
+    bool FixtureHandler::setHighlight(uint8_t id, bool on)
     {
         Fixture* fix = get(id);
         if (!fix) return false;
 
-        fix->toggleHighlight();
+        fix->setHighlight(on);
         return true;
     }
 

@@ -37,8 +37,7 @@ namespace Commands
         if (req["presetIndex"].is<uint8_t>()) patch.preset = req["presetIndex"].as<uint8_t>();
         if (req["name"].is<const char*>()) patch.name = req["name"].as<const char*>();
         if (req["leds"].is<uint16_t>()) patch.leds = req["leds"].as<uint16_t>();
-        // Any bool toggles it, as before.
-        patch.highlight = req["highlight"].is<bool>();
+        if (req["highlight"].is<bool>()) patch.highlight = req["highlight"].as<bool>();
 
         auto result = m_api.setFixture(req["id"], patch, transport.remoteAddress());
         if (!result)

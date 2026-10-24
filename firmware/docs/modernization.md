@@ -166,9 +166,9 @@ record.
     nothing read it (HWCDC retries 20 × 100 ms).
 17. ✅ **Every `setfixture` wrote flash** — fixture records are now written
     1 s after the last change.
-18. ⬜ **`highlight` toggles whatever value is sent** (`"highlight": false`
+18. ✅ **`highlight` toggles whatever value is sent** (`"highlight": false`
     turns it on).
-19. ⬜ **`describe()`'s `num_leds` is the group count**, not the LED count
+19. ✅ **`describe()`'s `num_leds` is the group count**, not the LED count
     (`Strip1D::describe` uses `footprint() / 3`).
 
 ## Suggested next steps

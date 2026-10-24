@@ -53,7 +53,8 @@ struct FixturePatch
     std::optional<std::string> name;
     // Strip LED count. Saved, then the device reboots to apply it.
     std::optional<uint16_t> leds;
-    bool highlight = false;
+    // All LEDs white while on. Not saved.
+    std::optional<bool> highlight;
 };
 
 struct FixtureUpdate
