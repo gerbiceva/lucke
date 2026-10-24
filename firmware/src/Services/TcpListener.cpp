@@ -3,8 +3,9 @@
 
 namespace
 {
-    // Drop a client that has sent nothing for this long.
-    constexpr TickType_t c_idleTimeout = pdMS_TO_TICKS(10000);
+    // Drop a client that has sent nothing for this long. Short, because only
+    // one client is served at a time and the others wait behind it.
+    constexpr TickType_t c_idleTimeout = pdMS_TO_TICKS(2000);
 
     constexpr Utils::Log s_log{"TCP"};
 }

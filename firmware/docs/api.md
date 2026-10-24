@@ -1,6 +1,6 @@
 # Firmware Command API
 
-Firmware `0.99`. Examples below are real replies from a board with one
+Firmware `1.0`. Examples below are real replies from a board with one
 60-LED `StripWS2815` fixture.
 
 ## Network Overview
@@ -17,7 +17,7 @@ Firmware `0.99`. Examples below are real replies from a board with one
 Over TCP, each request is one line of JSON ending in `\n`; its response comes
 back as one `\n`-terminated JSON line on the same connection. A client may send
 several requests on one connection. The device serves one client at a time and
-closes a connection after 10 s without data, or if a request line exceeds
+closes a connection after 2 s without data, or if a request line exceeds
 4096 bytes. Serial works the same way, line in / line out.
 
 Older clients that waited for responses on port 12345 (TCP or UDP) must switch

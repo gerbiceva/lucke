@@ -116,7 +116,7 @@ transport (TCP 8888 or serial). See [`api.md`](./api.md).
   command at a time** (a mutex), so serial and TCP handlers never race each
   other.
 - `TcpListener` serves one client at a time, buffers into lines (max 4096
-  bytes), and drops a client after 10 s without data.
+  bytes), and drops a client after 2 s without data.
 - Handlers: `describe`, `fixtures`/`getfixture`, `setfixture`, `inputs`,
   `wifi`, `reboot`, `factory_reset`, `serial_report_task`,
   `wireless_report_task`, `wifi_animation`.
