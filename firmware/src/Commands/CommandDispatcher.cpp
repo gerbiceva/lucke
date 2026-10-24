@@ -20,7 +20,7 @@ namespace Commands
         DeserializationError err = deserializeJson(doc, data);
         if (err)
         {
-            s_log.warn("JSON parse error: {}", err.c_str());
+            s_log.warn("JSON parse error: %s", err.c_str());
             transport.send("{\"err\":\"invalid json\"}");
             return;
         }
@@ -36,7 +36,7 @@ namespace Commands
         auto it = m_handlers.find(cmd);
         if (it == m_handlers.end())
         {
-            s_log.warn("unknown command: {}", cmd);
+            s_log.warn("unknown command: %s", cmd);
             transport.send("{\"err\":\"unknown cmd\"}");
             return;
         }

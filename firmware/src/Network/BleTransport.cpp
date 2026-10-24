@@ -77,7 +77,7 @@
 //         advertising->setScanResponse(true);
 //         advertising->start();
 //
-//         s_log.info("advertising as '{}'", deviceName);
+//         s_log.info("advertising as '%s'", deviceName.c_str());
 //     }
 //
 //     void BleTransport::onLineChunk(const std::string& chunk)

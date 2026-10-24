@@ -66,7 +66,7 @@ namespace Services
             if (connected == wasConnected) continue;
             wasConnected = connected;
 
-            if (connected) s_log.info("wifi up, ip {}", m_wifi.localIP());
+            if (connected) s_log.info("wifi up, ip %s", m_wifi.localIP().c_str());
             else s_log.warn("wifi down");
             for (auto& listener : m_listeners)
             {

@@ -59,8 +59,9 @@ namespace Services
             // Every minute
             if (++cycles % 6 == 0 && Utils::Log::enabled(Utils::Level::Debug))
             {
-                s_log.debug("heap free {} (min {}, largest block {})",
-                            ESP.getFreeHeap(), ESP.getMinFreeHeap(), ESP.getMaxAllocHeap());
+                s_log.debug("heap free %lu (min %lu, largest block %lu)",
+                            static_cast<unsigned long>(ESP.getFreeHeap()), static_cast<unsigned long>(ESP.getMinFreeHeap()),
+                            static_cast<unsigned long>(ESP.getMaxAllocHeap()));
                 m_tasks.logStackHeadroom();
             }
             vTaskDelay(10000);

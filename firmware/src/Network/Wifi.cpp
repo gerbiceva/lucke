@@ -16,7 +16,7 @@ namespace Net
         m_ssid = ssid;
         m_password = pass;
 
-        s_log.info("connecting to '{}'", m_ssid);
+        s_log.info("connecting to '%s'", m_ssid.c_str());
 
         WiFi.setScanMethod(WIFI_FAST_SCAN);
         WiFi.mode(WIFI_STA);
@@ -27,7 +27,7 @@ namespace Net
 
     void Wifi::reconnect(const std::string& ssid, const std::string& pass)
     {
-        s_log.info("reconnecting to '{}'", ssid);
+        s_log.info("reconnecting to '%s'", ssid.c_str());
 
         WiFi.disconnect(true);
         WiFi.mode(WIFI_OFF);

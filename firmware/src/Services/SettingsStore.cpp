@@ -31,7 +31,7 @@ namespace Services
         DeserializationError err = deserializeJson(doc, m_engineNvs.getString(c_settingsKey));
         if (err)
         {
-            s_log.warn("stored settings unreadable ({}), using defaults", err.c_str());
+            s_log.warn("stored settings unreadable (%s), using defaults", err.c_str());
             return;
         }
         m_engine.fromJson(doc.as<JsonVariantConst>());
@@ -108,7 +108,7 @@ namespace Services
     void SettingsStore::writePending()
     {
         if (m_pendingFixtures.empty()) return;
-        s_log.info("saving {} fixture record(s)", m_pendingFixtures.size());
+        s_log.info("saving %zu fixture record(s)", m_pendingFixtures.size());
         for (const auto& [id, json] : m_pendingFixtures)
         {
             m_fixtureNvs.putString(fixtureKey(id), json);

@@ -29,8 +29,8 @@ namespace
             case ESP_RST_SDIO:       name = "SDIO"; abnormal = false; break;
             default: break;
         }
-        if (abnormal) s_log.warn("reset reason: {}", name);
-        else s_log.info("reset reason: {}", name);
+        if (abnormal) s_log.warn("reset reason: %s", name);
+        else s_log.info("reset reason: %s", name);
     }
 }
 
@@ -49,6 +49,7 @@ Engine::Engine()
       m_wifiConfigHandler(m_api),
       m_rebootHandler(m_api),
       m_engineConfigHandler(m_api),
+      m_logsHandler(m_api),
       m_serialSession(m_serial, m_dispatcher, m_tasks, "serial_cmd"),
       m_tcpListener(COMMAND_PORT, m_dispatcher, m_tasks)
 {
@@ -76,7 +77,7 @@ void Engine::init()
     s_log.debug("starting services");
     startServices();
 
-    s_log.info("{} initialized", config.version);
+    s_log.info("%.*s initialized", static_cast<int>(config.version.size()), config.version.data());
 }
 
 void Engine::registerCommands()
@@ -85,6 +86,7 @@ void Engine::registerCommands()
     m_dispatcher.registerHandler("fixtures", &m_getFixtureHandler);
     m_dispatcher.registerHandler("getfixture", &m_getFixtureHandler);
     m_dispatcher.registerHandler("setfixture", &m_setFixtureHandler);
+    m_dispatcher.registerHandler("logs", &m_logsHandler);
     m_dispatcher.registerHandler("inputs", &m_inputsHandler);
     m_dispatcher.registerHandler("wifi", &m_wifiConfigHandler);
     m_dispatcher.registerHandler("reboot", &m_rebootHandler);

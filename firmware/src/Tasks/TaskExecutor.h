@@ -56,12 +56,12 @@ public:
         );
         if (created != pdPASS)
         {
-            s_log.error("failed to create task '{}' (stack {})", rec.name, stackSize);
+            s_log.error("failed to create task '%s' (stack %lu)", rec.name.c_str(), static_cast<unsigned long>(stackSize));
             m_tasks.pop_back();
             return TaskId::Invalid;
         }
 
-        s_log.debug("created task '{}'", rec.name);
+        s_log.debug("created task '%s'", rec.name.c_str());
         return rec.id;
     }
 
@@ -75,7 +75,7 @@ public:
             if (!line.empty()) line += ", ";
             line += rec.name + " " + std::to_string(uxTaskGetStackHighWaterMark(rec.handle));
         }
-        s_log.debug("stack free: {}", line);
+        s_log.debug("stack free: %s", line.c_str());
     }
 
 private:

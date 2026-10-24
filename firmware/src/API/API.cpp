@@ -33,6 +33,18 @@ void DeviceInfo::toJson(JsonObject& obj)
     inputs.toJson(inputsObj);
 }
 
+void LogsInfo::toJson(JsonObject& obj)
+{
+    obj["first"] = first;
+    obj["next"] = next;
+    obj["lost"] = lost;
+    JsonArray arr = obj["lines"].to<JsonArray>();
+    for (const std::string& line : lines)
+    {
+        arr.add(line);
+    }
+}
+
 API::API(Services::SettingsStore& settings, Handler::FixtureHandler& fixtures, Handler::InputHandler& inputs,
          Net::Wifi& wifi, Services::Telemetry& telemetry)
     : m_settings(settings), m_fixtures(fixtures), m_inputs(inputs), m_wifi(wifi), m_telemetry(telemetry)
@@ -93,6 +105,28 @@ Handler::InputsInfo API::inputs() const
     return m_inputs.inputs();
 }
 
+LogsInfo API::logs(uint32_t since) const
+{
+    const Utils::LogHistory& history = Utils::Log::history();
+    if (since > history.nextSeq()) since = 0;
+
+    LogsInfo info;
+    char buf[Utils::LogHistory::MaxLine];
+    uint32_t seq = since;
+    while (auto line = history.read(seq, buf))
+    {
+        if (info.lines.empty())
+        {
+            info.first = seq;
+            info.lost = seq - since;
+        }
+        info.lines.emplace_back(*line);
+        ++seq;
+    }
+    info.next = seq;
+    return info;
+}
+
 std::expected<FixtureUpdate, ApiError> API::setFixture(uint8_t id, const FixturePatch& patch, Origin from)
 {
     if (!m_fixtures.exists(id)) return std::unexpected(ApiError::FixtureNotFound);
@@ -112,9 +146,9 @@ std::expected<FixtureUpdate, ApiError> API::setFixture(uint8_t id, const Fixture
     FixtureInfo info = m_fixtures.get(id)->info();
     if (changed)
     {
-        s_log.info("fixture {} changed via {}: universe {}, address {}, preset {}, name '{}', highlighted {}", id,
-                   from, info.config.universe, info.config.address, info.config.selectedPreset, info.config.name,
-                   info.config.highlighted);
+        s_log.info("fixture %u changed via %.*s: universe %u, address %u, preset %u, name '%s', highlighted %s", id,
+                   static_cast<int>(from.size()), from.data(), info.config.universe, info.config.address,
+                   info.config.selectedPreset, info.config.name.c_str(), info.config.highlighted ? "true" : "false");
     }
     return FixtureUpdate{std::move(info), changed};
 }
@@ -129,7 +163,8 @@ void API::setWifi(std::optional<std::string> ssid, std::optional<std::string> pa
         if (password) c.password = std::move(*password);
     });
     Config::Engine config = m_settings.snapshot();
-    s_log.info("wifi settings changed via {}, ssid '{}'", from, config.ssid);
+    s_log.info("wifi settings changed via %.*s, ssid '%s'", static_cast<int>(from.size()), from.data(),
+               config.ssid.c_str());
 
     runLater(delayMs, [this, ssid = config.ssid, password = config.password]() {
         m_wifi.reconnect(ssid, password);
@@ -138,27 +173,30 @@ void API::setWifi(std::optional<std::string> ssid, std::optional<std::string> pa
 
 void API::setSerialReport(bool enable, Origin from)
 {
-    s_log.info("serial_report_task set to {} via {}", enable, from);
+    s_log.info("serial_report_task set to %s via %.*s", enable ? "true" : "false", static_cast<int>(from.size()),
+               from.data());
     m_telemetry.setSerialReport(enable);
     m_settings.update([enable](Config::Engine& c) { c.serial_report_task = enable; });
 }
 
 void API::setWirelessReport(bool enable, Origin from)
 {
-    s_log.info("wireless_report_task set to {} via {}", enable, from);
+    s_log.info("wireless_report_task set to %s via %.*s", enable ? "true" : "false", static_cast<int>(from.size()),
+               from.data());
     m_telemetry.setWirelessReport(enable);
     m_settings.update([enable](Config::Engine& c) { c.wireless_report_task = enable; });
 }
 
 void API::setWifiAnimation(bool enable, Origin from)
 {
-    s_log.info("wifi_animation set to {} via {}", enable, from);
+    s_log.info("wifi_animation set to %s via %.*s", enable ? "true" : "false", static_cast<int>(from.size()),
+               from.data());
     m_settings.update([enable](Config::Engine& c) { c.wifi_animation = enable; });
 }
 
 void API::reboot(Origin from, uint32_t delayMs)
 {
-    s_log.info("reboot requested via {}", from);
+    s_log.info("reboot requested via %.*s", static_cast<int>(from.size()), from.data());
     // Fixture records are written with a delay; don't lose the last change.
     m_settings.flush();
     runLater(delayMs, [] { ESP.restart(); });
@@ -166,7 +204,7 @@ void API::reboot(Origin from, uint32_t delayMs)
 
 void API::factoryReset(Origin from, uint32_t delayMs)
 {
-    s_log.warn("factory reset requested via {}", from);
+    s_log.warn("factory reset requested via %.*s", static_cast<int>(from.size()), from.data());
     m_settings.factoryReset();
     runLater(delayMs, [] { ESP.restart(); });
 }

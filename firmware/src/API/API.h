@@ -58,6 +58,17 @@ struct FixtureUpdate
     bool changed = false;
 };
 
+// Lines from the log history (Info and up), oldest first.
+struct LogsInfo
+{
+    uint32_t first = 0;   // number of lines[0]
+    uint32_t next = 0;    // pass as `since` to get only newer lines
+    uint32_t lost = 0;    // lines after `since` already overwritten
+    std::vector<std::string> lines;
+
+    void toJson(JsonObject& obj);
+};
+
 // What the device can do, without JSON or transports. Command handlers,
 // the serial shell, or anything else call this.
 class API
@@ -76,6 +87,8 @@ public:
     [[nodiscard]] std::expected<JsonDocument, ApiError> fixturePresets(uint8_t id) const;
     [[nodiscard]] std::expected<JsonDocument, ApiError> fixtureOutputs(uint8_t id) const;
     [[nodiscard]] Handler::InputsInfo inputs() const;
+    // Lines numbered >= since. A since from before a reboot starts over.
+    [[nodiscard]] LogsInfo logs(uint32_t since = 0) const;
 
     // Writes
     std::expected<FixtureUpdate, ApiError> setFixture(uint8_t id, const FixturePatch& patch, Origin from);

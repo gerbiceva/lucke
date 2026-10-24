@@ -153,11 +153,19 @@ the other way round.
 
 ## 8. Logging
 
-`Utils::Logger` over USB serial. `printf` is checked at compile time
-(`format(printf)` + `-Werror=format` for `src/`). The USB serial is set to a
-4 KB TX buffer and 2 ms write timeout: with nothing reading the port, a log
-call costs at most ~40 ms instead of ~2 s, and output is dropped once the
-buffer is full.
+`Utils::Log`, one per module with a tag (`constexpr Utils::Log s_log{"WIFI"}`).
+Levels debug/info/warn/error; a call below the level costs one comparison.
+`printf`-style, checked at compile time (`format(printf)` + `-Werror=format`
+for `src/`); `std::format` was tried and cost ~411 KB of flash.
+
+Each line (`I   12.345 [WIFI] message`) is formatted once, then:
+
+- kept in `LogHistory` (Info and up, 4 KB ring, readable with the `logs`
+  command), and
+- written to USB serial without blocking: skipped when no host is plugged in
+  or the TX buffer is full (a `-- N serial lines dropped --` note follows).
+
+`API` logs every change with its origin (`fixture 0 changed via 192.168.0.5`).
 
 ## 9. Known gaps
 
@@ -165,8 +173,8 @@ buffer is full.
   (see [`improvement.md`](./improvement.md)).
 - No grid output (commented out, needs porting to `Output::Driver`).
 - Only one WS2815 strip (SPI2); more strips must use FastLED.
-- sACN: one source per universe, no priority merge, no source-loss timeout
-  (LEDs hold the last frame).
+- sACN: one source per universe, no priority merge. Source loss is detected
+  and logged, but LEDs still hold the last frame.
 - `highlight` toggles regardless of the value sent.
 - Serialization overlaps: `toJson` / `describe` / `configJson` /
   `outputsJson` emit overlapping fields. `describe`'s `num_leds` on an

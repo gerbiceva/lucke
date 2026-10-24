@@ -107,7 +107,7 @@ namespace Handler
             if (!e.active)
             {
                 e.active = true;
-                s_log.info("universe {} receiving", pkt->universe);
+                s_log.info("universe %u receiving", pkt->universe);
             }
 
             Dmx::Universe frame{};   // slots the sender didn't send read as 0
@@ -128,7 +128,7 @@ namespace Handler
             if (!e.active || now - e.lastPacket <= c_lossTimeout) continue;
             e.active = false;
             e.seen = false;
-            s_log.warn("universe {} lost (no data for 2.5 s)", uni);
+            s_log.warn("universe %u lost (no data for 2.5 s)", uni);
         }
     }
 

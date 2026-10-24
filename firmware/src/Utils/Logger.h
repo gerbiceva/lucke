@@ -3,7 +3,7 @@
 #include <array>
 #include <atomic>
 #include <cstdint>
-#include <format>
+#include <cstdarg>
 #include <optional>
 #include <span>
 #include <string_view>
@@ -38,7 +38,8 @@ namespace Utils
         uint32_t m_tail = 0;      // oldest stored line
         uint32_t m_tailSeq = 0;   // number of the line at m_tail
         uint32_t m_nextSeq = 0;
-        mutable portMUX_TYPE m_lock = portMUX_INITIALIZER_UNLOCKED;
+        // No lock member: its initializer isn't zero, which would move the
+        // whole buffer from .bss to .data (4 KB of flash). See Logger.cpp.
     };
 
     class Log
@@ -46,29 +47,11 @@ namespace Utils
     public:
         constexpr explicit Log(const char* tag) : m_tag(tag) {}
 
-        template<typename... Args>
-        void debug(std::format_string<Args...> fmt, Args&&... args) const
-        {
-            if (enabled(Level::Debug)) write(Level::Debug, fmt.get(), std::make_format_args(args...));
-        }
-
-        template<typename... Args>
-        void info(std::format_string<Args...> fmt, Args&&... args) const
-        {
-            if (enabled(Level::Info)) write(Level::Info, fmt.get(), std::make_format_args(args...));
-        }
-
-        template<typename... Args>
-        void warn(std::format_string<Args...> fmt, Args&&... args) const
-        {
-            if (enabled(Level::Warn)) write(Level::Warn, fmt.get(), std::make_format_args(args...));
-        }
-
-        template<typename... Args>
-        void error(std::format_string<Args...> fmt, Args&&... args) const
-        {
-            if (enabled(Level::Error)) write(Level::Error, fmt.get(), std::make_format_args(args...));
-        }
+        // printf-style; -Werror=format checks the arguments.
+        [[gnu::format(printf, 2, 3)]] void debug(const char* fmt, ...) const;
+        [[gnu::format(printf, 2, 3)]] void info(const char* fmt, ...) const;
+        [[gnu::format(printf, 2, 3)]] void warn(const char* fmt, ...) const;
+        [[gnu::format(printf, 2, 3)]] void error(const char* fmt, ...) const;
 
         static void begin(uint32_t baudrate = 9600);
 
@@ -84,7 +67,7 @@ namespace Utils
     private:
         static constexpr Level HistoryLevel = Level::Info;
 
-        void write(Level level, std::string_view fmt, std::format_args args) const;
+        void write(Level level, const char* fmt, va_list args) const;
 
         const char* m_tag;
 

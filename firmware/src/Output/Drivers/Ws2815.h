@@ -41,7 +41,7 @@ namespace Drivers
         {
             if (!Handler::Pin::available(Pin))
             {
-                s_log.error("pin {} already used", Pin);
+                s_log.error("pin %u already used", Pin);
                 return nullptr;
             }
 
@@ -49,7 +49,7 @@ namespace Drivers
             if (!dev->init(pixels))
             {
                 // The lib owns SPI2_HOST, so a second strip lands here.
-                s_log.error("init on pin {} failed (only one WS2815 strip is supported)", Pin);
+                s_log.error("init on pin %u failed (only one WS2815 strip is supported)", Pin);
                 return nullptr;
             }
             return dev;

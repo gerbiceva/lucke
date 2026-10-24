@@ -130,7 +130,7 @@
 //
 //             if (vW == 0 || vH == 0 || m_w % vW != 0 || m_h % vH != 0)
 //             {
-//                 s_log.warn("invalid subgrid {}x{} for {}x{} grid", vW, vH, m_w, m_h);
+//                 s_log.warn("invalid subgrid %ux%u for %ux%u grid", vW, vH, m_w, m_h);
 //                 return;
 //             }
 //

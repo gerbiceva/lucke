@@ -1,32 +1,10 @@
 #include "Logger.h"
 #include <algorithm>
+#include <cstdio>
 #include <cstring>
 
 namespace
 {
-    // Fixed-buffer output iterator; counts what didn't fit.
-    struct BoundedOut
-    {
-        using difference_type = std::ptrdiff_t;
-
-        char* buf = nullptr;
-        size_t cap = 0;
-        size_t count = 0;
-
-        BoundedOut& operator=(char c)
-        {
-            if (count < cap) buf[count] = c;
-            ++count;
-            return *this;
-        }
-        BoundedOut& operator*() { return *this; }
-        BoundedOut& operator++() { return *this; }
-        BoundedOut& operator++(int) { return *this; }
-
-        size_t size() const { return std::min(count, cap); }
-        bool truncated() const { return count > cap; }
-    };
-
     char letter(Utils::Level level)
     {
         switch (level)
@@ -38,6 +16,10 @@ namespace
         }
         return '?';
     }
+
+    // LogHistory's lock. Kept out of the class: its initializer isn't zero,
+    // which would put the whole 4 KB buffer in .data instead of .bss.
+    portMUX_TYPE s_historyLock = portMUX_INITIALIZER_UNLOCKED;
 }
 
 namespace Utils
@@ -52,7 +34,7 @@ namespace Utils
         const size_t len = std::min(line.size(), MaxLine);
         const uint32_t need = len + 1;
 
-        portENTER_CRITICAL(&m_lock);
+        portENTER_CRITICAL(&s_historyLock);
         while (m_head - m_tail + need > Capacity)
         {
             m_tail += 1 + m_buf[m_tail % Capacity];
@@ -64,16 +46,16 @@ namespace Utils
             m_buf[m_head++ % Capacity] = static_cast<uint8_t>(line[i]);
         }
         ++m_nextSeq;
-        portEXIT_CRITICAL(&m_lock);
+        portEXIT_CRITICAL(&s_historyLock);
     }
 
     std::optional<std::string_view> LogHistory::read(uint32_t& seq, std::span<char> out) const
     {
-        portENTER_CRITICAL(&m_lock);
+        portENTER_CRITICAL(&s_historyLock);
         if (seq < m_tailSeq) seq = m_tailSeq;
         if (seq >= m_nextSeq)
         {
-            portEXIT_CRITICAL(&m_lock);
+            portEXIT_CRITICAL(&s_historyLock);
             return std::nullopt;
         }
 
@@ -87,16 +69,16 @@ namespace Utils
         {
             out[i] = static_cast<char>(m_buf[pos++ % Capacity]);
         }
-        portEXIT_CRITICAL(&m_lock);
+        portEXIT_CRITICAL(&s_historyLock);
 
         return std::string_view(out.data(), len);
     }
 
     uint32_t LogHistory::nextSeq() const
     {
-        portENTER_CRITICAL(&m_lock);
+        portENTER_CRITICAL(&s_historyLock);
         uint32_t seq = m_nextSeq;
-        portEXIT_CRITICAL(&m_lock);
+        portEXIT_CRITICAL(&s_historyLock);
         return seq;
     }
 
@@ -127,29 +109,66 @@ namespace Utils
         if (uint32_t dropped = s_dropped.exchange(0, std::memory_order_relaxed))
         {
             char note[48];
-            BoundedOut out{note, sizeof(note)};
-            out = std::format_to(out, "-- {} serial lines dropped --\r\n", dropped);
-            Serial.write(reinterpret_cast<const uint8_t*>(note), out.size());
+            int n = snprintf(note, sizeof(note), "-- %lu serial lines dropped --\r\n", static_cast<unsigned long>(dropped));
+            Serial.write(reinterpret_cast<const uint8_t*>(note), std::min<size_t>(n, sizeof(note) - 1));
         }
         Serial.write(reinterpret_cast<const uint8_t*>(text.data()), text.size());
     }
 
-    void Log::write(Level level, std::string_view fmt, std::format_args args) const
+    void Log::write(Level level, const char* fmt, va_list args) const
     {
-        // "I   12.345 [WIFI] message\r\n"
-        char line[LogHistory::MaxLine + 2];
-        BoundedOut out{line, LogHistory::MaxLine};
+        // "I   12.345 [WIFI] message\r\n". +1 for vsnprintf's NUL, +2 for "\r\n".
+        constexpr size_t cap = LogHistory::MaxLine;
+        char line[cap + 3];
         const uint32_t ms = millis();
-        out = std::format_to(out, "{} {:>4}.{:03} [{}] ", letter(level), ms / 1000, ms % 1000, m_tag);
-        out = std::vformat_to(out, fmt, args);
-
-        size_t len = out.size();
-        if (out.truncated()) std::memcpy(line + len - 3, "...", 3);
+        int n = snprintf(line, cap + 1, "%c %4lu.%03lu [%s] ", letter(level),
+                         static_cast<unsigned long>(ms / 1000), static_cast<unsigned long>(ms % 1000), m_tag);
+        size_t len = std::min<size_t>(n > 0 ? n : 0, cap);
+        n = vsnprintf(line + len, cap + 1 - len, fmt, args);
+        size_t total = len + (n > 0 ? n : 0);
+        len = std::min(total, cap);
+        if (total > cap) std::memcpy(line + len - 3, "...", 3);
 
         if (level >= HistoryLevel) s_history.append({line, len});
 
         line[len++] = '\r';
         line[len++] = '\n';
         raw({line, len});
+    }
+
+    void Log::debug(const char* fmt, ...) const
+    {
+        if (!enabled(Level::Debug)) return;
+        va_list args;
+        va_start(args, fmt);
+        write(Level::Debug, fmt, args);
+        va_end(args);
+    }
+
+    void Log::info(const char* fmt, ...) const
+    {
+        if (!enabled(Level::Info)) return;
+        va_list args;
+        va_start(args, fmt);
+        write(Level::Info, fmt, args);
+        va_end(args);
+    }
+
+    void Log::warn(const char* fmt, ...) const
+    {
+        if (!enabled(Level::Warn)) return;
+        va_list args;
+        va_start(args, fmt);
+        write(Level::Warn, fmt, args);
+        va_end(args);
+    }
+
+    void Log::error(const char* fmt, ...) const
+    {
+        if (!enabled(Level::Error)) return;
+        va_list args;
+        va_start(args, fmt);
+        write(Level::Error, fmt, args);
+        va_end(args);
     }
 }

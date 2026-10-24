@@ -182,14 +182,14 @@ void Fixture::setPreset(uint8_t new_preset)
     JsonArrayConst groups = m_jsonPresets["groups"].as<JsonArrayConst>();
     if (new_preset >= groups.size())
     {
-        s_log.warn("invalid preset index: {}", new_preset);
+        s_log.warn("invalid preset index: %u", new_preset);
         return;
     }
 
     JsonArrayConst settings = groups[new_preset]["settings"].as<JsonArrayConst>();
     if (settings.size() != m_outputs.size())
     {
-        s_log.warn("preset {} has {} settings but fixture has {} outputs — ignored",
+        s_log.warn("preset %u has %zu settings but fixture has %zu outputs — ignored",
                    new_preset, settings.size(), m_outputs.size());
         return;
     }

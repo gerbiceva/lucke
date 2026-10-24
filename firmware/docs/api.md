@@ -1,6 +1,6 @@
 # Firmware Command API
 
-Firmware `v0.98`. Examples below are real replies from a board with one
+Firmware `0.99`. Examples below are real replies from a board with one
 60-LED `StripWS2815` fixture.
 
 ## Network Overview
@@ -150,8 +150,10 @@ since boot (or since the universe was first subscribed).
 
 ```
 -> {"request": "inputs"}
-<- {"num_inputs": 1, "inputs": [{"type": "SACN", "universe": 10, "packets": 68}]}
+<- {"num_inputs": 1, "inputs": [{"type": "SACN", "universe": 10, "packets": 68, "active": true}]}
 ```
+
+`active`: data arrived within the last 2.5 s (E1.31 source-loss timeout).
 
 ## wifi
 
@@ -183,6 +185,22 @@ Saves pending fixture changes, restarts after 1 s.
 
 Erases all stored settings and fixture records, restarts after 1 s. The next
 boot uses defaults (default wifi, universe `id + 1` per fixture).
+
+## logs
+
+Recent log lines (Info and up) kept in a 4 KB ring buffer, oldest first.
+
+```
+-> {"request": "logs"}
+<- {"first": 0, "next": 6, "lost": 0, "lines": ["I    0.023 [ENGINE] reset reason: USB", ...]}
+
+-> {"request": "logs", "since": 6}
+<- {"first": 6, "next": 11, "lost": 0, "lines": [...]}
+```
+
+Pass the previous `next` as `since` to get only new lines. `lost` counts lines
+after `since` that were already overwritten. A `since` from before a reboot
+starts over from the oldest line.
 
 ## serial_report_task / wireless_report_task / wifi_animation
 

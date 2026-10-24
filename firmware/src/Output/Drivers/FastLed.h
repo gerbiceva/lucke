@@ -40,7 +40,7 @@ namespace Drivers
         {
             if (!Handler::Pin::available(Pin))
             {
-                s_log.error("pin {} already used", Pin);
+                s_log.error("pin %u already used", Pin);
                 return nullptr;
             }
 

@@ -12,6 +12,7 @@
 #include "Commands/WifiConfigHandler.h"
 #include "Commands/RebootHandler.h"
 #include "Commands/EngineConfigHandler.h"
+#include "Commands/LogsHandler.h"
 #include "Handlers/FixtureHandler.h"
 #include "Handlers/InputHandler.h"
 #include "Tasks/TaskExecutor.h"
@@ -68,6 +69,7 @@ private:
     Commands::WifiConfigHandler m_wifiConfigHandler;
     Commands::RebootHandler m_rebootHandler;
     Commands::EngineConfigHandler m_engineConfigHandler;
+    Commands::LogsHandler m_logsHandler;
 
     // Hold references to m_dispatcher, so they come after it.
     Services::CommandSession m_serialSession;

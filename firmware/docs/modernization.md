@@ -34,7 +34,7 @@ commented-out BLE transport, the commented-out grid output.
 | ✅ | `Utils/Optional.h` | Deleted; `std::optional`. |
 | ✅ | `Utils/StringUtils.h` | Deleted (was unused). |
 | ✅ | `Utils/PresetMaker.h` | `Presets::c_groupPresets<N>`: one `constexpr` writer run twice (measure, then fill an exactly-sized `std::array`), stored in flash. The old runtime builder overflowed its fixed 1024-byte buffer from N = 120 (e.g. 300 LEDs); it's kept commented out below the new code. Output is byte-identical for every N it could handle. |
-| ✅ | `Utils/Logger.h` — `printf` | C-variadic with `[[gnu::format(printf, 1, 2)]]` + `-Werror=format`: a format/argument mismatch is a compile error. Chosen over `std::format` because it costs no flash and keeps every call site. |
+| ✅ | `Utils/Logger.h` — `printf` | C-variadic `Log::info/warn/...` with `[[gnu::format(printf, 2, 3)]]` + `-Werror=format`: a format/argument mismatch is a compile error. `std::format` was tried and measured at +411 KB flash (float/locale/unicode tables), so printf stays. |
 | ⬜ | `Output/Strip1D.h` — `toJson` | `char type[24]; snprintf(...)` → `std::format("{}-1D", TDriver::kind)` (or build the string at compile time). |
 
 ## 2. Raw `new` → RAII ownership ✅
@@ -67,7 +67,7 @@ timing table.
 
 ## 5. `enum` → `enum class` ✅
 
-`Logger::Level`, `Tasks::TaskId` (strong id, `Invalid = 0` never handed out),
+`Utils::Level`, `Tasks::TaskId` (strong id, `Invalid = 0` never handed out),
 `RenderLoop::Mode`.
 
 ## 6. Command dispatch ⬜
