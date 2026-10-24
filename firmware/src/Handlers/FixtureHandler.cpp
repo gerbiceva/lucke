@@ -61,7 +61,7 @@ namespace Handler
         std::string serialized;
         serializeJson(doc, serialized);
 
-        m_settings.saveFixture(id, serialized);
+        m_settings.saveFixture(id, std::move(serialized));
     }
 
     Fixture* FixtureHandler::get(uint8_t id)

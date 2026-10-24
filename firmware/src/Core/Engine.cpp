@@ -13,6 +13,7 @@ Engine::Engine()
       m_setFixtureHandler(m_fixtures),
       m_inputsHandler(m_inputs),
       m_wifiConfigHandler(m_wifi, m_settings),
+      m_rebootHandler(m_settings),
       m_engineConfigHandler(m_settings, m_telemetry),
       m_serialSession(m_serial, m_dispatcher, m_tasks, "serial_cmd"),
       m_tcpListener(COMMAND_PORT, m_dispatcher, m_tasks)
@@ -84,6 +85,7 @@ void Engine::wireConnectivity()
 
 void Engine::startServices()
 {
+    m_settings.start(m_tasks);
     m_inputs.start();
 
     // Animation until wifi first connects, then live DMX (see wireConnectivity)

@@ -10,7 +10,7 @@ namespace Commands
 
     void CommandDispatcher::dispatch(const std::string& data, Interface::Transport& transport)
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        std::scoped_lock lock(m_mutex);
         JsonDocument doc;
         DeserializationError err = deserializeJson(doc, data);
         if (err)

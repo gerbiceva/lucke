@@ -1,10 +1,12 @@
 #pragma once
 #include <concepts>
 #include <cstdint>
+#include <map>
 #include <mutex>
 #include <optional>
 #include <string>
 #include "Core/Config/EngineConfig.h"
+#include "Tasks/TaskExecutor.h"
 #include "Utils/Storage.h"
 
 namespace Services
@@ -21,6 +23,10 @@ namespace Services
         // are stored. Idempotent: later calls do nothing.
         void load();
 
+        // Spawns the task that writes queued fixture records. Call once,
+        // after load().
+        void start(Tasks::Manager& tasks);
+
         // Unlocked view, for boot code that runs before the other tasks.
         [[nodiscard]] const Config::Engine& engine() const;
 
@@ -32,29 +38,44 @@ namespace Services
         template <std::invocable<Config::Engine&> F>
         void update(F&& change)
         {
-            std::lock_guard<std::mutex> lock(m_mutex);
+            std::scoped_lock lock(m_mutex);
             change(m_engine);
             m_engineNvs.putString(c_settingsKey, m_engine.toString());
         }
 
         [[nodiscard]] std::optional<std::string> loadFixture(uint8_t id);
-        void saveFixture(uint8_t id, const std::string& json);
 
-        // Erases all stored settings and fixture records. The caller reboots;
-        // the next boot starts from defaults.
+        // Queues a fixture record. It is written once no fixture has changed
+        // for c_saveDelay, so dragging a slider in a UI costs one flash
+        // write, not one per step.
+        void saveFixture(uint8_t id, std::string json);
+
+        // Writes queued fixture records now. Call before restarting.
+        void flush();
+
+        // Erases all stored settings and fixture records, and drops queued
+        // ones. The caller reboots; the next boot starts from defaults.
         void factoryReset();
 
     private:
         static constexpr const char* c_settingsKey = "settings";
+        static constexpr TickType_t c_saveDelay = pdMS_TO_TICKS(1000);
         static std::string fixtureKey(uint8_t id);
 
-        // Serializes NVS access and guards m_engine, which the report and
-        // wifi tasks read while commands change it.
+        void saveLoop();
+        // Caller holds m_mutex.
+        void writePending();
+
+        // Serializes NVS access and guards m_engine (read by the report and
+        // wifi tasks while commands change it) and m_pendingFixtures.
         mutable std::mutex m_mutex;
         bool m_loaded = false;
 
         Config::Engine m_engine;
         Utils::Storage m_engineNvs;
         Utils::Storage m_fixtureNvs;
+
+        std::map<uint8_t, std::string> m_pendingFixtures;
+        TickType_t m_lastFixtureChange = 0;
     };
 }

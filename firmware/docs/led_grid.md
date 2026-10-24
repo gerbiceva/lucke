@@ -1,5 +1,13 @@
 # LEDGrid / VirtualGrid
 
+> **Status (October 2026).** The prototype analysed here now lives in
+> `unused/src_prev/`. The live tree has no grid output: its last version,
+> `Output/Base/LEDGridBase.h`, is commented out since the LED drivers rework
+> and must be ported to `Output::Driver` (one driver per strip). The
+> single-formula index math and corrected stride fan-out proposed in §2 are
+> the parts to carry over. Design the grid's JSON (`strips[]`) together with
+> the JSON fixture work in [`improvement.md`](./improvement.md).
+
 Analysis of the `OutputV2::LEDGrid` / `OutputV2::VirtualGrid` prototype (`src_prev/OutputV2/LEDGrid.h`, `VirtualGrid.h`) and a proposed generic redesign.
 
 This code is unfinished scratch/prototype work living in `src_prev` — it is not currently wired into the active engine. Two other files in the same tree (`CoreV2/Grid.h` + `LEDStripMapping`) explore a second, closure-based take on the same idea; they aren't covered in detail here.

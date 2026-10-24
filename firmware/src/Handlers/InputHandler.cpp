@@ -28,7 +28,7 @@ namespace Handler
 
     std::shared_ptr<SyncBuffer> InputHandler::subscribe(uint16_t uni)
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        std::scoped_lock lock(m_mutex);
         auto [it, inserted] = m_universes.try_emplace(uni);
         // Before the socket is open this fails; reopen() joins it later.
         if (inserted) m_sacn.join(uni);
@@ -38,7 +38,7 @@ namespace Handler
 
     void InputHandler::unsubscribe(uint16_t uni)
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        std::scoped_lock lock(m_mutex);
         auto it = m_universes.find(uni);
         if (it == m_universes.end()) return;
 
@@ -56,7 +56,7 @@ namespace Handler
 
     void InputHandler::reopen()
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        std::scoped_lock lock(m_mutex);
         m_sacn.close();
         if (!m_sacn.open())
         {
@@ -84,7 +84,7 @@ namespace Handler
         // the queue.
         for (auto pkt = m_sacn.receive(c_waitMs); pkt; pkt = m_sacn.receive(0))
         {
-            std::lock_guard<std::mutex> lock(m_mutex);
+            std::scoped_lock lock(m_mutex);
             auto it = m_universes.find(pkt->universe);
             if (it == m_universes.end()) continue;   // not a universe we use
 
@@ -105,7 +105,7 @@ namespace Handler
 
     void InputHandler::toJson(JsonObject& obj)
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        std::scoped_lock lock(m_mutex);
         obj["num_inputs"] = m_universes.size();
         JsonArray arr = obj["inputs"].to<JsonArray>();
         for (auto& [uni, entry] : m_universes)

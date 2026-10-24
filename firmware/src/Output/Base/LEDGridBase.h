@@ -100,7 +100,6 @@
 //             return f;
 //         }
 //
-//         void bind() override {}
 //
 //         void update(std::span<const uint8_t> src) override
 //         {

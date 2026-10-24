@@ -25,7 +25,6 @@ public:
     TOutput& addOutput(Args&&... args)
     {
         auto& out = m_outputs.emplace_back(std::make_unique<TOutput>(std::forward<Args>(args)...));
-        out->bind();
         m_lastOffset += out->footprint();
         return static_cast<TOutput&>(*out);
     }

@@ -24,8 +24,6 @@ namespace Output
         {
         }
 
-        void bind() override {}
-
         void update(std::span<const uint8_t> src) override
         {
             if (m_numGroups == 0) return;

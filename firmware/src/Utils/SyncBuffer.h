@@ -11,7 +11,7 @@ class SyncBuffer
 public:
     void write(Dmx::UniverseCView src)
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        std::scoped_lock lock(m_mutex);
         std::ranges::copy(src, m_buffer.begin());
     }
 
@@ -20,7 +20,7 @@ public:
     // reads, reopening the torn-read race this buffer exists to prevent.
     void read(Dmx::UniverseView dst)
     {
-        std::lock_guard<std::mutex> lock(m_mutex);
+        std::scoped_lock lock(m_mutex);
         std::ranges::copy(m_buffer, dst.begin());
     }
 };

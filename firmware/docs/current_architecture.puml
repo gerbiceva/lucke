@@ -1,285 +1,199 @@
 @startuml current_architecture
-title Lucke Firmware — CURRENT architecture (branch: refactor)
+title Lucke Firmware — current architecture (branch: cpp23)
 skinparam classAttributeIconSize 0
 skinparam packageStyle rectangle
 skinparam linetype ortho
 hide empty members
 
-' ============================================================
-'  This describes the code AS IT IS TODAY in src/.
-'  Compile-time fixture types are still the source of truth;
-'  NVS only stores a CONFIG OVERLAY (not a full definition).
-' ============================================================
+' Companion to current_architecture.md. Ownership = composition (*--),
+' borrowed references = plain arrows.
 
-' ─────────────────────────────────────────
-'  INTERFACES
-' ─────────────────────────────────────────
 package "Interfaces" #DDEBF7 {
-  interface Serializable {
-    +toJson(JsonObject&) = 0
-    +toJsonDoc() : JsonDocument   ' default: empty doc
-  }
-  interface Deserializable {
-    +fromJson(json : string) = 0
-  }
   interface Output {
-    +footprint() : uint16_t = 0
+    +footprint() : uint16_t
     +footprintFor(setting) : uint16_t
-    +bind() = 0
-    +update(src : uint8_t*) = 0
-    +postupdate() = 0
-    +setPreset(doc : JsonDocument&) = 0
-    +toJson(obj)        ' round-trip / type info
-    +describe(obj)      ' human summary
-    +appendBasicInfo(doc)  ' << DEAD: never called >>
-  }
-  interface Input {
-    +begin(universe) = 0
-    +stop() = 0
-    +poll(buff) : bool
-    +toJson(obj)
-  }
-  interface CommandHandler {
-    +handle(req : JsonDocument&, t : Transport&) = 0
+    +update(span<const uint8_t>)
+    +postupdate()
+    +setPreset(json)
+    +toJson(JsonObject&)
+    +describe(JsonObject&)
   }
   interface Transport {
-    +send(s : string)
+    +send(string)
+    +readLine() : string
+    +isAvailable() : bool
+    +remoteAddress() : string
+    +close()
+  }
+  interface CommandHandler {
+    +handle(JsonDocument&, Transport&)
   }
 }
 
-' ─────────────────────────────────────────
-'  OUTPUT (templated on backend driver)
-' ─────────────────────────────────────────
-package "Output" #E2EFDA {
-  class Base {
-    {static} -s_uuid
-    #m_uuid, m_size
-    +footprint()
-    +describe()  ' name/footprint/hardware_pin
-  }
-  class "LEDBase<TDriver>" as LEDBase {
-    #m_numLeds, m_pin
-    #m_driver : TDriver
-    #m_dstBuffer : unique_ptr<uint8_t[]>
-  }
-  class "LED1D<TDriver>" as LED1D {
-    -m_numGroups
-    +setPreset()  ' "num_groups"
-    +footprint() = num_groups*3
-  }
-  class LEDGridBase {
-    -m_w, m_h
-    -m_views[] : {x,y,cellW,cellH}
-    +setPreset()  ' "width"/"height"
-    +footprint() = SUM(vW*vH*3)
-  }
-  class WS2815Grid
-  class "FastLED1D / FastLEDGrid" as FL
-  class "WS2815Driver / FastLEDDriver" as Drivers
-
-  Base ..|> Output
-  Base ..|> Serializable
-  LEDBase --|> Base
-  LED1D --|> LEDBase
-  FL --|> LEDBase
-  LEDGridBase --|> Base
-  WS2815Grid --|> LEDGridBase
-  LEDBase o--> Drivers : TDriver
+class Engine <<composition root>> {
+  +addFixture<TFixture>()
+  +init()
+  -registerCommands()
+  -startServices()
+  -wireConnectivity()
 }
 
-' ─────────────────────────────────────────
-'  CONFIG (pure data, JSON-serializable)
-' ─────────────────────────────────────────
-package "Config" #FFF9E6 {
-  class "Config::Engine" as CfgE {
-    +version (const)
-    +to_factory_settings
-    +serial_report_task, wireless_report_task
-    +wifi_animation
-    +ssid, password
-    +toJson() / toJsonDoc() / toString()
-  }
-  class "Config::Fixture" as CfgF {
-    +m_ID, universe, address
-    +selectedPreset, numPresets
-    +name, type, highlighted
-    +toJson() / toJsonDoc()
-  }
-  CfgE ..|> Serializable
-  CfgF ..|> Serializable
-}
-
-' ─────────────────────────────────────────
-'  CORE — Fixture (still a COMPILE-TIME subclass)
-' ─────────────────────────────────────────
-class Fixture {
-  -m_config : Config::Fixture
-  -m_outputs : vector<Output*>
-  -m_jsonPresets : JsonDocument
-  -m_syncBuffers : vector<SyncBuffer>
-  -m_buffer : vector<uint8_t>
-  -m_mutex
-  --
-  +addOutput<T>()  ' compile time
-  +fromJson(json)  ' overlays config ONLY (name/uni/addr/preset)
-  +fromConfig()    ' defaults
-  +update()        ' stitch universes -> outputs
-  +setPreset(i)    ' positional settings[k]->outputs[k]
-  .. many JSON views ..
-  +toJson() / toJsonDoc()
-  +configJson() / presetsJson() / outputsJson()
-}
-class "StripWS2815<N,Pin> / Grid2815 / BlinderTest" as FxConcrete {
-  ' ctor calls addOutput<...>() + MakeJSON<N> presets
-}
-Fixture ..|> Serializable
-Fixture ..|> Deserializable
-Fixture *--> CfgF
-Fixture "1" o--> "*" Output : owns (raw new, never deleted)
-FxConcrete --|> Fixture
-
-' ─────────────────────────────────────────
-'  HANDLERS
-' ─────────────────────────────────────────
-package "Handlers" #FCE4D6 {
-  class FixtureHandler {
-    -m_fixtures : vector<Fixture*>
-    -m_storage : Storage  ' "fixtures" ns
-    -m_inputs : InputHandler&
-    -m_nextId
+package "Services" #E2F0D9 {
+  class SettingsStore {
+    +load()
+    +start(Tasks)
+    +snapshot() : Config::Engine
+    +update(fn)
+    +loadFixture(id) : optional<string>
+    +saveFixture(id, json)  ' queued, 1 s delay
+    +flush()
+    +factoryReset()
     --
-    +addFixture<T>(factoryReset)  ' compile-time T
-    +get/exists/all()
-    +setUniverse/Address/Preset/Name/highlight()
-    +update() / wifiAnimation()
-    -persistFixture(id)  ' fix->toJsonDoc() -> NVS "fixtureN"
+    task settings_save
+  }
+  class RenderLoop {
+    +setMode(Live | Animation | Off)
+    --
+    task render (prio 2)
+  }
+  class Connectivity {
+    +onChange(listener)
+    --
+    task wifi_monitor
+  }
+  class StatusReport {
+    +build() : string
+    +settings() : string
+  }
+  class Telemetry {
+    +setSerialReport(bool)
+    +setWirelessReport(bool)
+    --
+    tasks heartbeat, report
+  }
+  class CommandSession {
+    task serial_cmd
+  }
+  class TcpListener {
+    -serve(TcpConnection&)  ' 10 s idle timeout
+    --
+    task tcp_cmd
+  }
+}
+
+package "Handlers" #FFF2CC {
+  class FixtureHandler {
+    +addFixture<T>()
+    +setUniverse/Address/Preset/Name(id, v)
+    +highlight(id)
+    +update()
     -resubscribe(fix, oldBase, oldCount)
   }
   class InputHandler {
-    -m_sources  : map<uni, Input>
-    -m_buffers  : map<uni, SyncBuffer>
-    -m_refcount : map<uni, int>
-    -m_mutex
+    +subscribe(uni) : shared_ptr<SyncBuffer>
+    +unsubscribe(uni)
+    +reconnect()  ' sets a flag
+    -m_universes : map<uint16_t, Entry>
     --
-    +subscribe(uni)/unsubscribe(uni)  ' ref-counted
-    +update()/reconnect()
+    task input_update (prio 3)
   }
-  class PinHandler
-  FixtureHandler ..|> Serializable
-  FixtureHandler ..|> Deserializable
-  InputHandler ..|> Serializable
-  FixtureHandler "1" o--> "*" Fixture
-  FixtureHandler --> InputHandler : subscribe/unsubscribe
 }
 
-package "Input" #F2EFFF {
-  class SacnSource
-  SacnSource ..|> Input
-  InputHandler o--> "*" Input : HARDCODED SacnSource
+package "Input" #FCE4D6 {
+  class SacnReceiver {
+    +open() / close()
+    +join(uni) / leave(uni)
+    +receive(timeoutMs) : optional<Packet>
+  }
 }
 
-' ─────────────────────────────────────────
-'  UTILS / STORAGE
-' ─────────────────────────────────────────
-package "Utils" #EBF5EB {
-  class Storage {
-    -m_Preferences : Preferences  ' ESP32 NVS
-    -m_Partition, m_inited
-    +setPartition(ns)
-    +isKey/putString/getString
-    +putChar/UChar/UShort + getters  ' << UNUSED API >>
-    +putIfNExist*  ' << UNUSED API >>
-  }
-  class SyncBuffer {
-    -m_buffer[512]
-    -m_mutex
-    +write(src)/read(dst)  ' double-buffer, lock-copy
-  }
-  class "MakeJSON<N> (PresetMaker)" as Mk
+class SyncBuffer {
+  +write(UniverseCView)
+  +read(UniverseView)
 }
 
-' ─────────────────────────────────────────
-'  COMMANDS / NETWORK / TASKS
-' ─────────────────────────────────────────
-package "Commands" #F5E6FF {
+package "Core" #EDEDED {
+  class Fixture {
+    +update()
+    +lock() : unique_lock<recursive_mutex>
+    +addOutput<TOutput>(args)
+    +setSyncBuffers(bufs)
+    +setPreset(i)
+    -m_config : Config::Fixture
+  }
+  class "Fixtures::Strip<Type, TDriver, N, Pin>" as Strip
+}
+
+package "Output" #DDEBF7 {
+  class "Strip1D<TDriver, Pin>" as Strip1D
+  interface Driver {
+    +show()
+    +kind()
+    +pin()
+  }
+  class Ws2815Device
+  class FastLedDevice
+}
+
+package "Commands" #F4CCCC {
   class CommandDispatcher {
-    -m_handlers : map<string, CommandHandler*>
-    +dispatch(line, transport)
+    +registerHandler(name, handler)
+    +dispatch(line, transport)  ' one at a time
   }
-  class DescribeHandler
-  class GetFixtureHandler
-  class SetFixtureHandler
-  class InputsHandler
-  class WifiConfigHandler
-  class EngineConfigHandler
-  class RebootHandler
-  CommandDispatcher o--> DescribeHandler
-  CommandDispatcher o--> GetFixtureHandler
-  CommandDispatcher o--> SetFixtureHandler
-  CommandDispatcher o--> WifiConfigHandler
-  CommandDispatcher o--> EngineConfigHandler
+  class "Describe / GetFixture / SetFixture /\nInputs / WifiConfig / Reboot / EngineConfig" as Handlers
 }
 
-package "Network" #E8E8E8 {
+package "Net" #E2F0D9 {
   class Wifi
-  class TcpServer
-  class "TcpConnection" as TC
-  class UdpBroadcaster
+  class TcpConnection
   class SerialTransport
-  TC ..|> Transport
-  SerialTransport ..|> Transport
 }
 
-package "Tasks" #E8E8E8 {
-  class "Tasks::Manager" as TM {
-    +spawnTask(name, fn, prio, stack)
-    +suspend/resume/stopTask(id)
-  }
-}
+' --- ownership
+Engine *-- SettingsStore
+Engine *-- Wifi
+Engine *-- InputHandler
+Engine *-- FixtureHandler
+Engine *-- RenderLoop
+Engine *-- Connectivity
+Engine *-- StatusReport
+Engine *-- Telemetry
+Engine *-- CommandDispatcher
+Engine *-- Handlers
+Engine *-- CommandSession
+Engine *-- TcpListener
+InputHandler *-- SacnReceiver
+InputHandler *-- "N" SyncBuffer
+FixtureHandler *-- "N" Fixture
+Fixture *-- "N" Output
+Strip1D *-- Driver
 
-' ─────────────────────────────────────────
-'  ENGINE — composition root
-' ─────────────────────────────────────────
-class Engine {
-  -m_config : Config::Engine
-  -m_storage : Storage  ' "engine" ns
-  -m_factoryReset
-  -m_fixtures, m_inputs
-  -m_wifi, m_tcpServer, m_udp*, m_serial
-  -m_dispatcher + all handlers
-  -m_tasks
-  --
-  +addFixture<T>()
-  +init() : loadConfig/registerCommands/spawnTasks
-  +loadConfig()/saveConfig()
-  +toString()  ' full status snapshot
-}
+' --- types
+Strip --|> Fixture
+Strip1D ..|> Output
+Ws2815Device ..|> Driver
+FastLedDevice ..|> Driver
+TcpConnection ..|> Transport
+SerialTransport ..|> Transport
+Handlers ..|> CommandHandler
 
-Engine *--> CfgE
-Engine *--> FixtureHandler
-Engine *--> InputHandler
-Engine *--> CommandDispatcher
-Engine *--> TM
-Engine --> Storage : "engine" / "settings"
-FixtureHandler --> Storage : "fixtures" / "fixtureN"
-GetFixtureHandler ..> FixtureHandler
-SetFixtureHandler ..> FixtureHandler
-DescribeHandler ..> FixtureHandler
-WifiConfigHandler --> Storage
-EngineConfigHandler --> Storage
-EngineConfigHandler --> TM : toggle report tasks
-Fixture ..> SyncBuffer
-InputHandler o--> "*" SyncBuffer
-FxConcrete ..> Mk : presets at compile time
+' --- references
+Fixture --> "span" SyncBuffer : reads
+FixtureHandler --> InputHandler : subscribe
+FixtureHandler --> SettingsStore : saveFixture
+RenderLoop --> FixtureHandler : update()
+Connectivity --> Wifi
+Telemetry --> StatusReport
+CommandSession --> CommandDispatcher
+TcpListener --> CommandDispatcher
+TcpListener ..> TcpConnection : creates per client
+CommandDispatcher --> Handlers
+Handlers --> FixtureHandler
+Handlers --> SettingsStore
 
-note as N1
-  KEY OBSERVATION
-  Persistence is a CONFIG OVERLAY, not a full definition.
-  Outputs + preset language come from the compiled C++ type
-  (addFixture<T>); NVS "fixtureN" only restores
-  name/universe/address/presetIndex on top of that type.
-  => stored JSON alone CANNOT rebuild a fixture.
+note bottom of Connectivity
+  on link change, in order:
+  RenderLoop mode, TcpListener begin/stop,
+  InputHandler.reconnect()
 end note
-N1 .. Fixture
-
 @enduml

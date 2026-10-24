@@ -9,9 +9,6 @@ inline constexpr std::string_view ENGINE_VERSION = "v0.98";
 inline constexpr std::string_view DEFAULT_WIFI_SSID = "Ledique";
 inline constexpr std::string_view DEFAULT_WIFI_PASSWORD = "dasenebipovezau";
 
-// #define DEFAULT_WIFI_SSID "lasportiva5"
-// #define DEFAULT_WIFI_PASSWORD "GregorJeCar!56"
-
 inline constexpr uint16_t COMMAND_PORT = 8888;
 inline constexpr uint16_t HEARTBEAT_PORT = 12343;
 inline constexpr uint16_t REPORT_PORT = 12344;

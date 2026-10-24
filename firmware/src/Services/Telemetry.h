@@ -43,8 +43,6 @@ namespace Services
         Net::UdpBroadcaster m_udpHeartbeat;
         Net::UdpBroadcaster m_udpReport;
 
-        Tasks::TaskId m_heartbeatTaskId = Tasks::TaskId::Invalid;
-
         // The report task runs forever and checks these: deleting it from
         // outside could kill it while it holds a lock (InputHandler's mutex
         // during build()), freezing whoever needs that lock next.

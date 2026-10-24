@@ -1,6 +1,6 @@
 #pragma once
 #include <Arduino.h>
-#include "StringUtils.h"
+#include <cstdarg>
 
 namespace Utils
 {
@@ -58,12 +58,19 @@ namespace Utils
             }
         }
 
-        template<typename... Args>
-        static void printf(const char* format, Args&&... args)
+        // format(printf) makes the compiler check the arguments against the
+        // format string, like it does for ::printf.
+        [[gnu::format(printf, 1, 2)]]
+        static void printf(const char* format, ...)
         {
             if(m_enabled)
             {
-                Serial.printf(format, args...);
+                va_list args;
+                va_start(args, format);
+                char buf[256];
+                int n = vsnprintf(buf, sizeof(buf), format, args);
+                va_end(args);
+                if (n > 0) Serial.write(buf, std::min<size_t>(n, sizeof(buf) - 1));
             }
         }
     };

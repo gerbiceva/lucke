@@ -1,5 +1,21 @@
 # Architecture Improvement Proposal
 
+> **Status (October 2026): implemented, kept for history.** The code it
+> describes (`Engine::parseConfig`, `Wifi::receiveData`, raw `xTaskCreate`)
+> is gone. How each change landed:
+>
+> | # | Change | Outcome |
+> |---|---|---|
+> | 1 | SyncBuffer | ✅ as proposed |
+> | 2 | Ref-counted inputs + universe validation | ✅, then replaced by one shared sACN socket (`Input::SacnReceiver`) with full E1.31 validation; universes are `uint16_t`; new fixtures get universe `id + 1` (2c) |
+> | 3 | Response on the same socket | ✅ newline-framed, 10 s idle timeout; port 12345 removed |
+> | 4 | CommandDispatcher | ✅, plus one-command-at-a-time locking |
+> | 5 | Event-driven wifi | ✅ as `Services::Connectivity` |
+> | 6 | Config as pure data | 🟡 `Config::Engine` / `Config::Fixture` are data + JSON; NVS owned by `Services::SettingsStore` |
+> | 7 | Thin orchestrator | ✅ `Engine` is the composition root; work lives in `Services::*` |
+>
+> Current design: [`current_architecture.md`](./current_architecture.md).
+
 ## Table of Contents
 1. [Current Problems](#1-current-problems)
 2. [Proposed Changes Overview](#2-proposed-changes-overview)

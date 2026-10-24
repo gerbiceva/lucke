@@ -19,7 +19,7 @@ Fixture::Fixture(std::string name, std::string type, std::string presets)
 
 void Fixture::update()
 {
-    std::lock_guard lock(m_mutex);
+    std::scoped_lock lock(m_mutex);
     if (m_syncBuffers.empty()) return;
 
     size_t footprint = 0;
@@ -63,14 +63,14 @@ std::unique_lock<std::recursive_mutex> Fixture::lock()
 
 void Fixture::setSyncBuffers(std::vector<std::shared_ptr<SyncBuffer>> bufs)
 {
-    std::lock_guard lock(m_mutex);
+    std::scoped_lock lock(m_mutex);
     m_syncBuffers = std::move(bufs);
     m_buffer.resize(m_syncBuffers.size() * Dmx::c_universeSize, 0);
 }
 
 void Fixture::setUniverse(uint16_t new_universe)
 {
-    std::lock_guard lock(m_mutex);
+    std::scoped_lock lock(m_mutex);
     m_config.universe = new_universe;
 }
 
@@ -101,7 +101,7 @@ void Fixture::fromJson(const std::string& json)
 
 void Fixture::toJson(JsonObject& doc)
 {
-    std::lock_guard lock(m_mutex);
+    std::scoped_lock lock(m_mutex);
     m_config.toJson(doc);
     doc["footprint"] = m_lastOffset;
 }
@@ -116,7 +116,7 @@ JsonDocument Fixture::toJsonDoc()
 
 JsonDocument Fixture::configJson()
 {
-    std::lock_guard lock(m_mutex);
+    std::scoped_lock lock(m_mutex);
     JsonDocument doc = m_config.toJsonDoc();
     doc["footprint"] = m_lastOffset;
     JsonArray outputs = doc["outputs"].to<JsonArray>();
@@ -130,7 +130,7 @@ JsonDocument Fixture::configJson()
 
 JsonDocument Fixture::outputsJson()
 {
-    std::lock_guard lock(m_mutex);
+    std::scoped_lock lock(m_mutex);
     JsonDocument doc;
     JsonArray outputs = doc.to<JsonArray>();
 
@@ -157,7 +157,7 @@ JsonDocument Fixture::outputsJson()
 
 JsonDocument Fixture::presetsJson()
 {
-    std::lock_guard lock(m_mutex);
+    std::scoped_lock lock(m_mutex);
     JsonDocument doc;
     doc["selected"] = m_config.selectedPreset;
     doc["presets"] = m_jsonPresets;
@@ -166,13 +166,13 @@ JsonDocument Fixture::presetsJson()
 
 void Fixture::setAddress(uint16_t new_address)
 {
-    std::lock_guard lock(m_mutex);
+    std::scoped_lock lock(m_mutex);
     m_config.address = new_address;
 }
 
 void Fixture::setPreset(uint8_t new_preset)
 {
-    std::lock_guard lock(m_mutex);
+    std::scoped_lock lock(m_mutex);
 
     // Iterate the preset tree by reference (JsonObjectConst/JsonArrayConst) —
     // binding elements to a JsonDocument would deep-copy each group.
@@ -207,7 +207,7 @@ void Fixture::setPreset(uint8_t new_preset)
 
 void Fixture::setName(const std::string& other) 
 {
-    std::lock_guard lock(m_mutex);
+    std::scoped_lock lock(m_mutex);
     m_config.name = other;
 }
 
@@ -243,7 +243,7 @@ uint8_t Fixture::getNumPresets() const
 
 std::string Fixture::getName() const 
 { 
-    std::lock_guard lock(m_mutex);
+    std::scoped_lock lock(m_mutex);
     return m_config.name; 
 }
 
@@ -254,7 +254,7 @@ const std::string& Fixture::getType() const
 
 void Fixture::toggleHighlight()
 {
-    std::lock_guard lock(m_mutex);
+    std::scoped_lock lock(m_mutex);
     m_config.highlighted = !m_config.highlighted;
 }
 

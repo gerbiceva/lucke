@@ -1,207 +1,180 @@
-# Lucke Firmware — Current Architecture & Analysis
+# Lucke Firmware — Current Architecture
 
-> Branch `refactor`. Scope: `src/` (the live tree). `src_prev/` and `tmp/` are
-> legacy/scratch and are ignored here.
+> Branch `cpp23`, October 2026. Scope: `src/`. `unused/src_prev/` is the old
+> tree and is not described here. Diagram: [`current_architecture.puml`](./current_architecture.puml).
+> Wire protocol: [`api.md`](./api.md). Open work: [`modernization.md`](./modernization.md),
+> [`improvement.md`](./improvement.md).
 
-Companion diagram: [`current_architecture.puml`](./current_architecture.puml).
-
----
-
-## 1. Persistent storage — where do we read/write?
-
-All persistence goes through **`Utils::Storage`**, a thin wrapper over the ESP32
-`Preferences` library (NVS — non-volatile key/value flash). There are **two
-independent NVS namespaces**, each owned by a different object.
-
-### Namespace `"engine"` — owned by `Engine::m_storage`
-
-| Key | Value | Written by | Read by |
-|-----|-------|-----------|---------|
-| `"settings"` | JSON of `Config::Engine` (version, `serial_report_task`, `wireless_report_task`, `wifi_animation`, `ssid`, `password`) | `Engine::saveConfig()` (`Engine.cpp:97`), `EngineConfigHandler::save()` (`EngineConfigHandler.cpp:66`), `WifiConfigHandler` on ssid/pw change (`WifiConfigHandler.cpp:27`) | `Engine::loadConfig()` on boot (`Engine.cpp:62-64`) |
-
-Partition opened in `Engine::init()` → `m_storage.setPartition("engine")`
-(`Engine.cpp:22`).
-
-### Namespace `"fixtures"` — owned by `FixtureHandler::m_storage`
-
-| Key | Value | Written by | Read by |
-|-----|-------|-----------|---------|
-| `"fixture0".."fixtureN"` | JSON of `Fixture::toJsonDoc()` — **config only** (id, name, type, universe, address, presetIndex, numPresets, footprint) | `FixtureHandler::persistFixture()` (`FixtureHandler.cpp:66`), called after `addFixture` and after every `setUniverse/setAddress/setPreset/setName` | `FixtureHandler::_addFixture()` on boot (`FixtureHandler.cpp:23-25`) |
-
-Partition is opened **lazily** the first time a fixture is added
-(`FixtureHandler.cpp:14-18`) — deliberately, because NVS flash isn't initialized
-at global-constructor time.
-
-### Read/write flow summary
-
-- **Boot read (engine):** `loadConfig()` → if `"settings"` exists, parse and
-  overlay selected fields onto `m_config`; honour `to_factory_settings` (clears
-  the flag, rewrites). Otherwise `saveConfig()` writes defaults.
-- **Boot read (fixtures):** for each compiled-in fixture, if `"fixtureN"` exists
-  **and not** `factoryReset` → `fix->fromJson(stored)`; else `fix->fromConfig()`
-  (defaults). Then immediately `persistFixture()` to write it back.
-- **Runtime writes:** every fixture mutation and every engine-config/wifi change
-  re-serializes the whole object and does one `putString`.
-
-### Notes / risks in the storage layer
-
-1. **`highlight` is intentionally not persisted** (transient) — correct, but
-   undocumented.
-2. **Write amplification / flash wear.** Each setter writes the *entire* JSON
-   blob to NVS synchronously. Dragging an address slider = one flash write per
-   step. Consider debouncing or a dirty-flag flush.
-3. **Dead API.** `Storage` exposes `putChar/UChar/UShort`, the matching getters,
-   and the whole `putIfNExist*` family. None are used anywhere in `src/` — only
-   `isKey/putString/getString` are. Dead surface to delete.
-4. **`setPartition` never `end()`s a previously-open namespace** (the in-code
-   `// TODO: check if open` at `Storage.cpp:16`). Not hit today (each Storage
-   opens exactly one namespace), but a latent footgun.
-5. **Factory reset doesn't erase NVS** — it overwrites with defaults. Orphaned
-   keys (e.g. a fixture that no longer exists in firmware) are never cleared.
-6. **The persisted fixture JSON is not self-sufficient** — see §3.
+Target: ESP32-C3 (`lolin_c3_mini`), Arduino core on pioarduino, GCC 14,
+`-std=gnu++23`, `-fno-rtti -fexceptions`.
 
 ---
 
-## 2. The class model (how it fits together)
+## 1. Shape
 
 ```
-main.cpp ─ engine.addFixture<StripWS2815<24,5>>() ─ engine.init()
-                                                         │
-                                       ┌─────────────────┴─────────────────┐
-                                    Engine (composition root, owns everything)
-       ┌──────────────┬───────────────┬──────────────┬─────────────┬───────────┐
-   Config::Engine  FixtureHandler  InputHandler   CommandDispatcher  Tasks::Mgr  Network
-                       │   │            │              │  (+handlers)
-                  Fixture* │       SacnSource      handlers ──> FixtureHandler / Config
-                  (owns Output*)   (+SyncBuffer)
+main.cpp ── engine.addFixture<Fixtures::StripWS2815<60, 5>>() ── engine.init()
+
+Engine (composition root: owns everything, wires it, starts the services)
+ ├─ SettingsStore      the only NVS owner: engine settings + fixture records
+ ├─ Tasks::Manager     spawns the FreeRTOS tasks
+ ├─ Net::Wifi          station connect / reconnect / status
+ ├─ InputHandler       sACN socket, one SyncBuffer per subscribed universe
+ ├─ FixtureHandler     owns the Fixtures, ref-counts their universe span
+ ├─ Services
+ │   ├─ RenderLoop     the one task that drives the LEDs (Live / Animation / Off)
+ │   ├─ Connectivity   wifi events -> "connected?" callbacks
+ │   ├─ StatusReport   builds status JSON (never includes the wifi password)
+ │   ├─ Telemetry      UDP heartbeat + optional serial / UDP reports
+ │   ├─ CommandSession line protocol over serial
+ │   └─ TcpListener    line protocol over TCP 8888
+ └─ Commands           CommandDispatcher + one handler per request
 ```
 
-- **`Engine`** is the composition root: it owns the config, both handlers, the
-  dispatcher + all command handlers, the task manager, and all networking. It
-  wires everything in its constructor initializer list and `init()`.
-- **`Fixture`** owns a `Config::Fixture` (data), a vector of `Output*`, a parsed
-  preset document (`m_jsonPresets`), and the per-universe `SyncBuffer`s. Its
-  `update()` stitches the subscribed universes into one flat buffer and walks the
-  outputs. A `std::mutex` guards `update()` against the command-task mutators.
-- **`Output`** is the hardware-mapping interface (`LED1D`, `LEDGridBase`/
-  `WS2815Grid`, FastLED variants), templated on a backend `TDriver`.
-- **`FixtureHandler`** owns the fixtures, persists them, and ref-counts universe
-  subscriptions through **`InputHandler`** (which today hardcodes `SacnSource`).
-- **`SyncBuffer`** is the lock-protected 512-byte hand-off between the input task
-  (writer) and the fixture task (reader).
-- **Tasks** (`Tasks::Manager`) spawns the FreeRTOS tasks: input poll, fixture
-  update, wifi animation, wifi monitor, heartbeat, serial cmd, tcp cmd, and the
-  two report tasks.
-- **Commands** parse a JSON line and dispatch by the `"request"` field over a
-  `Transport` (TCP or Serial).
+`Engine` members are declared in dependency order (each holds references to
+members above it), so the constructor initializer list is the wiring diagram.
 
-### Threading model (sound, worth keeping)
+## 2. Boot
 
-- `SyncBuffer` lock-copies on both `read` and `write` → no torn DMX frames.
-- `Fixture::m_mutex` serializes `update()` against resize/swap mutators.
-- `InputHandler::m_mutex` guards the maps against concurrent subscribe/iterate.
-- These three are correct and the comments explaining *why* are good.
+1. Global `Engine engine;` constructs everything. NVS isn't ready yet, so
+   nothing touches storage.
+2. `setup()` calls `engine.addFixture<T>()` for each compiled-in fixture.
+   `FixtureHandler::_addFixture` loads settings (first call opens NVS), gives
+   the fixture an id, restores its stored record (`"fixtureN"`) or — first
+   boot — assigns universe `id + 1` and applies the default preset, subscribes
+   its universe span, and queues its record for saving.
+3. `engine.init()`: load settings, start wifi, register commands, then
+   `startServices()` spawns the tasks (below) and hooks Connectivity.
 
----
+## 3. Tasks
 
-## 3. The JSON / "describe" story — you're right, it's the weak spot
+| Task | Owner | Prio | Stack | Does |
+|---|---|---|---|---|
+| `input_update` | InputHandler | 3 | 30000 | waits on the sACN socket, drains packets into SyncBuffers |
+| `render` | RenderLoop | 2 | 30000 | per mode: fixtures `update()` + `show()`, or the wifi animation, or nothing |
+| `tcp_cmd` | TcpListener | 2 | 8192 | accepts one client at a time, line in / line out |
+| `serial_cmd` | CommandSession | 1 | 8192 | same protocol over USB serial |
+| `wifi_monitor` | Connectivity | 1 | 4096 | woken by wifi events, calls listeners on link change |
+| `heartbeat` | Telemetry | 1 | 4096 | UDP broadcast every 500 ms |
+| `report` | Telemetry | 1 | 15000 | every 10 s: serial report and/or UDP report, per flags |
+| `settings_save` | SettingsStore | 1 | 4096 | writes queued fixture records after 1 s of quiet |
 
-You said *"I think the JSON describe is not good"* — agreed, and here is the
-concrete diagnosis. The **idea** (JSON as the lingua franca for transport,
-presets, and persistence) is good. The **current implementation** has three
-problems.
+Rule: **no task is stopped or suspended from outside.** Deleting a task can
+leave a lock it holds taken forever (this froze DMX input once). Tasks that
+pause check a flag or mode instead (RenderLoop mode, Telemetry report flags).
+`Tasks::Manager` therefore only spawns.
 
-### 3a. Too many overlapping serialization methods, fuzzy contracts
+Connectivity listeners (in order): render mode (Live on connect; Animation or
+Off on disconnect, per `wifi_animation`), open/close the TCP listener, ask
+InputHandler to reopen the sACN socket.
 
-A single fixture can be turned into JSON through **five** different methods, and
-an output through **four**:
+## 4. DMX data path
 
-| Level | Methods | Overlap |
-|-------|---------|---------|
-| `Output` | `toJson()`, `describe()`, `appendBasicInfo()`, `toJsonDoc()` | `num_leds`, `footprint`, `hardware_pin` appear in *both* `toJson` and `describe` (sometimes nested under `"description"`, sometimes flat) |
-| `Fixture` | `toJson()`, `toJsonDoc()`, `configJson()`, `presetsJson()`, `outputsJson()` | `configJson` embeds `toJson` + outputs' `toJson`; `outputsJson` re-emits outputs via `describe` + per-preset footprints |
+```
+UDP 5568 ─► SacnReceiver ─► InputHandler ─► SyncBuffer ─► Fixture::update ─► Output ─► Driver
+ (1 socket,   validate      route by         512-byte       copy universe    map to     show()
+  N groups)   E1.31         universe field   locked copy    span, slice      pixels
+```
 
-Problems this causes:
+- **`Input::SacnReceiver`** — one UDP socket bound to `0.0.0.0:5568`;
+  `join(u)` adds multicast group 239.255.hi.lo. Unicast sACN arrives on the
+  same socket. `receive()` waits with `select()`, then validates: ACN id,
+  root/framing/DMP vectors, start code `0x00` (skips `0xDD` priority), skips
+  preview and stream-terminated packets, accepts partial universes.
+- **`InputHandler`** — `unordered_map<uint16_t, Entry{buffer, refcount,
+  lastSeq, seen, packets}>`. Drops late/duplicate packets by sequence number
+  (E1.31 §6.7.2), zero-fills unsent slots, writes the SyncBuffer. The socket
+  is opened/closed only by the input task; `reconnect()` (wifi task) just
+  sets a flag.
+- **`SyncBuffer`** — mutex-protected 512-byte copy in / copy out; no torn
+  frames between the input and render tasks.
+- **`Fixture`** — config (`Config::Fixture`), its outputs, preset JSON, and
+  the SyncBuffers of every universe its `address + footprint` spans.
+  `update()` copies those universes into one flat buffer and hands each
+  output its slice. Highlight fills the slice with 255.
+- **Outputs** — `Interface::Output`: `footprint()`, `update(span)`,
+  `postupdate()` (= show), `setPreset(json)`. Only `Output::Strip1D<TDriver,
+  Pin>` exists today: N LEDs, `num_groups` source colors spread evenly.
+  The grid output (`Output/Base/LEDGridBase.h`) is commented out until it is
+  ported to the driver model.
+- **Drivers** — `Output::Driver` (`show`, `kind`, `pin`). Policies make one
+  per output: `Drivers::Ws2815` (native SPI driver, runtime pin, only one
+  strip because it owns `SPI2_HOST`) and `Drivers::FastLed<Chip, Order>`
+  (needs the pin at compile time; shows only its own controller). A taken pin
+  or failed init gives a null driver: the output renders, nothing is sent.
+- **Fixture types** — `Fixtures::Strip<Type, TDriver, N, Pin>` with aliases
+  `StripWS2815`, `StripWS2812`, `StripSK6812`. Presets are generated at
+  compile time (`Presets::c_groupPresets<N>`: one "group by d" per divisor of
+  N).
 
-- **No single contract.** It's unclear which method is the "truth", which is the
-  wire format, and which is the persistence format. They've diverged.
-- **`Output::appendBasicInfo()` is dead code** — declared on the interface,
-  overridden in `LEDBase`, **never called**. Delete it.
-- `describe` vs `toJson` is a naming coin-flip; a reader can't predict which
-  fields land where.
+## 5. Commands
 
-### 3b. Persistence and "describe" are conflated, and the round-trip is open
+Line protocol: one JSON object per line, reply one JSON line on the same
+transport (TCP 8888 or serial). See [`api.md`](./api.md).
 
-This is the real architectural issue. **What is persisted is not enough to
-rebuild a fixture.**
+- `CommandDispatcher` parses once, routes on `"request"`, and **runs one
+  command at a time** (a mutex), so serial and TCP handlers never race each
+  other.
+- `TcpListener` serves one client at a time, buffers into lines (max 4096
+  bytes), and drops a client after 10 s without data.
+- Handlers: `describe`, `fixtures`/`getfixture`, `setfixture`, `inputs`,
+  `wifi`, `reboot`, `factory_reset`, `serial_report_task`,
+  `wireless_report_task`, `wifi_animation`.
 
-- `persistFixture()` stores `Fixture::toJsonDoc()` = **config only** (name,
-  universe, address, presetIndex…). It contains **no outputs and no preset
-  language**.
-- On boot the outputs and presets come from the **compiled C++ type**
-  (`addFixture<StripWS2815<24,5>>`), and `fromJson()` only *overlays* the stored
-  config on top.
+## 6. Persistence (NVS)
 
-Consequences:
+Everything goes through `Services::SettingsStore`.
 
-- The stored `"fixtureN"` is meaningless without the matching firmware build.
-- Persistence is **positional/index-based** (`"fixtureN"`, presets are
-  `settings[k] -> outputs[k]`). Reorder the fixtures in `main.cpp`, or change a
-  compiled fixture's outputs, and stored records silently bind to the wrong
-  fixture / wrong outputs.
-- `Deserializable::fromJson` is declared on `FixtureHandler` but its body is
-  empty (`FixtureHandler.cpp:174` — "Handled per-fixture") — an interface method
-  that does nothing is a smell.
+| Namespace / key | Content | Written |
+|---|---|---|
+| `engine` / `settings` | `Config::Engine` JSON: report flags, `wifi_animation`, `ssid`, `password` | at once, via `update(fn)` |
+| `fixtures` / `fixtureN` | fixture config JSON: id, name, type, universe, address, presetIndex, numPresets, highlighted, footprint | queued; written 1 s after the last fixture change |
 
-### 3c. Mechanical JSON inefficiencies (matter on an ESP32)
+- Delayed fixture writes: a burst of changes (a UI slider) costs one flash
+  write. `reboot` flushes first; `factory_reset` drops the queue and erases
+  both namespaces. A power cut within 1 s of a change loses that change.
+- `highlighted` is stored but has no effect on boot.
+- The record is **config only**. Outputs and presets come from the compiled
+  fixture type, and records bind by position (`fixture0` = first
+  `addFixture`). Fixing that is [`improvement.md`](./improvement.md).
 
-- **`fromJson(std::string)` re-parses at every layer.** A command line is parsed
-  in the dispatcher, then the string is handed down and `deserializeJson`'d again
-  inside `Fixture::fromJson`. Pass the already-parsed `JsonObjectConst` instead.
-- **`JsonDocument` returned by value everywhere** (`toJsonDoc`, `configJson`,
-  `presetsJson`, `outputsJson`). ArduinoJson v7 docs are heap-backed; returning
-  them by value churns the heap. Prefer filling a caller-provided `JsonObject&`
-  (which `toJson` already does — so the `*Doc()` wrappers are mostly redundant).
-- `getElement<T>` / `updateElement<T>` are duplicated for `const` and non-`const`
-  `JsonDocument&` — collapse with a template.
+## 7. Locking
 
-### Verdict on the JSON approach
+| Lock | Guards | Taken by |
+|---|---|---|
+| `CommandDispatcher::m_mutex` | one command at a time | `tcp_cmd`, `serial_cmd` |
+| `Fixture::m_mutex` (recursive) | buffers, outputs, config | render, commands, report/heartbeat readers. `FixtureHandler` holds it across a change **and** its resubscribe, so the render task never sees a new footprint with an old buffer |
+| `InputHandler::m_mutex` | universe map; socket open/close vs join/leave | input task (per packet, not while waiting), commands |
+| `SyncBuffer` mutex | one universe's bytes | input (write), render (read) |
+| `SettingsStore::m_mutex` | NVS, engine settings, pending fixture records | everyone; readers use `snapshot()` |
 
-**Keep JSON as the schema — drop the multiplicity.** The fix is not "less JSON",
-it's *one* authoritative JSON document per fixture that is simultaneously the
-wire payload, the NVS record, and the preset source — and from which a fixture
-can be **fully rebuilt** (outputs included). That is exactly what the proposed
-architecture in [`json_fixture_architecture.puml`](./json_fixture_architecture.puml)
-does. See [`improvement.md`](./improvement.md) for the plan and trade-offs.
+Order when nested: Fixture → InputHandler → SyncBuffer. Nothing takes them
+the other way round.
 
----
+## 8. Logging
 
-## 4. Other findings (smaller)
+`Utils::Logger` over USB serial. `printf` is checked at compile time
+(`format(printf)` + `-Werror=format` for `src/`). The USB serial is set to a
+4 KB TX buffer and 2 ms write timeout: with nothing reading the port, a log
+call costs at most ~40 ms instead of ~2 s, and output is dropped once the
+buffer is full.
 
-- **Raw `new` for outputs and fixtures, never `delete`d.** `Fixture` holds
-  `vector<Output*>` from `new TOutput(...)`; `FixtureHandler` holds
-  `vector<Fixture*>` from `new TFixture()`. Acceptable for objects that live
-  forever, but `Fixture`'s destructor leaks its outputs. Prefer
-  `vector<unique_ptr<...>>`.
-- **`InputHandler` hardcodes `SacnSource`** (`InputHandler.cpp:21`) — fine for
-  now, but the only input protocol is wired in. An input factory is the natural
-  next step (the proposed diagram notes this as a *later* phase).
-- **`CommandDispatcher` reads `doc["request"]`** but logs `"Missing 'cmd'"` — the
-  message is stale vs the field name.
-- **`Serializable::toJsonDoc()` has a default returning an empty doc**, so
-  forgetting to override it fails silently (empty JSON) instead of at compile
-  time.
-- **`Fixture::update()` highlight branch** writes `m_lastOffset` bytes at
-  `&m_buffer[m_config.address]` — if `address + lastOffset` exceeds the buffer
-  (mis-set address), that's an OOB write. Worth a bounds check.
+## 9. Known gaps
 
----
+- Fixtures are compiled-in types; stored records can't rebuild a fixture
+  (see [`improvement.md`](./improvement.md)).
+- No grid output (commented out, needs porting to `Output::Driver`).
+- Only one WS2815 strip (SPI2); more strips must use FastLED.
+- sACN: one source per universe, no priority merge, no source-loss timeout
+  (LEDs hold the last frame).
+- `highlight` toggles regardless of the value sent.
+- Serialization overlaps: `toJson` / `describe` / `configJson` /
+  `outputsJson` emit overlapping fields. `describe`'s `num_leds` on an
+  output is really the group count.
 
-## 5. What's already good (don't lose it in the refactor)
+## 10. Other diagrams in this folder
 
-- Clean separation of **Interfaces** (Output / Input / Transport / Command).
-- The **driver-templated Output** hierarchy (`LEDBase<TDriver>`) cleanly isolates
-  FastLED vs native WS2815.
-- The **threading/locking** model is carefully thought through and commented.
-- **Ref-counted universe subscriptions** in `InputHandler` are elegant.
-- The **Engine composition root** keeps wiring in one place.
+`architecture.puml` and `proposed_architecture.puml` are the original
+pre-refactor design and proposal, kept for history. `json_fixture_architecture.puml`
+belongs to [`improvement.md`](./improvement.md). `led_grid*.puml` belong to
+[`led_grid.md`](./led_grid.md).

@@ -3,7 +3,7 @@
 namespace Net
 {
     TcpServer::TcpServer(uint16_t port)
-        : m_port(port), m_server(port)
+        : m_server(port)
     {}
 
     void TcpServer::begin()
@@ -14,12 +14,6 @@ namespace Net
     void TcpServer::stop()
     {
         m_server.stop();
-    }
-
-    void TcpServer::restart()
-    {
-        stop();
-        begin();
     }
 
     std::optional<TcpConnection> TcpServer::accept()

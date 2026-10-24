@@ -3,6 +3,27 @@
 Companion diagram: [`json_fixture_architecture.puml`](./json_fixture_architecture.puml)
 (class view + boot/persistence sequence). Baseline: [`current_architecture.md`](./current_architecture.md).
 
+> **Status (October 2026): not started — the next big feature.** Since this
+> was written the baseline moved; read the names below with that in mind:
+>
+> - Fixture types are now `Fixtures::Strip<Type, TDriver, N, Pin>` (aliases
+>   `StripWS2815`, `StripWS2812`, `StripSK6812`); `Strip2815`, `Grid2815`,
+>   `BlinderTest` and `LEDBase` no longer exist.
+> - Outputs drive hardware through `Output::Driver`, made by a driver policy
+>   (`Drivers::Ws2815`, `Drivers::FastLed<Chip, Order>`).
+> - Presets are generated at compile time by `Presets::c_groupPresets<N>`
+>   (`MakeJSON` is gone).
+> - `appendBasicInfo` is deleted. Persistence goes through
+>   `Services::SettingsStore` (fixture writes are delayed 1 s).
+>
+> **Constraint the factory must solve:** `Drivers::FastLed::make<Pin>` needs
+> the pin at compile time (FastLED's `addLeds<Chip, Pin>`), so an
+> `Output::Factory` reading `"pin"` from JSON can't create FastLED outputs
+> directly. Options: a `constexpr` table of supported pins that dispatches to
+> the right template instance, or a runtime-pin backend (e.g. ESP-IDF RMT
+> directly). `Drivers::Ws2815` already takes a runtime pin, but supports one
+> strip only (SPI2).
+
 ## The one idea
 
 Make **one JSON document the single source of truth** for a fixture. The *same*

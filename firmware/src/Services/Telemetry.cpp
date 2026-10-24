@@ -14,7 +14,7 @@ namespace Services
         m_udpHeartbeat.begin(HEARTBEAT_PORT);
         m_udpReport.begin(REPORT_PORT);
 
-        m_heartbeatTaskId = m_tasks.spawnTask("heartbeat", [this]() {
+        m_tasks.spawnTask("heartbeat", [this]() {
             heartbeatLoop();
         }, 1, 4096);
 
