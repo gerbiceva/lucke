@@ -8,14 +8,26 @@ namespace Handler
         : m_inputs(inputs), m_settings(settings)
     {}
 
-    void FixtureHandler::_addFixture(std::unique_ptr<Fixture> fix)
+    std::optional<std::string> FixtureHandler::loadStored()
     {
         // Fixtures are added from setup(), before Engine::init().
         m_settings.load();
+        return m_settings.loadFixture(m_nextId);
+    }
 
+    uint16_t FixtureHandler::storedLedCount(const std::optional<std::string>& stored)
+    {
+        if (!stored) return 0;
+        JsonDocument doc;
+        if (deserializeJson(doc, *stored)) return 0;
+        const uint16_t leds = doc["num_leds"] | 0;
+        return leds <= c_maxLeds ? leds : 0;
+    }
+
+    void FixtureHandler::_addFixture(std::unique_ptr<Fixture> fix, const std::optional<std::string>& stored)
+    {
         fix->setId(m_nextId++);
 
-        const auto stored = m_settings.loadFixture(fix->id());
         if (stored)
         {
             fix->fromJson(*stored);
@@ -150,6 +162,17 @@ namespace Handler
 
         fix->toggleHighlight();
         return true;
+    }
+
+    bool FixtureHandler::setLedCount(uint8_t id, uint16_t leds)
+    {
+        Fixture* fix = get(id);
+        if (!fix) return false;
+
+        fix->setLedCount(leds);
+        // The current presets are for the old count; 0 ("group by 1")
+        // exists for every count. Also persists the record.
+        return setPreset(id, 0);
     }
 
     void FixtureHandler::update()

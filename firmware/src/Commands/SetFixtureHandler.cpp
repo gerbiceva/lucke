@@ -36,6 +36,7 @@ namespace Commands
         if (req["address"].is<uint16_t>()) patch.address = req["address"].as<uint16_t>();
         if (req["presetIndex"].is<uint8_t>()) patch.preset = req["presetIndex"].as<uint8_t>();
         if (req["name"].is<const char*>()) patch.name = req["name"].as<const char*>();
+        if (req["leds"].is<uint16_t>()) patch.leds = req["leds"].as<uint16_t>();
         // Any bool toggles it, as before.
         patch.highlight = req["highlight"].is<bool>();
 
@@ -48,7 +49,7 @@ namespace Commands
 
         JsonDocument doc;
         JsonObject obj = doc.to<JsonObject>();
-        obj["status"] = result->changed ? "ok" : "no changes";
+        obj["status"] = result->rebooting ? "ok, rebooting" : result->changed ? "ok" : "no changes";
         result->fixture.toJson(obj);
         send(transport, doc);
     }

@@ -14,6 +14,7 @@ const char* toString(ApiError error)
     {
         case ApiError::FixtureNotFound:    return "fixture not found";
         case ApiError::UniverseOutOfRange: return "universe must be 1-63999";
+        case ApiError::LedCountOutOfRange: return "leds must be 1-1000";
     }
     return "unknown error";
 }
@@ -136,6 +137,10 @@ std::expected<FixtureUpdate, ApiError> API::setFixture(uint8_t id, const Fixture
     {
         return std::unexpected(ApiError::UniverseOutOfRange);
     }
+    if (patch.leds && (*patch.leds == 0 || *patch.leds > Handler::FixtureHandler::c_maxLeds))
+    {
+        return std::unexpected(ApiError::LedCountOutOfRange);
+    }
 
     bool changed = false;
     if (patch.universe) changed |= m_fixtures.setUniverse(id, *patch.universe);
@@ -144,6 +149,14 @@ std::expected<FixtureUpdate, ApiError> API::setFixture(uint8_t id, const Fixture
     if (patch.name) changed |= m_fixtures.setName(id, *patch.name);
     if (patch.highlight) changed |= m_fixtures.highlight(id);
 
+    // The strip is built with its count at boot, so a new one needs a restart.
+    bool rebooting = false;
+    if (patch.leds && *patch.leds != m_fixtures.get(id)->ledCount())
+    {
+        changed |= m_fixtures.setLedCount(id, *patch.leds);
+        rebooting = true;
+    }
+
     FixtureInfo info = m_fixtures.get(id)->info();
     if (changed)
     {
@@ -151,7 +164,14 @@ std::expected<FixtureUpdate, ApiError> API::setFixture(uint8_t id, const Fixture
                    static_cast<int>(from.size()), from.data(), info.config.universe, info.config.address,
                    info.config.selectedPreset, info.config.name.c_str(), info.config.highlighted ? "true" : "false");
     }
-    return FixtureUpdate{std::move(info), changed};
+    if (rebooting)
+    {
+        s_log.warn("fixture %u: %u LEDs via %.*s, rebooting to apply", id, *patch.leds,
+                   static_cast<int>(from.size()), from.data());
+        m_settings.flush();
+        runLater(1000, [] { ESP.restart(); });
+    }
+    return FixtureUpdate{std::move(info), changed, rebooting};
 }
 
 void API::setWifi(std::optional<std::string> ssid, std::optional<std::string> password, Origin from,

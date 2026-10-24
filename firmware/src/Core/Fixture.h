@@ -53,6 +53,9 @@ public:
     void setPreset(uint8_t new_preset);
     void setName(const std::string& other);
     void toggleHighlight();
+    // Takes effect on the next boot; see FixtureHandler::setLedCount.
+    void setLedCount(uint16_t numLeds);
+    [[nodiscard]] uint16_t ledCount() const;
 
     void setId(uint8_t id);
     [[nodiscard]] uint8_t id() const;
@@ -80,11 +83,8 @@ public:
     }
 
 private:
-    // Serializes update() (fixture task) against the mutators that reallocate
-    // m_buffer / swap m_syncBuffers / repoint outputs (command task). Without
-    // it, resize/swap under a live reader corrupts the heap. Also guards the
-    // config read by the report/heartbeat tasks. Recursive so lock() can be
-    // held around the setters, which lock it too.
+    // Guards buffers, outputs and config between the render, command and report
+    // tasks. Recursive so lock() can be held around the setters.
     mutable std::recursive_mutex m_mutex;
     Config::Fixture m_config;
     std::vector<std::shared_ptr<SyncBuffer>> m_syncBuffers;

@@ -117,8 +117,9 @@ Errors:
 
 ## setfixture
 
-Any combination of `universe`, `address`, `presetIndex`, `name`, `highlight`.
-The reply is the fixture after the change, with `status` `ok` or `no changes`.
+Any combination of `universe`, `address`, `presetIndex`, `name`, `highlight`,
+`leds`. The reply is the fixture after the change, with `status` `ok`,
+`no changes`, or `ok, rebooting` (after a new `leds`).
 
 ```
 -> {"request": "setfixture", "id": 0, "universe": 5, "address": 10}
@@ -130,6 +131,9 @@ The reply is the fixture after the change, with `status` `ok` or `no changes`.
 
 - `universe`: 1–63999. A new fixture starts on universe `id + 1`.
 - `presetIndex`: an invalid index is ignored (the fixture keeps its preset).
+- `leds`: LED count of a strip, 1–1000. Saved, the preset is reset to 0, and
+  the device reboots after 1 s to rebuild the strip. Until a count is set, a
+  fixture uses the default from `main.cpp`. Reported as `num_leds`.
 - Changes are saved to flash 1 s after the last change; `reboot` saves first.
 - `highlight` **toggles** all of the fixture's LEDs to white, whatever value is
   sent — `"highlight": true` again turns it off. Not saved across reboots.
@@ -142,6 +146,9 @@ Errors:
 
 -> {"request": "setfixture", "id": 0, "universe": 0}
 <- {"err": "universe must be 1-63999"}
+
+-> {"request": "setfixture", "id": 0, "leds": 0}
+<- {"err": "leds must be 1-1000"}
 ```
 
 ## inputs

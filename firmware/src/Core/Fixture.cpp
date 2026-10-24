@@ -33,9 +33,7 @@ void Fixture::update()
         footprint += o->footprint();
     }
 
-    // FixtureHandler changes the footprint and resizes m_buffer under one
-    // lock, so this shouldn't trigger; it guards against a mis-set address
-    // (or a caller that skips the resubscribe) reading past the end.
+    // Guards against a mis-set address reading past the end of m_buffer.
     if (m_config.address + footprint > m_buffer.size()) return;
 
     std::span<uint8_t> all{m_buffer};
@@ -252,6 +250,18 @@ std::string Fixture::getName() const
 const std::string& Fixture::getType() const 
 { 
     return m_config.type; 
+}
+
+void Fixture::setLedCount(uint16_t numLeds)
+{
+    std::scoped_lock lock(m_mutex);
+    m_config.numLeds = numLeds;
+}
+
+uint16_t Fixture::ledCount() const
+{
+    std::scoped_lock lock(m_mutex);
+    return m_config.numLeds;
 }
 
 void Fixture::toggleHighlight()

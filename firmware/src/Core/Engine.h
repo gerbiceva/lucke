@@ -33,10 +33,11 @@ public:
     Engine();
     void init();
 
-    template<typename TFixture>
-    void addFixture()
+    // Strips take their default LED count: addFixture<StripWS2815<5>>(60).
+    template<typename TFixture, typename... Args>
+    void addFixture(Args... args)
     {
-        m_fixtures.addFixture<TFixture>();
+        m_fixtures.addFixture<TFixture>(args...);
     }
 
 private:

@@ -3,6 +3,8 @@
 #include <memory>
 #include <cstdint>
 #include <string>
+#include <optional>
+#include <type_traits>
 #include "Core/Fixture.h"
 #include "Handlers/InputHandler.h"
 #include "Interfaces/Serializable.h"
@@ -29,22 +31,39 @@ namespace Handler
 
     class FixtureHandler : public Interface::Serializable, public Interface::Deserializable
     {
-        void _addFixture(std::unique_ptr<Fixture> fix);
+        void _addFixture(std::unique_ptr<Fixture> fix, const std::optional<std::string>& stored);
+        // The record for the fixture about to be added, if any.
+        std::optional<std::string> loadStored();
+        // "num_leds" from a stored record, or 0 if there is none.
+        static uint16_t storedLedCount(const std::optional<std::string>& stored);
         void persistFixture(uint8_t id);
 
-        // Re-derive the universe span from the fixture's current
-        // address + footprint, dropping the old span (oldBase..oldBase+oldCount)
-        // and subscribing the new one. Call after any change to
-        // universe, address, or preset (footprint).
+        // Resubscribes to the universes the fixture now spans. Call after any
+        // universe, address or preset change.
         void resubscribe(Fixture* fix, uint16_t oldBase, uint8_t oldCount);
 
     public:
         FixtureHandler(InputHandler& inputs, Services::SettingsStore& settings);
 
+        static constexpr uint16_t c_maxLeds = 1000;
+
         template<typename TFixture>
+            requires std::is_default_constructible_v<TFixture>
         void addFixture()
         {
-            _addFixture(std::make_unique<TFixture>());
+            const auto stored = loadStored();
+            _addFixture(std::make_unique<TFixture>(), stored);
+        }
+
+        // A strip: built with its stored LED count, or defaultLeds until one
+        // is stored (setfixture "leds").
+        template<typename TFixture>
+            requires std::is_constructible_v<TFixture, uint16_t>
+        void addFixture(uint16_t defaultLeds)
+        {
+            const auto stored = loadStored();
+            const uint16_t leds = storedLedCount(stored);
+            _addFixture(std::make_unique<TFixture>(leds ? leds : defaultLeds), stored);
         }
 
         [[nodiscard]] Fixture* get(uint8_t id);
@@ -58,6 +77,8 @@ namespace Handler
         [[nodiscard]] bool setPreset(uint8_t id, uint8_t preset);
         [[nodiscard]] bool setName(uint8_t id, const std::string& name);
         [[nodiscard]] bool highlight(uint8_t id);
+        // Saves a new LED count and resets the preset to 0. Applied after a reboot.
+        [[nodiscard]] bool setLedCount(uint8_t id, uint16_t leds);
 
         void update();
         void wifiAnimation();

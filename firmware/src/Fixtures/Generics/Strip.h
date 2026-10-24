@@ -1,6 +1,6 @@
 #pragma once
 #include <algorithm>
-#include <array>
+#include <vector>
 #include <span>
 #include "Core/Fixture.h"
 #include "Output/Strip1D.h"
@@ -18,14 +18,17 @@ namespace Fixtures
         constexpr FixedString(const char (&s)[N]) { std::copy_n(s, N, value); }
     };
 
-    template <FixedString Type, typename TDriver, uint16_t N, uint8_t Pin>
+    // The LED count comes from the stored record, or the default passed to
+    // addFixture (see FixtureHandler::addFixture).
+    template <FixedString Type, typename TDriver, uint8_t Pin>
     struct Strip : public Fixture
     {
-        static constexpr uint16_t BYTES = N * 3;
-
-        Strip() : Fixture("name", Type.value, Presets::c_groupPresets<N>.data())
+        explicit Strip(uint16_t numLeds)
+            : Fixture("name", Type.value, Presets::groupPresets(numLeds)),
+              m_animBuf(numLeds * 3, 0)
         {
-            addOutput<Output::Strip1D<TDriver, Pin>>(N);
+            setLedCount(numLeds);
+            addOutput<Output::Strip1D<TDriver, Pin>>(numLeds);
         }
 
         // Unchanged from StripWS2815 until the generic Effect replaces it.
@@ -34,9 +37,10 @@ namespace Fixtures
             {
                 // A preset change from the command task resizes the outputs.
                 auto guard = lock();
+                const uint16_t bytes = m_animBuf.size();
                 m_animBuf[m_animOff] = 255;
-                m_animBuf[m_animOff == 0 ? (BYTES - 1) : m_animOff - 1] = 0;
-                m_animOff = (m_animOff + 1) % BYTES;
+                m_animBuf[m_animOff == 0 ? (bytes - 1) : m_animOff - 1] = 0;
+                m_animOff = (m_animOff + 1) % bytes;
 
                 std::span<const uint8_t> src{m_animBuf};
                 for (auto& o : getOutputs())
@@ -49,17 +53,17 @@ namespace Fixtures
         }
 
     private:
-        std::array<uint8_t, BYTES> m_animBuf{};
+        std::vector<uint8_t> m_animBuf;
         uint16_t m_animOff = 0;
     };
 
     // The names main.cpp uses. Type strings match what NVS already stores.
-    template <uint16_t N, uint8_t Pin = 5>
-    using StripWS2815 = Strip<"StripWS2815", Drivers::Ws2815, N, Pin>;
+    template <uint8_t Pin = 5>
+    using StripWS2815 = Strip<"StripWS2815", Drivers::Ws2815, Pin>;
 
-    template <uint16_t N, uint8_t Pin>
-    using StripWS2812 = Strip<"StripWS2812", Drivers::FastLed<WS2812B, GRB>, N, Pin>;
+    template <uint8_t Pin>
+    using StripWS2812 = Strip<"StripWS2812", Drivers::FastLed<WS2812B, GRB>, Pin>;
 
-    template <uint16_t N, uint8_t Pin>
-    using StripSK6812 = Strip<"StripSK6812", Drivers::FastLed<SK6812, GRB>, N, Pin>;
+    template <uint8_t Pin>
+    using StripSK6812 = Strip<"StripSK6812", Drivers::FastLed<SK6812, GRB>, Pin>;
 }

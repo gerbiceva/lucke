@@ -23,7 +23,8 @@
 enum class ApiError : uint8_t
 {
     FixtureNotFound,
-    UniverseOutOfRange
+    UniverseOutOfRange,
+    LedCountOutOfRange
 };
 
 const char* toString(ApiError error);
@@ -50,6 +51,8 @@ struct FixturePatch
     std::optional<uint16_t> address;
     std::optional<uint8_t> preset;
     std::optional<std::string> name;
+    // Strip LED count. Saved, then the device reboots to apply it.
+    std::optional<uint16_t> leds;
     bool highlight = false;
 };
 
@@ -57,6 +60,7 @@ struct FixtureUpdate
 {
     FixtureInfo fixture;
     bool changed = false;
+    bool rebooting = false;   // a new LED count is applied by restarting
 };
 
 // Lines from the log history (Info and up), oldest first.

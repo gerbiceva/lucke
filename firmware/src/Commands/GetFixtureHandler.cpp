@@ -62,6 +62,7 @@ namespace Commands
         else if (field == "preset")   doc["val"] = config.selectedPreset;
         else if (field == "name")     doc["val"] = config.name;
         else if (field == "type")     doc["val"] = config.type;
+        else if (field == "leds")     doc["val"] = config.numLeds;
         else if (field == "config")   doc["val"] = *m_api.fixtureConfig(id);
         else if (field == "presets")  doc["val"] = *m_api.fixturePresets(id);
         else if (field == "outputs")  doc["val"] = *m_api.fixtureOutputs(id);
