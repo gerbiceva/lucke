@@ -8,25 +8,21 @@ namespace Commands
 
     void WifiConfigHandler::handle(JsonDocument& req, Interface::Transport& transport)
     {
-        Config::Engine& config = m_settings.engine();
-        bool dirty = false;
-
-        if (req["ssid"].is<const char*>())
-        {
-            config.ssid = req["ssid"].as<const char*>();
-            dirty = true;
-        }
-
-        if (req["password"].is<const char*>())
-        {
-            config.password = req["password"].as<const char*>();
-            dirty = true;
-        }
+        bool hasSsid = req["ssid"].is<const char*>();
+        bool hasPassword = req["password"].is<const char*>();
+        bool dirty = hasSsid || hasPassword;
 
         if (dirty)
         {
-            m_settings.save();
+            m_settings.update([&](Config::Engine& c) {
+                if (hasSsid) c.ssid = req["ssid"].as<const char*>();
+                if (hasPassword) c.password = req["password"].as<const char*>();
+            });
+        }
+        Config::Engine config = m_settings.snapshot();
 
+        if (dirty)
+        {
             JsonDocument doc;
             JsonObject obj = doc.to<JsonObject>();
             obj["status"] = "ok";

@@ -1,6 +1,6 @@
 #pragma once
 #include <string>
-#include "Core/Config/EngineConfig.h"
+#include "Services/SettingsStore.h"
 #include "Network/Wifi.h"
 #include "Handlers/FixtureHandler.h"
 #include "Handlers/InputHandler.h"
@@ -12,7 +12,7 @@ namespace Services
     class StatusReport
     {
     public:
-        StatusReport(Config::Engine& config, Net::Wifi& wifi,
+        StatusReport(const SettingsStore& settings, Net::Wifi& wifi,
                      Handler::FixtureHandler& fixtures, Handler::InputHandler& inputs);
 
         // Full status: settings, wifi, fixtures, inputs.
@@ -24,7 +24,7 @@ namespace Services
     private:
         void writeSettings(JsonObject& obj);
 
-        Config::Engine& m_config;
+        const SettingsStore& m_settings;
         Net::Wifi& m_wifi;
         Handler::FixtureHandler& m_fixtures;
         Handler::InputHandler& m_inputs;

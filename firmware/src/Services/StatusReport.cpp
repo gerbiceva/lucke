@@ -3,9 +3,9 @@
 
 namespace Services
 {
-    StatusReport::StatusReport(Config::Engine& config, Net::Wifi& wifi,
+    StatusReport::StatusReport(const SettingsStore& settings, Net::Wifi& wifi,
                                Handler::FixtureHandler& fixtures, Handler::InputHandler& inputs)
-        : m_config(config), m_wifi(wifi), m_fixtures(fixtures), m_inputs(inputs)
+        : m_settings(settings), m_wifi(wifi), m_fixtures(fixtures), m_inputs(inputs)
     {}
 
     std::string StatusReport::build()
@@ -41,9 +41,11 @@ namespace Services
 
     void StatusReport::writeSettings(JsonObject& obj)
     {
-        // Config::Engine::toJson is also the NVS format, so it must keep the
-        // password; strip it here for anything that leaves the device.
-        m_config.toJson(obj);
+        // Runs on the report task, so read a locked copy. Config::Engine::toJson
+        // is also the NVS format, so it must keep the password; strip it here
+        // for anything that leaves the device.
+        Config::Engine config = m_settings.snapshot();
+        config.toJson(obj);
         obj.remove("password");
     }
 }

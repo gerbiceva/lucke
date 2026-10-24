@@ -2,7 +2,7 @@
 #include "Interfaces/Command.h"
 #include "Handlers/FixtureHandler.h"
 #include "Handlers/InputHandler.h"
-#include "Core/Config/EngineConfig.h"
+#include "Services/SettingsStore.h"
 #include "Network/Wifi.h"
 
 namespace Commands
@@ -10,11 +10,11 @@ namespace Commands
     class DescribeHandler : public Interface::CommandHandler
     {
     public:
-        DescribeHandler(Config::Engine& config, Handler::FixtureHandler& fixtures, Handler::InputHandler& inputs, Net::Wifi& wifi);
+        DescribeHandler(const Services::SettingsStore& settings, Handler::FixtureHandler& fixtures, Handler::InputHandler& inputs, Net::Wifi& wifi);
         void handle(JsonDocument& req, Interface::Transport& transport) override;
 
     private:
-        Config::Engine& m_config;
+        const Services::SettingsStore& m_settings;
         Handler::FixtureHandler& m_fixtures;
         Handler::InputHandler& m_inputs;
         Net::Wifi& m_wifi;

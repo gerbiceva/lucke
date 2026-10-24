@@ -9,7 +9,6 @@ namespace Commands
 
     void EngineConfigHandler::handle(JsonDocument& req, Interface::Transport& transport)
     {
-        Config::Engine& config = m_settings.engine();
         const char* request = req["request"] | "";
 
         if (strcmp(request, "factory_reset") == 0)
@@ -27,10 +26,9 @@ namespace Commands
             {
                 bool value = req["value"];
                 m_telemetry.setSerialReport(value);
-                config.serial_report_task = value;
-                m_settings.save();
+                m_settings.update([value](Config::Engine& c) { c.serial_report_task = value; });
             }
-            respond(transport, "serial_report_task", config.serial_report_task);
+            respond(transport, "serial_report_task", m_settings.snapshot().serial_report_task);
             return;
         }
 
@@ -40,10 +38,9 @@ namespace Commands
             {
                 bool value = req["value"];
                 m_telemetry.setWirelessReport(value);
-                config.wireless_report_task = value;
-                m_settings.save();
+                m_settings.update([value](Config::Engine& c) { c.wireless_report_task = value; });
             }
-            respond(transport, "wireless_report_task", config.wireless_report_task);
+            respond(transport, "wireless_report_task", m_settings.snapshot().wireless_report_task);
             return;
         }
 
@@ -51,10 +48,10 @@ namespace Commands
         {
             if (req["value"].is<bool>())
             {
-                config.wifi_animation = req["value"];
-                m_settings.save();
+                bool value = req["value"];
+                m_settings.update([value](Config::Engine& c) { c.wifi_animation = value; });
             }
-            respond(transport, "wifi_animation", config.wifi_animation);
+            respond(transport, "wifi_animation", m_settings.snapshot().wifi_animation);
             return;
         }
 

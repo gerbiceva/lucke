@@ -82,13 +82,15 @@ namespace Handler
         Fixture* fix = get(id);
         if (!fix) return false;
 
-        uint8_t oldBase = fix->getUniverse();
-        if (oldBase == uni) return true;
+        {
+            auto lock = fix->lock();
+            uint8_t oldBase = fix->getUniverse();
+            if (oldBase == uni) return true;
 
-        uint8_t oldCount = fix->getNumUniverses();
-        fix->setUniverse(uni);
-        resubscribe(fix, oldBase, oldCount);
-
+            uint8_t oldCount = fix->getNumUniverses();
+            fix->setUniverse(uni);
+            resubscribe(fix, oldBase, oldCount);
+        }
         persistFixture(id);
         return true;
     }
@@ -98,9 +100,14 @@ namespace Handler
         Fixture* fix = get(id);
         if (!fix) return false;
 
-        fix->setAddress(addr);
-        // Address shifts totalBytes, so the span may grow/shrink.
-        resubscribe(fix, fix->getUniverse(), fix->getNumUniverses());
+        {
+            // One lock for change + resubscribe: the render task never sees
+            // the new footprint with the old buffer.
+            auto lock = fix->lock();
+            fix->setAddress(addr);
+            // Address shifts totalBytes, so the span may grow/shrink.
+            resubscribe(fix, fix->getUniverse(), fix->getNumUniverses());
+        }
         persistFixture(id);
         return true;
     }
@@ -110,10 +117,13 @@ namespace Handler
         Fixture* fix = get(id);
         if (!fix) return false;
 
-        fix->setPreset(preset);
-        // Preset changes the footprint (e.g. pixel grouping), which changes
-        // how many universes the fixture spans.
-        resubscribe(fix, fix->getUniverse(), fix->getNumUniverses());
+        {
+            auto lock = fix->lock();
+            fix->setPreset(preset);
+            // Preset changes the footprint (e.g. pixel grouping), which changes
+            // how many universes the fixture spans.
+            resubscribe(fix, fix->getUniverse(), fix->getNumUniverses());
+        }
         persistFixture(id);
         return true;
     }

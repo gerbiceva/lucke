@@ -30,6 +30,10 @@ public:
         return static_cast<TOutput&>(*out);
     }
 
+    // Holds the fixture lock across several calls, so a change and the
+    // resubscribe it needs look like one step to the render task.
+    [[nodiscard]] std::unique_lock<std::recursive_mutex> lock();
+
     void setSyncBuffers(std::vector<std::shared_ptr<SyncBuffer>> bufs);
     [[nodiscard]] uint16_t getFootprint() const;
     [[nodiscard]] uint8_t getNumUniverses() const;
@@ -45,7 +49,7 @@ public:
     [[nodiscard]] uint16_t getAddress() const;
     [[nodiscard]] uint8_t getSelectedPreset() const;
     [[nodiscard]] uint8_t getNumPresets() const;
-    [[nodiscard]] const std::string& getName() const;
+    [[nodiscard]] std::string getName() const;
     [[nodiscard]] const std::string& getType() const;
     [[nodiscard]] std::vector<std::unique_ptr<Interface::Output>>& getOutputs();
 
@@ -61,8 +65,10 @@ public:
 private:
     // Serializes update() (fixture task) against the mutators that reallocate
     // m_buffer / swap m_syncBuffers / repoint outputs (command task). Without
-    // it, resize/swap under a live reader corrupts the heap.
-    std::mutex m_mutex;
+    // it, resize/swap under a live reader corrupts the heap. Also guards the
+    // config read by the report/heartbeat tasks. Recursive so lock() can be
+    // held around the setters, which lock it too.
+    mutable std::recursive_mutex m_mutex;
     Config::Fixture m_config;
     std::vector<std::shared_ptr<SyncBuffer>> m_syncBuffers;
     std::vector<uint8_t> m_buffer;

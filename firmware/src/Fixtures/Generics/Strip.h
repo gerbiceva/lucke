@@ -31,15 +31,19 @@ namespace Fixtures
         // Unchanged from StripWS2815 until the generic Effect replaces it.
         void wifiAnimation() override
         {
-            m_animBuf[m_animOff] = 255;
-            m_animBuf[m_animOff == 0 ? (BYTES - 1) : m_animOff - 1] = 0;
-            m_animOff = (m_animOff + 1) % BYTES;
-
-            std::span<const uint8_t> src{m_animBuf};
-            for (auto& o : getOutputs())
             {
-                o->update(src.first(o->footprint()));
-                src = src.subspan(o->footprint());
+                // A preset change from the command task resizes the outputs.
+                auto guard = lock();
+                m_animBuf[m_animOff] = 255;
+                m_animBuf[m_animOff == 0 ? (BYTES - 1) : m_animOff - 1] = 0;
+                m_animOff = (m_animOff + 1) % BYTES;
+
+                std::span<const uint8_t> src{m_animBuf};
+                for (auto& o : getOutputs())
+                {
+                    o->update(src.first(o->footprint()));
+                    src = src.subspan(o->footprint());
+                }
             }
             vTaskDelay(20);
         }

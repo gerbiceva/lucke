@@ -1,4 +1,5 @@
 #pragma once
+#include <concepts>
 #include <cstdint>
 #include <mutex>
 #include <optional>
@@ -20,11 +21,21 @@ namespace Services
         // are stored. Idempotent: later calls do nothing.
         void load();
 
-        [[nodiscard]] Config::Engine& engine();
+        // Unlocked view, for boot code that runs before the other tasks.
         [[nodiscard]] const Config::Engine& engine() const;
 
-        // Persists the engine settings.
-        void save();
+        // Copy of the engine settings, safe to take from any task.
+        [[nodiscard]] Config::Engine snapshot() const;
+
+        // Applies change to the engine settings and persists them, as one
+        // step under the store lock.
+        template <std::invocable<Config::Engine&> F>
+        void update(F&& change)
+        {
+            std::lock_guard<std::mutex> lock(m_mutex);
+            change(m_engine);
+            m_engineNvs.putString(c_settingsKey, m_engine.toString());
+        }
 
         [[nodiscard]] std::optional<std::string> loadFixture(uint8_t id);
         void saveFixture(uint8_t id, const std::string& json);
@@ -34,11 +45,12 @@ namespace Services
         void factoryReset();
 
     private:
+        static constexpr const char* c_settingsKey = "settings";
         static std::string fixtureKey(uint8_t id);
 
-        // Serializes NVS access: serial and TCP command tasks can save at the
-        // same time.
-        std::mutex m_mutex;
+        // Serializes NVS access and guards m_engine, which the report and
+        // wifi tasks read while commands change it.
+        mutable std::mutex m_mutex;
         bool m_loaded = false;
 
         Config::Engine m_engine;

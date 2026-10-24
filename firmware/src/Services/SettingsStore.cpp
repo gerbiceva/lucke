@@ -2,11 +2,6 @@
 #include <ArduinoJson.h>
 #include "Utils/Logger.h"
 
-namespace
-{
-    constexpr const char* c_settingsKey = "settings";
-}
-
 namespace Services
 {
     void SettingsStore::load()
@@ -34,20 +29,15 @@ namespace Services
         m_engine.fromJson(doc.as<JsonVariantConst>());
     }
 
-    Config::Engine& SettingsStore::engine()
-    {
-        return m_engine;
-    }
-
     const Config::Engine& SettingsStore::engine() const
     {
         return m_engine;
     }
 
-    void SettingsStore::save()
+    Config::Engine SettingsStore::snapshot() const
     {
         std::lock_guard<std::mutex> lock(m_mutex);
-        m_engineNvs.putString(c_settingsKey, m_engine.toString());
+        return m_engine;
     }
 
     std::optional<std::string> SettingsStore::loadFixture(uint8_t id)

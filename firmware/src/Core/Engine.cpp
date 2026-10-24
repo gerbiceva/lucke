@@ -6,9 +6,9 @@ Engine::Engine()
       m_fixtures(m_inputs, m_settings),
       m_render(m_fixtures, m_tasks),
       m_connectivity(m_wifi, m_tasks),
-      m_statusReport(m_settings.engine(), m_wifi, m_fixtures, m_inputs),
+      m_statusReport(m_settings, m_wifi, m_fixtures, m_inputs),
       m_telemetry(m_settings.engine(), m_wifi, m_fixtures, m_statusReport, m_tasks),
-      m_describeHandler(m_settings.engine(), m_fixtures, m_inputs, m_wifi),
+      m_describeHandler(m_settings, m_fixtures, m_inputs, m_wifi),
       m_getFixtureHandler(m_fixtures),
       m_setFixtureHandler(m_fixtures),
       m_inputsHandler(m_inputs),
@@ -66,7 +66,7 @@ void Engine::wireConnectivity()
         if (connected)
             m_render.setMode(Mode::Live);
         else
-            m_render.setMode(m_settings.engine().wifi_animation ? Mode::Animation : Mode::Off);
+            m_render.setMode(m_settings.snapshot().wifi_animation ? Mode::Animation : Mode::Off);
     });
 
     m_connectivity.onChange([this](bool connected) {
