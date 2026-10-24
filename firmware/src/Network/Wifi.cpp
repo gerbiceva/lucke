@@ -57,10 +57,13 @@ namespace Net
         return WiFi.RSSI();
     }
 
+    WifiInfo Wifi::info() const
+    {
+        return {isConnected(), localIP(), rssi()};
+    }
+
     void Wifi::toJson(JsonObject& doc)
     {
-        doc["rssi"] = WiFi.RSSI();
-        doc["local_ip"] = WiFi.localIP().toString();
-        doc["connected"] = isConnected();
+        info().toJson(doc);
     }
 }

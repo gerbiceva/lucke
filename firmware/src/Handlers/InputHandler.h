@@ -4,6 +4,7 @@
 #include <memory>
 #include <mutex>
 #include <unordered_map>
+#include <vector>
 #include "Interfaces/Serializable.h"
 #include "Input/SacnReceiver.h"
 #include "Utils/SyncBuffer.h"
@@ -11,6 +12,21 @@
 
 namespace Handler
 {
+    struct InputInfo
+    {
+        uint16_t universe = 0;
+        uint32_t packets = 0;
+        bool active = false;   // data within the last 2.5 s
+
+        void toJson(JsonObject& obj)
+        {
+            obj["type"] = "SACN";
+            obj["universe"] = universe;
+            obj["packets"] = packets;
+            obj["active"] = active;
+        }
+    };
+
     // Owns the sACN socket and one SyncBuffer per subscribed universe.
     // Packets are routed by the universe field they carry.
     class InputHandler : public Interface::Serializable
@@ -30,6 +46,8 @@ namespace Handler
         // Call when wifi (re)connects. The input task reopens the socket and
         // rejoins every universe on its next pass.
         void reconnect();
+
+        [[nodiscard]] std::vector<InputInfo> inputs();
 
         void toJson(JsonObject& obj) override;
     private:

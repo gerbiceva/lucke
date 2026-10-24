@@ -22,6 +22,7 @@
 #include "Services/Connectivity.h"
 #include "Services/CommandSession.h"
 #include "Services/TcpListener.h"
+#include "API/API.h"
 
 class Engine
 {
@@ -57,6 +58,7 @@ private:
     Services::Connectivity m_connectivity;
     Services::StatusReport m_statusReport;
     Services::Telemetry m_telemetry;
+    API m_api;
 
     Commands::CommandDispatcher m_dispatcher;
     Commands::DescribeHandler m_describeHandler;

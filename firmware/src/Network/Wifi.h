@@ -2,11 +2,26 @@
 // #include <atomic>
 #include <memory>
 #include <functional>
+#include <string>
 #include "Interfaces/Serializable.h"
 
 
-namespace Net 
+namespace Net
 {
+struct WifiInfo
+{
+    bool connected = false;
+    std::string ip;
+    int rssi = 0;
+
+    void toJson(JsonObject& obj)
+    {
+        obj["rssi"] = rssi;
+        obj["local_ip"] = ip;
+        obj["connected"] = connected;
+    }
+};
+
 class Wifi : public Interface::Serializable
 {
     // Wifi(const char *ssid, const char *password, const std::function<void(bool)>& connection_status_callback, const std::function<void(std::string, std::string)>& receive_callback);
@@ -19,19 +34,7 @@ public:
     [[nodiscard]] bool isConnected() const;
     [[nodiscard]] std::string localIP() const;
     [[nodiscard]] int rssi() const;
-    // static Wifi& initialize(const char* ssid, const char* password, std::function<void(bool)> connection_status_callback, std::function<void(std::string, std::string)> receive_callback);
-    // static Wifi& reinitialize(const char* ssid, const char* password);
-    // static Wifi& instance();
-
-    // static void monitorConnection(void*);
-    // static void receiveData(void*);
-    // static void startTasks();
-    
-    // bool isConnected();
-    // std::optional<std::string> getIP();
-
-    // void sendUdpPacket(uint16_t port, std::string data);
-    // void sendTcpPacket(const std::string& hostip, uint16_t port, std::string data);
+    [[nodiscard]] WifiInfo info() const;
 
     void toJson(JsonObject& doc) override;
 

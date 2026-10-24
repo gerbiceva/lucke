@@ -41,6 +41,7 @@ Engine::Engine()
       m_connectivity(m_wifi, m_tasks),
       m_statusReport(m_settings, m_wifi, m_fixtures, m_inputs),
       m_telemetry(m_settings.engine(), m_wifi, m_fixtures, m_statusReport, m_tasks),
+      m_api(m_settings, m_fixtures, m_inputs, m_wifi, m_telemetry),
       m_describeHandler(m_settings, m_fixtures, m_inputs, m_wifi),
       m_getFixtureHandler(m_fixtures),
       m_setFixtureHandler(m_fixtures),

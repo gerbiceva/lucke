@@ -9,6 +9,18 @@
 #include <cstring>
 #include <mutex>
 
+// Snapshot of a fixture, safe to hand to another task.
+struct FixtureInfo
+{
+    Config::Fixture config;
+    uint16_t footprint = 0;
+
+    void toJson(JsonObject& obj)
+    {
+        config.toJson(obj);
+        obj["footprint"] = footprint;
+    }
+};
 
 class Fixture : public Interface::Serializable, public Interface::Deserializable
 {
@@ -60,6 +72,12 @@ public:
     JsonDocument presetsJson();
     JsonDocument outputsJson();
     void toJson(JsonObject& doc) override;
+
+    FixtureInfo info() const
+    {
+        std::scoped_lock lock(m_mutex);
+        return {m_config, m_lastOffset};
+    }
 
 private:
     // Serializes update() (fixture task) against the mutators that reallocate

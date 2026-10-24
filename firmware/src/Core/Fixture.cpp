@@ -106,9 +106,7 @@ void Fixture::fromJson(const std::string& json)
 
 void Fixture::toJson(JsonObject& doc)
 {
-    std::scoped_lock lock(m_mutex);
-    m_config.toJson(doc);
-    doc["footprint"] = m_lastOffset;
+    info().toJson(doc);
 }
 
 JsonDocument Fixture::toJsonDoc()

@@ -132,17 +132,27 @@ namespace Handler
         }
     }
 
-    void InputHandler::toJson(JsonObject& obj)
+    std::vector<InputInfo> InputHandler::inputs()
     {
         std::scoped_lock lock(m_mutex);
-        obj["num_inputs"] = m_universes.size();
-        JsonArray arr = obj["inputs"].to<JsonArray>();
+        std::vector<InputInfo> list;
+        list.reserve(m_universes.size());
         for (auto& [uni, entry] : m_universes)
         {
+            list.push_back({uni, entry.packets, entry.active});
+        }
+        return list;
+    }
+
+    void InputHandler::toJson(JsonObject& obj)
+    {
+        std::vector<InputInfo> list = inputs();
+        obj["num_inputs"] = list.size();
+        JsonArray arr = obj["inputs"].to<JsonArray>();
+        for (InputInfo& input : list)
+        {
             JsonObject item = arr.add<JsonObject>();
-            item["type"] = "SACN";
-            item["universe"] = uni;
-            item["packets"] = entry.packets;
+            input.toJson(item);
         }
     }
 }
