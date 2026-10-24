@@ -1,16 +1,16 @@
 #pragma once
 #include "Interfaces/Command.h"
-#include "Handlers/FixtureHandler.h"
+#include "API/API.h"
 
 namespace Commands
 {
     class SetFixtureHandler : public Interface::CommandHandler
     {
     public:
-        SetFixtureHandler(Handler::FixtureHandler& fixtures);
+        explicit SetFixtureHandler(API& api);
         void handle(JsonDocument& req, Interface::Transport& transport) override;
 
     private:
-        Handler::FixtureHandler& m_fixtures;
+        API& m_api;
     };
 }

@@ -44,7 +44,7 @@ Engine::Engine()
       m_api(m_settings, m_fixtures, m_inputs, m_wifi, m_telemetry),
       m_describeHandler(m_api),
       m_getFixtureHandler(m_api),
-      m_setFixtureHandler(m_fixtures),
+      m_setFixtureHandler(m_api),
       m_inputsHandler(m_api),
       m_wifiConfigHandler(m_api),
       m_rebootHandler(m_api),
