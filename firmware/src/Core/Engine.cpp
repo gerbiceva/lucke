@@ -15,7 +15,7 @@ Engine::Engine()
       m_wifiConfigHandler(m_wifi, m_settings),
       m_engineConfigHandler(m_settings, m_telemetry),
       m_serialSession(m_serial, m_dispatcher, m_tasks, "serial_cmd"),
-      m_tcpListener(COMMAND_PORT, RESPONSE_PORT, m_dispatcher, m_tasks)
+      m_tcpListener(COMMAND_PORT, m_dispatcher, m_tasks)
 {
     Utils::Logger::enable();
     Utils::Logger::setLevel(Utils::Logger::Level::DEBUG);

@@ -11,8 +11,11 @@ namespace Commands
         JsonDocument doc;
         JsonObject obj = doc.to<JsonObject>();
 
+        // Config::Engine::toJson is also the NVS format and keeps the
+        // password; never send it off the device.
         Config::Engine config = m_settings.snapshot();
         config.toJson(obj);
+        obj.remove("password");
 
         JsonObject wifiObj = obj["wifi"].to<JsonObject>();
         m_wifi.toJson(wifiObj);

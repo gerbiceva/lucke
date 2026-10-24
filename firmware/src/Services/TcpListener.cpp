@@ -1,11 +1,16 @@
 #include "TcpListener.h"
-#include "Network/TCPConnection.h"
+#include "Utils/Logger.h"
+
+namespace
+{
+    // Drop a client that has sent nothing for this long.
+    constexpr TickType_t c_idleTimeout = pdMS_TO_TICKS(10000);
+}
 
 namespace Services
 {
-    TcpListener::TcpListener(uint16_t port, uint16_t responsePort,
-                             Commands::CommandDispatcher& dispatcher, Tasks::Manager& tasks)
-        : m_server(port), m_responsePort(responsePort), m_dispatcher(dispatcher), m_tasks(tasks)
+    TcpListener::TcpListener(uint16_t port, Commands::CommandDispatcher& dispatcher, Tasks::Manager& tasks)
+        : m_server(port), m_dispatcher(dispatcher), m_tasks(tasks)
     {}
 
     void TcpListener::start()
@@ -29,24 +34,44 @@ namespace Services
     {
         while (true)
         {
-            auto conn = m_server.accept();
-            if (conn.has_value())
+            if (auto conn = m_server.accept())
             {
-                auto& tc = conn.value();
-                std::string remoteIp = tc.remoteAddress();
-                while (tc.isConnected())
-                {
-                    if (tc.isAvailable())
-                    {
-                        std::string line = tc.readLine();
-                        Net::TcpConnection response(remoteIp, m_responsePort);
-                        m_dispatcher.dispatch(line, response);
-                        response.close();
-                    }
-                    vTaskDelay(10);
-                }
+                serve(*conn);
             }
             vTaskDelay(10);
         }
+    }
+
+    void TcpListener::serve(Net::TcpConnection& conn)
+    {
+        TickType_t lastActivity = xTaskGetTickCount();
+        while (conn.isConnected())
+        {
+            if (conn.receive() > 0)
+            {
+                lastActivity = xTaskGetTickCount();
+            }
+
+            if (conn.overflowed())
+            {
+                conn.send("{\"err\":\"request too long\"}");
+                break;
+            }
+
+            // Handle every complete line already buffered.
+            while (conn.isAvailable())
+            {
+                std::string line = conn.readLine();
+                if (!line.empty()) m_dispatcher.dispatch(line, conn);
+            }
+
+            if (xTaskGetTickCount() - lastActivity > c_idleTimeout)
+            {
+                Utils::Logger::printf("[TCP] %s idle, closing\n", conn.remoteAddress().c_str());
+                break;
+            }
+            vTaskDelay(10);
+        }
+        conn.close();
     }
 }

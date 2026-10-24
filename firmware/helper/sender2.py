@@ -1,57 +1,40 @@
 import socket
 import json
-import threading
 import argparse
 from contextlib import closing
-from queue import Queue, Empty
 
 SEND_PORT = 8888
-RESPONSE_PORT = 12345
 
 
 class ESPClient:
+    """Sends one JSON line per request; the reply comes back as one JSON
+    line on the same connection."""
+
     def __init__(self, ip: str):
         self.ip = ip
-        self._queue = Queue()
-        self._running = False
-        self._start_listener()
 
-    # ---- response listener (TCP server on RESPONSE_PORT) ----
-    def _start_listener(self):
-        self._running = True
-        t = threading.Thread(target=self._listen, daemon=True)
-        t.start()
-
-    def _listen(self):
-        srv = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        srv.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        srv.bind(("0.0.0.0", RESPONSE_PORT))
-        srv.listen(1)
-        srv.settimeout(1.0)
-        while self._running:
-            try:
-                conn, addr = srv.accept()
-                data = conn.recv(4096)
-                conn.close()
-                if data:
-                    try:
-                        self._queue.put(json.loads(data.decode()))
-                    except json.JSONDecodeError:
-                        self._queue.put(data.decode())
-            except socket.timeout:
-                continue
-
-    # ---- send request ----
+    # ---- send request, read the reply line ----
     def send(self, payload: dict, timeout: float = 5.0):
-        with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
-            s.connect((self.ip, SEND_PORT))
-            s.sendall((json.dumps(payload) + "\n").encode())
-
         try:
-            resp = self._queue.get(timeout=timeout)
-            return resp
-        except Empty:
+            with closing(socket.create_connection((self.ip, SEND_PORT), timeout=timeout)) as s:
+                s.sendall((json.dumps(payload) + "\n").encode())
+                buf = b""
+                while b"\n" not in buf:
+                    chunk = s.recv(4096)
+                    if not chunk:
+                        break
+                    buf += chunk
+        except OSError as e:
+            print(f"Socket error: {e}")
             return None
+
+        line = buf.split(b"\n", 1)[0].decode(errors="replace")
+        if not line:
+            return None
+        try:
+            return json.loads(line)
+        except json.JSONDecodeError:
+            return line
 
     # ---- commands ----
     def describe(self):

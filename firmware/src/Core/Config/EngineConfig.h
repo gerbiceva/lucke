@@ -15,7 +15,6 @@ inline constexpr std::string_view DEFAULT_WIFI_PASSWORD = "dasenebipovezau";
 inline constexpr uint16_t COMMAND_PORT = 8888;
 inline constexpr uint16_t HEARTBEAT_PORT = 12343;
 inline constexpr uint16_t REPORT_PORT = 12344;
-inline constexpr uint16_t RESPONSE_PORT = 12345;
 
 namespace Config
 {

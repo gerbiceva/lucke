@@ -4,12 +4,17 @@
 
 | Port  | Protocol | Direction | Description                        |
 |-------|----------|-----------|------------------------------------|
-| 8888  | TCP      | Receive   | Command input                      |
-| 12345 | TCP      | Send      | Command response                   |
+| 8888  | TCP      | Both      | Commands and their responses       |
 | 12343 | UDP      | Send      | Heartbeat broadcast (every 500ms)  |
 | 12344 | UDP      | Send      | Wireless report (every 10s)        |
 | 5568  | UDP      | Receive   | sACN / E1.31 DMX input (multicast) |
 | Serial| UART     | Both      | Command input / output             |
+
+Over TCP, each request is one line of JSON ending in `\n`; its response comes
+back as one `\n`-terminated JSON line on the same connection. A client may send
+several requests on one connection. The device serves one client at a time and
+closes a connection after 10 s without data, or if a request line exceeds
+4096 bytes. Serial works the same way, line in / line out.
 
 ---
 

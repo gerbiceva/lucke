@@ -22,6 +22,16 @@ namespace Utils
         {
             if(!m_enabled)
             {
+#if ARDUINO_USB_CDC_ON_BOOT && ARDUINO_USB_MODE
+                // USB serial (HWCDC). When the cable is in but nothing on
+                // the host reads, each write retries 20x the TX timeout
+                // (100 ms default) before giving up, stalling the calling
+                // task ~2 s. Keep the timeout short, and the buffer big
+                // enough that a whole report or reply fits without waiting
+                // when a monitor is reading. Both must be set before begin().
+                Serial.setTxBufferSize(4096);
+                Serial.setTxTimeoutMs(2);
+#endif
                 Serial.begin(baudrate);
                 m_enabled = true;
             }
