@@ -36,7 +36,7 @@ struct DeviceInfo
     Config::Engine settings;
     Net::WifiInfo wifi;
     std::vector<FixtureInfo> fixtures;
-    std::vector<Handler::InputInfo> inputs;
+    Handler::InputsInfo inputs;
 
     // Same layout as the describe reply.
     void toJson(JsonObject& obj);
@@ -75,7 +75,7 @@ public:
     [[nodiscard]] std::expected<JsonDocument, ApiError> fixtureConfig(uint8_t id) const;
     [[nodiscard]] std::expected<JsonDocument, ApiError> fixturePresets(uint8_t id) const;
     [[nodiscard]] std::expected<JsonDocument, ApiError> fixtureOutputs(uint8_t id) const;
-    [[nodiscard]] std::vector<Handler::InputInfo> inputs() const;
+    [[nodiscard]] Handler::InputsInfo inputs() const;
 
     // Writes
     std::expected<FixtureUpdate, ApiError> setFixture(uint8_t id, const FixturePatch& patch, Origin from);

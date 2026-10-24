@@ -1,16 +1,17 @@
 #pragma once
 #include "Interfaces/Command.h"
-#include "Handlers/InputHandler.h"
+#include "API/API.h"
+
 
 namespace Commands
 {
     class InputsHandler : public Interface::CommandHandler
     {
     public:
-        InputsHandler(Handler::InputHandler& inputs);
+        InputsHandler(API& api);
         void handle(JsonDocument& req, Interface::Transport& transport) override;
 
     private:
-        Handler::InputHandler& m_inputs;
+        const API& m_api;
     };
 }

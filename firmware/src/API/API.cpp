@@ -34,13 +34,7 @@ void DeviceInfo::toJson(JsonObject& obj)
     }
 
     JsonObject inputsObj = obj["inputs"].to<JsonObject>();
-    inputsObj["num_inputs"] = inputs.size();
-    JsonArray inputsArr = inputsObj["inputs"].to<JsonArray>();
-    for (Handler::InputInfo& input : inputs)
-    {
-        JsonObject entry = inputsArr.add<JsonObject>();
-        input.toJson(entry);
-    }
+    inputs.toJson(inputsObj);
 }
 
 API::API(Services::SettingsStore& settings, Handler::FixtureHandler& fixtures, Handler::InputHandler& inputs,
@@ -104,7 +98,7 @@ std::expected<JsonDocument, ApiError> API::fixtureOutputs(uint8_t id) const
     return fix->outputsJson();
 }
 
-std::vector<Handler::InputInfo> API::inputs() const
+Handler::InputsInfo API::inputs() const
 {
     return m_inputs.inputs();
 }

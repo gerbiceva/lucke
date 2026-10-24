@@ -27,6 +27,22 @@ namespace Handler
         }
     };
 
+    struct InputsInfo
+    {
+        std::vector<InputInfo> inputs;
+
+        void toJson(JsonObject& obj)
+        {
+            obj["num_inputs"] = inputs.size();
+            JsonArray arr = obj["inputs"].to<JsonArray>();
+            for (InputInfo& input : inputs)
+            {
+                JsonObject item = arr.add<JsonObject>();
+                input.toJson(item);
+            }
+        }
+    };
+
     // Owns the sACN socket and one SyncBuffer per subscribed universe.
     // Packets are routed by the universe field they carry.
     class InputHandler : public Interface::Serializable
@@ -47,7 +63,7 @@ namespace Handler
         // rejoins every universe on its next pass.
         void reconnect();
 
-        [[nodiscard]] std::vector<InputInfo> inputs();
+        [[nodiscard]] InputsInfo inputs();
 
         void toJson(JsonObject& obj) override;
     private:
