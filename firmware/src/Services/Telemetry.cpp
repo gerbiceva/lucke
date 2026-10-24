@@ -20,48 +20,35 @@ namespace Services
 
         setSerialReport(m_config.serial_report_task);
         setWirelessReport(m_config.wireless_report_task);
+
+        m_tasks.spawnTask("report", [this]() {
+            reportLoop();
+        }, 1, 15000);
     }
 
     void Telemetry::setSerialReport(bool enable)
     {
-        bool running = m_serialReportTaskId != Tasks::TaskId::Invalid;
-        if (enable && !running)
-        {
-            m_serialReportTaskId = m_tasks.spawnTask("serial_report", [this]() {
-                while (true)
-                {
-                    Utils::Logger::println(m_report.build().c_str());
-                    vTaskDelay(10000);
-                }
-            }, 1, 15000);
-        }
-        else if (!enable && running)
-        {
-            m_tasks.stopTask(m_serialReportTaskId);
-            m_serialReportTaskId = Tasks::TaskId::Invalid;
-        }
+        m_serialReport.store(enable);
     }
 
     void Telemetry::setWirelessReport(bool enable)
     {
-        bool running = m_wirelessReportTaskId != Tasks::TaskId::Invalid;
-        if (enable && !running)
+        m_wirelessReport.store(enable);
+    }
+
+    void Telemetry::reportLoop()
+    {
+        while (true)
         {
-            m_wirelessReportTaskId = m_tasks.spawnTask("wireless_report", [this]() {
-                while (true)
-                {
-                    if (m_wifi.isConnected())
-                    {
-                        m_udpReport.send(m_report.settings());
-                    }
-                    vTaskDelay(10000);
-                }
-            }, 1, 8192);
-        }
-        else if (!enable && running)
-        {
-            m_tasks.stopTask(m_wirelessReportTaskId);
-            m_wirelessReportTaskId = Tasks::TaskId::Invalid;
+            if (m_serialReport.load())
+            {
+                Utils::Logger::println(m_report.build().c_str());
+            }
+            if (m_wirelessReport.load() && m_wifi.isConnected())
+            {
+                m_udpReport.send(m_report.settings());
+            }
+            vTaskDelay(10000);
         }
     }
 

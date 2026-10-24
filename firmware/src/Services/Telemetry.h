@@ -1,4 +1,5 @@
 #pragma once
+#include <atomic>
 #include <string>
 #include "Core/Config/EngineConfig.h"
 #include "Network/Wifi.h"
@@ -18,17 +19,19 @@ namespace Services
         Telemetry(const Config::Engine& config, const Net::Wifi& wifi, const Handler::FixtureHandler& fixtures,
                   StatusReport& report, Tasks::Manager& tasks);
 
-        // Opens the UDP sockets, spawns the heartbeat and starts the reports
-        // enabled in config. Call once, after everything this depends on is
-        // constructed.
+        // Opens the UDP sockets and spawns the heartbeat and report tasks,
+        // with the reports enabled in config. Call once, after everything
+        // this depends on is constructed.
         void start();
 
-        // Start/stop the report tasks. Idempotent.
+        // Enable/disable a report. Takes effect on the next report cycle.
+        // Safe to call from any task.
         void setSerialReport(bool enable);
         void setWirelessReport(bool enable);
 
     private:
         void heartbeatLoop();
+        void reportLoop();
         std::string buildHeartbeat() const;
 
         const Config::Engine& m_config;
@@ -41,7 +44,11 @@ namespace Services
         Net::UdpBroadcaster m_udpReport;
 
         Tasks::TaskId m_heartbeatTaskId = Tasks::TaskId::Invalid;
-        Tasks::TaskId m_serialReportTaskId = Tasks::TaskId::Invalid;
-        Tasks::TaskId m_wirelessReportTaskId = Tasks::TaskId::Invalid;
+
+        // The report task runs forever and checks these: deleting it from
+        // outside could kill it while it holds a lock (InputHandler's mutex
+        // during build()), freezing whoever needs that lock next.
+        std::atomic<bool> m_serialReport{false};
+        std::atomic<bool> m_wirelessReport{false};
     };
 }

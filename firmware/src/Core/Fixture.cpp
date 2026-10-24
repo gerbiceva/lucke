@@ -165,8 +165,6 @@ void Fixture::setAddress(uint16_t new_address)
 void Fixture::setPreset(uint8_t new_preset)
 {
     std::lock_guard<std::mutex> lock(m_mutex);
-    m_config.selectedPreset = new_preset;
-    m_lastOffset = 0;
 
     // Iterate the preset tree by reference (JsonObjectConst/JsonArrayConst) —
     // binding elements to a JsonDocument would deep-copy each group.
@@ -186,6 +184,10 @@ void Fixture::setPreset(uint8_t new_preset)
         return;
     }
 
+    // Only reset once the preset is known to be valid: an invalid one keeps
+    // the current preset and footprint instead of leaving footprint 0.
+    m_config.selectedPreset = new_preset;
+    m_lastOffset = 0;
     for (size_t i = 0; i < m_outputs.size(); i++)
     {
         JsonDocument d;
