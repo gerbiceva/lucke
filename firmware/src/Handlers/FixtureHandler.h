@@ -21,7 +21,7 @@ namespace Handler
         // address + footprint, dropping the old span (oldBase..oldBase+oldCount)
         // and subscribing the new one. Call after any change to
         // universe, address, or preset (footprint).
-        void resubscribe(Fixture* fix, uint8_t oldBase, uint8_t oldCount);
+        void resubscribe(Fixture* fix, uint16_t oldBase, uint8_t oldCount);
 
     public:
         FixtureHandler(InputHandler& inputs, Services::SettingsStore& settings);
@@ -37,7 +37,7 @@ namespace Handler
         [[nodiscard]] bool exists(uint8_t id);
 
         // Return false if no fixture has this id.
-        [[nodiscard]] bool setUniverse(uint8_t id, uint8_t uni);
+        [[nodiscard]] bool setUniverse(uint8_t id, uint16_t uni);
         [[nodiscard]] bool setAddress(uint8_t id, uint16_t addr);
         [[nodiscard]] bool setPreset(uint8_t id, uint8_t preset);
         [[nodiscard]] bool setName(uint8_t id, const std::string& name);

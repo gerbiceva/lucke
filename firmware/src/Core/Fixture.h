@@ -37,7 +37,7 @@ public:
     void setSyncBuffers(std::vector<std::shared_ptr<SyncBuffer>> bufs);
     [[nodiscard]] uint16_t getFootprint() const;
     [[nodiscard]] uint8_t getNumUniverses() const;
-    void setUniverse(uint8_t new_universe);
+    void setUniverse(uint16_t new_universe);
     void setAddress(uint16_t new_address);
     void setPreset(uint8_t new_preset);
     void setName(const std::string& other);
@@ -45,7 +45,7 @@ public:
 
     void setId(uint8_t id);
     [[nodiscard]] uint8_t id() const;
-    [[nodiscard]] uint8_t getUniverse() const;
+    [[nodiscard]] uint16_t getUniverse() const;
     [[nodiscard]] uint16_t getAddress() const;
     [[nodiscard]] uint8_t getSelectedPreset() const;
     [[nodiscard]] uint8_t getNumPresets() const;

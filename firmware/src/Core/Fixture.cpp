@@ -68,7 +68,7 @@ void Fixture::setSyncBuffers(std::vector<std::shared_ptr<SyncBuffer>> bufs)
     m_buffer.resize(m_syncBuffers.size() * Dmx::c_universeSize, 0);
 }
 
-void Fixture::setUniverse(uint8_t new_universe)
+void Fixture::setUniverse(uint16_t new_universe)
 {
     std::lock_guard lock(m_mutex);
     m_config.universe = new_universe;
@@ -91,7 +91,7 @@ void Fixture::fromJson(const std::string& json)
 
     const char* name = Utils::Json::getElement(doc, "name", m_config.name.c_str());
 
-    Utils::Json::updateElement<uint8_t>(doc, "universe", m_config.universe);
+    Utils::Json::updateElement<uint16_t>(doc, "universe", m_config.universe);
     Utils::Json::updateElement<uint16_t>(doc, "address", m_config.address);
     Utils::Json::updateElement<uint8_t>(doc, "presetIndex", m_config.selectedPreset);
 
@@ -221,7 +221,7 @@ uint8_t Fixture::id() const
     return m_config.m_ID;
 }
 
-uint8_t Fixture::getUniverse() const
+uint16_t Fixture::getUniverse() const
 {
     return m_config.universe;
 }

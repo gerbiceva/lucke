@@ -21,6 +21,9 @@ namespace Handler
         }
         else
         {
+            // First boot: one universe per fixture, so they don't all
+            // show the same data.
+            fix->setUniverse(fix->id() + 1);
             fix->fromConfig();
         }
 
@@ -33,12 +36,12 @@ namespace Handler
         persistFixture(id);
     }
 
-    void FixtureHandler::resubscribe(Fixture* fix, uint8_t oldBase, uint8_t oldCount)
+    void FixtureHandler::resubscribe(Fixture* fix, uint16_t oldBase, uint8_t oldCount)
     {
         for (uint8_t i = 0; i < oldCount; i++)
             m_inputs.unsubscribe(oldBase + i);
 
-        uint8_t base = fix->getUniverse();
+        uint16_t base = fix->getUniverse();
         uint16_t totalBytes = fix->getAddress() + fix->getFootprint();
         uint8_t numUni = totalBytes > 0 ? ((totalBytes - 1) / 512 + 1) : 1;
 
@@ -77,14 +80,14 @@ namespace Handler
         return get(id) != nullptr;
     }
 
-    bool FixtureHandler::setUniverse(uint8_t id, uint8_t uni)
+    bool FixtureHandler::setUniverse(uint8_t id, uint16_t uni)
     {
         Fixture* fix = get(id);
         if (!fix) return false;
 
         {
             auto lock = fix->lock();
-            uint8_t oldBase = fix->getUniverse();
+            uint16_t oldBase = fix->getUniverse();
             if (oldBase == uni) return true;
 
             uint8_t oldCount = fix->getNumUniverses();

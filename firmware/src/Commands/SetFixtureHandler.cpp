@@ -1,4 +1,5 @@
 #include "SetFixtureHandler.h"
+#include "Input/SacnReceiver.h"
 
 namespace Commands
 {
@@ -23,9 +24,15 @@ namespace Commands
 
         bool changed = false;
 
-        if (req["universe"].is<uint8_t>())
+        if (req["universe"].is<uint16_t>())
         {
-            changed |= m_fixtures.setUniverse(id, req["universe"]);
+            uint16_t uni = req["universe"];
+            if (uni < Input::SacnReceiver::c_minUniverse || uni > Input::SacnReceiver::c_maxUniverse)
+            {
+                transport.send("{\"err\":\"universe must be 1-63999\"}");
+                return;
+            }
+            changed |= m_fixtures.setUniverse(id, uni);
         }
 
         if (req["address"].is<uint16_t>())
