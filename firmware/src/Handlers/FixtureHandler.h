@@ -12,6 +12,21 @@
 
 namespace Handler
 {
+    struct FixturesInfo
+    {
+        std::vector<FixtureInfo> fixtures;
+
+        void toJson(JsonObject& obj)
+        {
+            JsonArray arr = obj["fixtures"].to<JsonArray>();
+            for (FixtureInfo& fix : fixtures)
+            {
+                JsonObject entry = arr.add<JsonObject>();
+                fix.toJson(entry);
+            }
+        }
+    };
+
     class FixtureHandler : public Interface::Serializable, public Interface::Deserializable
     {
         void _addFixture(std::unique_ptr<Fixture> fix);
@@ -35,6 +50,7 @@ namespace Handler
         [[nodiscard]] Fixture* get(uint8_t id);
         [[nodiscard]] const std::vector<std::unique_ptr<Fixture>>& all() const;
         [[nodiscard]] bool exists(uint8_t id);
+        [[nodiscard]] FixturesInfo fixtures() const;
 
         // Return false if no fixture has this id.
         [[nodiscard]] bool setUniverse(uint8_t id, uint16_t uni);

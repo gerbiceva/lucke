@@ -1,91 +1,75 @@
 #include "GetFixtureHandler.h"
 
+namespace
+{
+    void send(Interface::Transport& transport, const JsonDocument& doc)
+    {
+        std::string response;
+        serializeJson(doc, response);
+        transport.send(response);
+    }
+
+    void sendError(Interface::Transport& transport, const char* err)
+    {
+        JsonDocument doc;
+        doc["err"] = err;
+        send(transport, doc);
+    }
+}
+
 namespace Commands
 {
-    GetFixtureHandler::GetFixtureHandler(Handler::FixtureHandler& fixtures)
-        : m_fixtures(fixtures)
+    GetFixtureHandler::GetFixtureHandler(const API& api)
+        : m_api(api)
     {}
 
     void GetFixtureHandler::handle(JsonDocument& req, Interface::Transport& transport)
     {
+        JsonDocument doc;
+        JsonObject obj = doc.to<JsonObject>();
+
+        // No id: every fixture.
         if (!req["id"].is<uint8_t>())
         {
-            JsonDocument doc;
-            JsonObject obj = doc.to<JsonObject>();
-            m_fixtures.toJson(obj);
-            std::string response;
-            serializeJson(doc, response);
-            transport.send(response);
+            m_api.fixtures().toJson(obj);
+            send(transport, doc);
             return;
         }
 
-        uint8_t id = req["id"];
-        Fixture* fix = m_fixtures.get(id);
-        if (!fix)
+        const uint8_t id = req["id"];
+        auto fixture = m_api.fixture(id);
+        if (!fixture)
         {
-            transport.send("{\"err\":\"fixture not found\"}");
+            sendError(transport, toString(fixture.error()));
             return;
         }
 
-        JsonDocument doc;
-
-        if (req["value"].is<const char*>())
+        // No value: the whole fixture.
+        if (!req["value"].is<const char*>())
         {
-            std::string field = req["value"].as<const char*>();
-
-            if (field == "universe")
-            {
-                doc["req"] = "universe";
-                doc["val"] = fix->getUniverse();
-            }
-            else if (field == "address")
-            {
-                doc["req"] = "address";
-                doc["val"] = fix->getAddress();
-            }
-            else if (field == "preset")
-            {
-                doc["req"] = "preset";
-                doc["val"] = fix->getSelectedPreset();
-            }
-            else if (field == "name")
-            {
-                doc["req"] = "name";
-                doc["val"] = fix->getName();
-            }
-            else if (field == "type")
-            {
-                doc["req"] = "type";
-                doc["val"] = fix->getType();
-            }
-            else if (field == "config")
-            {
-                doc["req"] = "config";
-                doc["val"] = fix->configJson();
-            }
-            else if (field == "presets")
-            {
-                doc["req"] = "presets";
-                doc["val"] = fix->presetsJson();
-            }
-            else if (field == "outputs")
-            {
-                doc["req"] = "outputs";
-                doc["val"] = fix->outputsJson();
-            }
-            else
-            {
-                doc["err"] = "unknown value";
-            }
+            fixture->toJson(obj);
+            send(transport, doc);
+            return;
         }
+
+        // One field: {"req": field, "val": ...}
+        const std::string field = req["value"].as<const char*>();
+        const Config::Fixture& config = fixture->config;
+        doc.clear();
+        doc["req"] = field;
+        if (field == "universe")      doc["val"] = config.universe;
+        else if (field == "address")  doc["val"] = config.address;
+        else if (field == "preset")   doc["val"] = config.selectedPreset;
+        else if (field == "name")     doc["val"] = config.name;
+        else if (field == "type")     doc["val"] = config.type;
+        else if (field == "config")   doc["val"] = *m_api.fixtureConfig(id);
+        else if (field == "presets")  doc["val"] = *m_api.fixturePresets(id);
+        else if (field == "outputs")  doc["val"] = *m_api.fixtureOutputs(id);
         else
         {
-            JsonObject obj = doc.to<JsonObject>();
-            fix->toJson(obj);
+            sendError(transport, "unknown value");
+            return;
         }
-
-        std::string response;
-        serializeJson(doc, response);
-        transport.send(response);
+        send(transport, doc);
     }
 }

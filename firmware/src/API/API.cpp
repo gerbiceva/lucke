@@ -26,12 +26,8 @@ void DeviceInfo::toJson(JsonObject& obj)
     JsonObject wifiObj = obj["wifi"].to<JsonObject>();
     wifi.toJson(wifiObj);
 
-    JsonArray fixturesArr = obj["fixtures"].to<JsonObject>()["fixtures"].to<JsonArray>();
-    for (FixtureInfo& fix : fixtures)
-    {
-        JsonObject entry = fixturesArr.add<JsonObject>();
-        fix.toJson(entry);
-    }
+    JsonObject fixturesObj = obj["fixtures"].to<JsonObject>();
+    fixtures.toJson(fixturesObj);
 
     JsonObject inputsObj = obj["inputs"].to<JsonObject>();
     inputs.toJson(inputsObj);
@@ -59,15 +55,9 @@ Net::WifiInfo API::wifi() const
     return m_wifi.info();
 }
 
-std::vector<FixtureInfo> API::fixtures() const
+Handler::FixturesInfo API::fixtures() const
 {
-    std::vector<FixtureInfo> list;
-    list.reserve(m_fixtures.all().size());
-    for (const auto& fix : m_fixtures.all())
-    {
-        list.push_back(fix->info());
-    }
-    return list;
+    return m_fixtures.fixtures();
 }
 
 std::expected<FixtureInfo, ApiError> API::fixture(uint8_t id) const

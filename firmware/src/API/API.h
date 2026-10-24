@@ -35,7 +35,7 @@ struct DeviceInfo
 {
     Config::Engine settings;
     Net::WifiInfo wifi;
-    std::vector<FixtureInfo> fixtures;
+    Handler::FixturesInfo fixtures;
     Handler::InputsInfo inputs;
 
     // Same layout as the describe reply.
@@ -70,7 +70,7 @@ public:
     [[nodiscard]] DeviceInfo describe() const;
     [[nodiscard]] Config::Engine settings() const;
     [[nodiscard]] Net::WifiInfo wifi() const;
-    [[nodiscard]] std::vector<FixtureInfo> fixtures() const;
+    [[nodiscard]] Handler::FixturesInfo fixtures() const;
     [[nodiscard]] std::expected<FixtureInfo, ApiError> fixture(uint8_t id) const;
     [[nodiscard]] std::expected<JsonDocument, ApiError> fixtureConfig(uint8_t id) const;
     [[nodiscard]] std::expected<JsonDocument, ApiError> fixturePresets(uint8_t id) const;

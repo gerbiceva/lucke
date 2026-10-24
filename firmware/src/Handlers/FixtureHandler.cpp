@@ -181,14 +181,20 @@ namespace Handler
         // Handled per-fixture via Fixture::fromJson
     }
 
+    FixturesInfo FixtureHandler::fixtures() const
+    {
+        FixturesInfo info;
+        info.fixtures.reserve(m_fixtures.size());
+        for (const auto& fix : m_fixtures)
+        {
+            info.fixtures.push_back(fix->info());
+        }
+        return info;
+    }
+
     void FixtureHandler::toJson(JsonObject& obj)
     {
-        JsonArray arr = obj["fixtures"].to<JsonArray>();
-        for (auto& fix : m_fixtures)
-        {
-            JsonObject entry = arr.add<JsonObject>();
-            fix->toJson(entry);
-        }
+        fixtures().toJson(obj);
     }
 
     JsonDocument FixtureHandler::toJsonDoc()
