@@ -23,7 +23,7 @@ namespace Fixtures
     {
         static constexpr uint16_t BYTES = N * 3;
 
-        Strip() : Fixture("name", Type.value, MakeJSON<N>::make().data())
+        Strip() : Fixture("name", Type.value, Presets::c_groupPresets<N>.data())
         {
             addOutput<Output::Strip1D<TDriver, Pin>>(N);
         }
