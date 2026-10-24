@@ -47,7 +47,7 @@ namespace Services
     void TcpListener::serve(Net::TcpConnection& conn)
     {
         const std::string addr = conn.remoteAddress();
-        s_log.info("client %s connected", addr.c_str());
+        s_log.debug("client %s connected", addr.c_str());
 
         TickType_t lastActivity = xTaskGetTickCount();
         while (conn.isConnected())
@@ -78,6 +78,6 @@ namespace Services
             vTaskDelay(10);
         }
         conn.close();
-        s_log.info("client %s disconnected", addr.c_str());
+        s_log.debug("client %s disconnected", addr.c_str());
     }
 }
