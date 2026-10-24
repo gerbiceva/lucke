@@ -39,7 +39,7 @@ namespace Drivers
         template <uint8_t Pin>
         static std::unique_ptr<Output::Driver> make(std::span<Core::RGB> pixels)
         {
-            if (!Handler::Pin::available(Pin))
+            if (!Handler::Pin::claim(Pin))
             {
                 s_log.error("pin %u already used", Pin);
                 return nullptr;

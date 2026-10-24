@@ -141,7 +141,7 @@ record.
 3. ✅ **Buffer overflow in the sACN parser**: unchecked packet size.
 4. ✅ **Division by zero** with `num_groups: 0` — `Strip1D` rejects 0 and
    non-divisors.
-5. ⬜ **`Pin::toJson` adds nothing**: `.as<JsonArray>()` on a missing key →
+5. ✅ **`Pin::toJson` adds nothing** (removed): `.as<JsonArray>()` on a missing key →
    should be `.to<JsonArray>()`. Unused.
 6. ✅ **`setPreset` zeroed the footprint before validating** — an invalid
    preset now leaves preset and footprint unchanged.

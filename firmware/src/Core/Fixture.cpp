@@ -264,10 +264,10 @@ uint16_t Fixture::ledCount() const
     return m_config.numLeds;
 }
 
-void Fixture::toggleHighlight()
+void Fixture::setHighlight(bool on)
 {
     std::scoped_lock lock(m_mutex);
-    m_config.highlighted = !m_config.highlighted;
+    m_config.highlighted = on;
 }
 
 uint16_t Fixture::getFootprint() const

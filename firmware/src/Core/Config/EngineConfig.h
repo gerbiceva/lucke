@@ -6,6 +6,9 @@
 #include <ArduinoJson.h>
 
 inline constexpr std::string_view ENGINE_VERSION = "0.99";
+// The command API clients speak. Bump only for a breaking change (a removed
+// or renamed field/command, or a changed meaning); additions don't count.
+inline constexpr int PROTOCOL_VERSION = 1;
 inline constexpr std::string_view DEFAULT_WIFI_SSID = "Ledique";
 inline constexpr std::string_view DEFAULT_WIFI_PASSWORD = "dasenebipovezau";
 
