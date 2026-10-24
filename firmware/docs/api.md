@@ -11,6 +11,7 @@ Firmware `0.99`. Examples below are real replies from a board with one
 | 12343 | UDP      | Send      | Heartbeat broadcast (every 500 ms) |
 | 12344 | UDP      | Send      | Wireless report (every 10 s)       |
 | 5568  | UDP      | Receive   | sACN / E1.31 DMX input             |
+| 3232  | TCP/UDP  | Receive   | Firmware update (only while `ota` is open) |
 | Serial| USB CDC  | Both      | Commands and responses; logs       |
 
 Over TCP, each request is one line of JSON ending in `\n`; its response comes
@@ -183,8 +184,39 @@ Saves pending fixture changes, restarts after 1 s.
 <- {"status": "factory reset, rebooting"}
 ```
 
-Erases all stored settings and fixture records, restarts after 1 s. The next
-boot uses defaults (default wifi, universe `id + 1` per fixture).
+Erases all stored settings and fixture records, restarts after 1 s. Changes
+made in that second are not saved. The next boot uses defaults (default wifi,
+universe `id + 1` per fixture).
+
+## ota
+
+Opens a window in which the device accepts a firmware update over WiFi
+(ArduinoOTA / espota, port 3232, password `OTA_PASSWORD` in `EngineConfig.h`).
+Closed by default; it closes again after `minutes` (1–30, default 5) or after
+an update.
+
+```
+-> {"request": "ota"}
+<- {"status": "ota open", "minutes": 5, "port": 3232}
+
+-> {"request": "ota", "minutes": 10}
+<- {"status": "ota open", "minutes": 10, "port": 3232}
+```
+
+### Updating over WiFi
+
+1. Open the window: `printf '{"request":"ota"}\n' | nc <ip> 8888`
+2. Upload: `pio run -e lolin_c3_mini_ota -t upload --upload-port <ip>`
+   (the env defaults to `192.168.0.140`).
+
+The LEDs go off during the update (~10 s), then the device reboots into the
+new firmware. That image is confirmed after 30 s with wifi up; if it crashes
+or is reset before that, the bootloader boots the previous firmware again.
+Don't power-cycle or open the serial port in those first 30 s, or it rolls
+back.
+
+The first switch to this layout (`min_spiffs.csv`, two app slots) must be
+flashed over USB once. Settings survive it.
 
 ## logs
 

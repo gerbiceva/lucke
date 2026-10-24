@@ -71,6 +71,7 @@ namespace Services
     void SettingsStore::saveFixture(uint8_t id, std::string json)
     {
         std::scoped_lock lock(m_mutex);
+        if (m_wiped) return;
         m_pendingFixtures[id] = std::move(json);
         m_lastFixtureChange = xTaskGetTickCount();
     }
@@ -88,6 +89,7 @@ namespace Services
         m_pendingFixtures.clear();
         m_engineNvs.clear();
         m_fixtureNvs.clear();
+        m_wiped = true;
         s_log.info("factory reset: NVS cleared");
     }
 

@@ -40,7 +40,7 @@ namespace Services
         {
             std::scoped_lock lock(m_mutex);
             change(m_engine);
-            m_engineNvs.putString(c_settingsKey, m_engine.toString());
+            if (!m_wiped) m_engineNvs.putString(c_settingsKey, m_engine.toString());
         }
 
         [[nodiscard]] std::optional<std::string> loadFixture(uint8_t id);
@@ -54,7 +54,9 @@ namespace Services
         void flush();
 
         // Erases all stored settings and fixture records, and drops queued
-        // ones. The caller reboots; the next boot starts from defaults.
+        // ones. Nothing is written after this, so a change that lands before
+        // the caller reboots can't survive the reset; the next boot starts
+        // from defaults.
         void factoryReset();
 
     private:
@@ -70,6 +72,7 @@ namespace Services
         // wifi tasks while commands change it) and m_pendingFixtures.
         mutable std::mutex m_mutex;
         bool m_loaded = false;
+        bool m_wiped = false;   // set by factoryReset(), until reboot
 
         Config::Engine m_engine;
         Utils::Storage m_engineNvs;
