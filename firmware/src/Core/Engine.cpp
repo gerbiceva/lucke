@@ -47,8 +47,8 @@ Engine::Engine()
       m_setFixtureHandler(m_fixtures),
       m_inputsHandler(m_api),
       m_wifiConfigHandler(m_wifi, m_settings),
-      m_rebootHandler(m_settings),
-      m_engineConfigHandler(m_settings, m_telemetry),
+      m_rebootHandler(m_api),
+      m_engineConfigHandler(m_api),
       m_serialSession(m_serial, m_dispatcher, m_tasks, "serial_cmd"),
       m_tcpListener(COMMAND_PORT, m_dispatcher, m_tasks)
 {

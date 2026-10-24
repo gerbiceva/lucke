@@ -1,24 +1,15 @@
 #include "RebootHandler.h"
-#include "Utils/Logger.h"
-
-namespace
-{
-    constexpr Utils::Log s_log{"CMD"};
-}
 
 namespace Commands
 {
-    RebootHandler::RebootHandler(Services::SettingsStore& settings)
-        : m_settings(settings)
+    RebootHandler::RebootHandler(API& api)
+        : m_api(api)
     {}
 
     void RebootHandler::handle(JsonDocument& req, Interface::Transport& transport)
     {
-        s_log.info("reboot requested via {}", transport.remoteAddress());
-        // Fixture records are written with a delay; don't lose the last change.
-        m_settings.flush();
+        // Restarts after a delay, so the reply still gets out.
+        m_api.reboot(transport.remoteAddress());
         transport.send("{\"status\":\"rebooting\"}");
-        delay(1000);
-        ESP.restart();
     }
 }

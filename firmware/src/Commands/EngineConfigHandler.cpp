@@ -1,66 +1,45 @@
 #include "EngineConfigHandler.h"
-#include "Utils/Logger.h"
-
-namespace
-{
-    constexpr Utils::Log s_log{"CMD"};
-}
+#include <cstring>
 
 namespace Commands
 {
-    EngineConfigHandler::EngineConfigHandler(Services::SettingsStore& settings, Services::Telemetry& telemetry)
-        : m_settings(settings), m_telemetry(telemetry)
+    EngineConfigHandler::EngineConfigHandler(API& api)
+        : m_api(api)
     {}
 
     void EngineConfigHandler::handle(JsonDocument& req, Interface::Transport& transport)
     {
         const char* request = req["request"] | "";
+        const std::string from = transport.remoteAddress();
+        const bool hasValue = req["value"].is<bool>();
+        const bool value = req["value"] | false;
 
         if (strcmp(request, "factory_reset") == 0)
         {
-            s_log.warn("factory reset requested via {}", transport.remoteAddress());
-            m_settings.factoryReset();
+            // Restarts after a delay, so the reply still gets out.
+            m_api.factoryReset(from);
             transport.send("{\"status\":\"factory reset, rebooting\"}");
-            delay(1000);
-            ESP.restart();
             return;
         }
 
         if (strcmp(request, "serial_report_task") == 0)
         {
-            if (req["value"].is<bool>())
-            {
-                bool value = req["value"];
-                s_log.info("serial_report_task set to {} via {}", value, transport.remoteAddress());
-                m_telemetry.setSerialReport(value);
-                m_settings.update([value](Config::Engine& c) { c.serial_report_task = value; });
-            }
-            respond(transport, "serial_report_task", m_settings.snapshot().serial_report_task);
+            if (hasValue) m_api.setSerialReport(value, from);
+            respond(transport, "serial_report_task", m_api.settings().serial_report_task);
             return;
         }
 
         if (strcmp(request, "wireless_report_task") == 0)
         {
-            if (req["value"].is<bool>())
-            {
-                bool value = req["value"];
-                s_log.info("wireless_report_task set to {} via {}", value, transport.remoteAddress());
-                m_telemetry.setWirelessReport(value);
-                m_settings.update([value](Config::Engine& c) { c.wireless_report_task = value; });
-            }
-            respond(transport, "wireless_report_task", m_settings.snapshot().wireless_report_task);
+            if (hasValue) m_api.setWirelessReport(value, from);
+            respond(transport, "wireless_report_task", m_api.settings().wireless_report_task);
             return;
         }
 
         if (strcmp(request, "wifi_animation") == 0)
         {
-            if (req["value"].is<bool>())
-            {
-                bool value = req["value"];
-                s_log.info("wifi_animation set to {} via {}", value, transport.remoteAddress());
-                m_settings.update([value](Config::Engine& c) { c.wifi_animation = value; });
-            }
-            respond(transport, "wifi_animation", m_settings.snapshot().wifi_animation);
+            if (hasValue) m_api.setWifiAnimation(value, from);
+            respond(transport, "wifi_animation", m_api.settings().wifi_animation);
             return;
         }
 
