@@ -15,7 +15,8 @@ namespace Handler
 
         fix->setId(m_nextId++);
 
-        if (auto stored = m_settings.loadFixture(fix->id()))
+        const auto stored = m_settings.loadFixture(fix->id());
+        if (stored)
         {
             fix->fromJson(*stored);
         }
@@ -33,7 +34,8 @@ namespace Handler
 
         uint8_t id = fix->id();
         m_fixtures.push_back(std::move(fix));
-        persistFixture(id);
+        // Only a new fixture needs saving; a stored one is already on flash.
+        if (!stored) persistFixture(id);
     }
 
     void FixtureHandler::resubscribe(Fixture* fix, uint16_t oldBase, uint8_t oldCount)

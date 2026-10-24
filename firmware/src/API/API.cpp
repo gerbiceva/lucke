@@ -112,8 +112,9 @@ std::expected<FixtureUpdate, ApiError> API::setFixture(uint8_t id, const Fixture
     FixtureInfo info = m_fixtures.get(id)->info();
     if (changed)
     {
-        s_log.info("fixture {} changed via {}: universe {}, address {}, preset {}, name '{}'", id, from,
-                   info.config.universe, info.config.address, info.config.selectedPreset, info.config.name);
+        s_log.info("fixture {} changed via {}: universe {}, address {}, preset {}, name '{}', highlighted {}", id,
+                   from, info.config.universe, info.config.address, info.config.selectedPreset, info.config.name,
+                   info.config.highlighted);
     }
     return FixtureUpdate{std::move(info), changed};
 }
