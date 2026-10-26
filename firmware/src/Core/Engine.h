@@ -11,7 +11,8 @@
 #include "Commands/InputsHandler.h"
 #include "Commands/WifiConfigHandler.h"
 #include "Commands/RebootHandler.h"
-#include "Commands/EngineConfigHandler.h"
+#include "Commands/BoolSettingHandler.h"
+#include "Commands/FactoryResetHandler.h"
 #include "Commands/LogsHandler.h"
 #include "Commands/OtaHandler.h"
 #include "Handlers/FixtureHandler.h"
@@ -72,7 +73,10 @@ private:
     Commands::InputsHandler m_inputsHandler;
     Commands::WifiConfigHandler m_wifiConfigHandler;
     Commands::RebootHandler m_rebootHandler;
-    Commands::EngineConfigHandler m_engineConfigHandler;
+    Commands::FactoryResetHandler m_factoryResetHandler;
+    Commands::BoolSettingHandler m_serialReportHandler;
+    Commands::BoolSettingHandler m_wirelessReportHandler;
+    Commands::BoolSettingHandler m_wifiAnimationHandler;
     Commands::LogsHandler m_logsHandler;
     Commands::OtaHandler m_otaHandler;
 

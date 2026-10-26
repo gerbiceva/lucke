@@ -4,15 +4,13 @@
 
 namespace Commands
 {
-    class EngineConfigHandler : public Interface::CommandHandler
+    class FactoryResetHandler : public Interface::CommandHandler
     {
     public:
-        explicit EngineConfigHandler(API& api);
+        explicit FactoryResetHandler(API& api);
         void handle(JsonDocument& req, Interface::Transport& transport) override;
 
     private:
         API& m_api;
-
-        void respond(Interface::Transport& transport, const char* key, bool value);
     };
 }
