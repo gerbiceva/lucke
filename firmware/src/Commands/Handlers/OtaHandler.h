@@ -1,16 +1,16 @@
 #pragma once
-#include "Interfaces/Command.h"
+#include "Commands/Command.h"
 #include "API/API.h"
 
 namespace Commands
 {
-    class LogsHandler : public Interface::CommandHandler
+    class OtaHandler : public Interface::CommandHandler
     {
     public:
-        explicit LogsHandler(const API& api);
+        explicit OtaHandler(API& api);
         void handle(JsonDocument& req, Interface::Transport& transport) override;
 
     private:
-        const API& m_api;
+        API& m_api;
     };
 }

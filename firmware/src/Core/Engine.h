@@ -5,18 +5,18 @@
 #include "Network/SerialTransport.h"
 #include "Network/BleTransport.h"
 #include "Commands/CommandDispatcher.h"
-#include "Commands/DescribeHandler.h"
-#include "Commands/GetFixtureHandler.h"
-#include "Commands/SetFixtureHandler.h"
-#include "Commands/InputsHandler.h"
-#include "Commands/WifiConfigHandler.h"
-#include "Commands/RebootHandler.h"
-#include "Commands/BoolSettingHandler.h"
-#include "Commands/FactoryResetHandler.h"
-#include "Commands/LogsHandler.h"
-#include "Commands/OtaHandler.h"
-#include "Handlers/FixtureHandler.h"
-#include "Handlers/InputHandler.h"
+#include "Commands/Handlers/DescribeHandler.h"
+#include "Commands/Handlers/GetFixtureHandler.h"
+#include "Commands/Handlers/SetFixtureHandler.h"
+#include "Commands/Handlers/InputsHandler.h"
+#include "Commands/Handlers/WifiConfigHandler.h"
+#include "Commands/Handlers/RebootHandler.h"
+#include "Commands/Handlers/BoolSettingHandler.h"
+#include "Commands/Handlers/FactoryResetHandler.h"
+#include "Commands/Handlers/LogsHandler.h"
+#include "Commands/Handlers/OtaHandler.h"
+#include "Core/Managers/FixtureManager.h"
+#include "Core/Managers/InputManager.h"
 #include "Tasks/TaskExecutor.h"
 #include "Services/SettingsStore.h"
 #include "Services/StatusReport.h"
@@ -54,8 +54,8 @@ private:
     Net::SerialTransport m_serial;
     // Net::BleTransport m_ble;
 
-    Handler::InputHandler m_inputs;
-    Handler::FixtureHandler m_fixtures;
+    Handler::InputManager m_inputs;
+    Handler::FixtureManager m_fixtures;
 
     // Members are built in declaration order: each one below holds references
     // to members declared above it.

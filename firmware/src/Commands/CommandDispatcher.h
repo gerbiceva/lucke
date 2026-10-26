@@ -3,7 +3,7 @@
 #include <unordered_map>
 #include <string>
 #include <ArduinoJson.h>
-#include "Interfaces/Command.h"
+#include "Commands/Command.h"
 #include "Interfaces/Transport.h"
 
 namespace Commands

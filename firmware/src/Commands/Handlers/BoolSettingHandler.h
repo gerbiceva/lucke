@@ -1,5 +1,5 @@
 #pragma once
-#include "Interfaces/Command.h"
+#include "Commands/Command.h"
 #include "API/API.h"
 
 namespace Commands

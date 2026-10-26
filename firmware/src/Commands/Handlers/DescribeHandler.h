@@ -1,16 +1,16 @@
 #pragma once
-#include "Interfaces/Command.h"
+#include "Commands/Command.h"
 #include "API/API.h"
 
 namespace Commands
 {
-    class RebootHandler : public Interface::CommandHandler
+    class DescribeHandler : public Interface::CommandHandler
     {
     public:
-        explicit RebootHandler(API& api);
+        explicit DescribeHandler(const API& api);
         void handle(JsonDocument& req, Interface::Transport& transport) override;
 
     private:
-        API& m_api;
+        const API& m_api;
     };
 }

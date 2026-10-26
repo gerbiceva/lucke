@@ -3,7 +3,7 @@
 #include <span>
 #include "Output/Driver.h"
 #include "Hardware/WS2815.h"
-#include "Handlers/PinHandler.h"
+#include "Core/Managers/PinManager.h"
 #include "Utils/Logger.h"
 
 namespace Drivers

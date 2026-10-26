@@ -2,7 +2,7 @@
 
 namespace Services
 {
-    RenderLoop::RenderLoop(Handler::FixtureHandler& fixtures, Tasks::Manager& tasks)
+    RenderLoop::RenderLoop(Handler::FixtureManager& fixtures, Tasks::Manager& tasks)
         : m_fixtures(fixtures), m_tasks(tasks)
     {}
 

@@ -1,7 +1,7 @@
 #pragma once
 #include <atomic>
 #include <cstdint>
-#include "Handlers/FixtureHandler.h"
+#include "Core/Managers/FixtureManager.h"
 #include "Tasks/TaskExecutor.h"
 
 namespace Services
@@ -19,7 +19,7 @@ namespace Services
             Off         // render nothing; LEDs keep their last frame
         };
 
-        RenderLoop(Handler::FixtureHandler& fixtures, Tasks::Manager& tasks);
+        RenderLoop(Handler::FixtureManager& fixtures, Tasks::Manager& tasks);
 
         // Spawns the render task. Call once, after everything is constructed.
         void start();
@@ -31,7 +31,7 @@ namespace Services
     private:
         void loop();
 
-        Handler::FixtureHandler& m_fixtures;
+        Handler::FixtureManager& m_fixtures;
         Tasks::Manager& m_tasks;
         // Boot shows the animation until wifi first connects.
         std::atomic<Mode> m_mode{Mode::Animation};

@@ -4,7 +4,7 @@
 namespace Services
 {
     StatusReport::StatusReport(const SettingsStore& settings, Net::Wifi& wifi,
-                               Handler::FixtureHandler& fixtures, Handler::InputHandler& inputs)
+                               Handler::FixtureManager& fixtures, Handler::InputManager& inputs)
         : m_settings(settings), m_wifi(wifi), m_fixtures(fixtures), m_inputs(inputs)
     {}
 

@@ -47,7 +47,7 @@ void LogsInfo::toJson(JsonObject& obj)
     }
 }
 
-API::API(Services::SettingsStore& settings, Handler::FixtureHandler& fixtures, Handler::InputHandler& inputs,
+API::API(Services::SettingsStore& settings, Handler::FixtureManager& fixtures, Handler::InputManager& inputs,
          Net::Wifi& wifi, Services::Telemetry& telemetry, Services::OtaService& ota)
     : m_settings(settings), m_fixtures(fixtures), m_inputs(inputs), m_wifi(wifi), m_telemetry(telemetry),
       m_ota(ota)
@@ -138,7 +138,7 @@ std::expected<FixtureUpdate, ApiError> API::setFixture(uint8_t id, const Fixture
     {
         return std::unexpected(ApiError::UniverseOutOfRange);
     }
-    if (patch.leds && (*patch.leds == 0 || *patch.leds > Handler::FixtureHandler::c_maxLeds))
+    if (patch.leds && (*patch.leds == 0 || *patch.leds > Handler::FixtureManager::c_maxLeds))
     {
         return std::unexpected(ApiError::LedCountOutOfRange);
     }

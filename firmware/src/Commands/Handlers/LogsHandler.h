@@ -1,13 +1,13 @@
 #pragma once
-#include "Interfaces/Command.h"
+#include "Commands/Command.h"
 #include "API/API.h"
 
 namespace Commands
 {
-    class GetFixtureHandler : public Interface::CommandHandler
+    class LogsHandler : public Interface::CommandHandler
     {
     public:
-        explicit GetFixtureHandler(const API& api);
+        explicit LogsHandler(const API& api);
         void handle(JsonDocument& req, Interface::Transport& transport) override;
 
     private:
