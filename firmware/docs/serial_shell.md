@@ -14,8 +14,9 @@ flowchart LR
     T[TcpListener] --> D
     CS --> D[CommandDispatcher<br/>deserializeJson + 'request' lookup]
     CS2 --> D
-    D --> H["Handlers<br/>handle(JsonDocument&, Transport&)"]
-    H -- "transport.send(JSON string)" --> S
+    D --> H["Handlers<br/>handle(const JsonDocument&, const Context&)"]
+    H -- "Reply (doc or error)" --> D
+    D -- "transport.send(doc)" --> S
 ```
 
 ## 2. Proposed text front-end
@@ -46,8 +47,9 @@ sequenceDiagram
     User->>Shell: set 0 universe=8 name="Front"
     Shell->>Parser: tokens [set, 0, universe=8, name=Front]
     Parser->>Disp: {"request":"setfixture","id":0,"universe":8,"name":"Front"}
-    Disp->>H: handle(doc, textTransport)
-    H->>Fmt: send({"status":"ok","id":0,"universe":8,...})
+    Disp->>H: handle(doc, ctx)
+    H-->>Disp: Reply {"status":"ok","id":0,"universe":8,...}
+    Disp->>Fmt: send(reply)
     Fmt->>User: ok / id 0 / universe 8 / name Front
 ```
 

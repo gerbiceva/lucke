@@ -7,16 +7,16 @@ namespace Commands
         : m_api(api)
     {}
 
-    void OtaHandler::handle(JsonDocument& req, Interface::Transport& transport)
+    Interface::Reply OtaHandler::handle(const JsonDocument& req, const Interface::Context& ctx)
     {
         // {"request":"ota"} or {"request":"ota","minutes":10}; 1..30, default 5.
         const uint32_t minutes = std::clamp<uint32_t>(req["minutes"] | 5u, 1, 30);
-        m_api.enableOta(minutes, transport.remoteAddress());
+        m_api.enableOta(minutes, ctx.from);
 
         JsonDocument doc;
         doc["status"] = "ota open";
         doc["minutes"] = minutes;
         doc["port"] = OTA_PORT;
-        transport.send(doc);
+        return doc;
     }
 }

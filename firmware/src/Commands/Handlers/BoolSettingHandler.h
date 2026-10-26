@@ -13,7 +13,7 @@ namespace Commands
         using Setter = void (API::*)(bool, Origin);
 
         BoolSettingHandler(API& api, const char* name, Member member, Setter setter);
-        void handle(JsonDocument& req, Interface::Transport& transport) override;
+        Interface::Reply handle(const JsonDocument& req, const Interface::Context& ctx) override;
 
     private:
         API& m_api;

@@ -8,7 +8,7 @@ namespace Commands
     {
     public:
         explicit OtaHandler(API& api);
-        void handle(JsonDocument& req, Interface::Transport& transport) override;
+        Interface::Reply handle(const JsonDocument& req, const Interface::Context& ctx) override;
 
     private:
         API& m_api;

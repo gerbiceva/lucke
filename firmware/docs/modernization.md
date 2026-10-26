@@ -82,8 +82,10 @@ timing table.
   small sorted `std::array` (11 commands).
 - ✅ "Serialize doc → send" repeated in most handlers →
   `Interface::Transport::send(const JsonDocument&)`.
-- ⬜ Handlers return `std::expected<JsonDocument, std::string_view>`; the
-  dispatcher sends and formats errors instead of hand-written `"{\"err\":...}"`.
+- ✅ Handlers return `Interface::Reply` (`std::expected<JsonDocument,
+  std::string_view>`) and get an `Interface::Context` (the origin) instead of
+  the transport; the dispatcher sends the reply and formats every error,
+  including its own, as `{"err": ...}`.
 
 ## 7. Parameters and signatures ✅
 

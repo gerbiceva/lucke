@@ -1,22 +1,12 @@
 #include "GetFixtureHandler.h"
 
-namespace
-{
-    void sendError(Interface::Transport& transport, const char* err)
-    {
-        JsonDocument doc;
-        doc["err"] = err;
-        transport.send(doc);
-    }
-}
-
 namespace Commands
 {
     GetFixtureHandler::GetFixtureHandler(const API& api)
         : m_api(api)
     {}
 
-    void GetFixtureHandler::handle(JsonDocument& req, Interface::Transport& transport)
+    Interface::Reply GetFixtureHandler::handle(const JsonDocument& req, const Interface::Context& ctx)
     {
         JsonDocument doc;
         JsonObject obj = doc.to<JsonObject>();
@@ -25,24 +15,19 @@ namespace Commands
         if (!req["id"].is<uint8_t>())
         {
             m_api.fixtures().toJson(obj);
-            transport.send(doc);
-            return;
+            return doc;
         }
 
-        const uint8_t id = req["id"];
+        const uint8_t id = req["id"].as<uint8_t>();
         auto fixture = m_api.fixture(id);
         if (!fixture)
-        {
-            sendError(transport, toString(fixture.error()));
-            return;
-        }
+            return std::unexpected(toString(fixture.error()));
 
         // No value: the whole fixture.
         if (!req["value"].is<const char*>())
         {
             fixture->toJson(obj);
-            transport.send(doc);
-            return;
+            return doc;
         }
 
         // One field: {"req": field, "val": ...}
@@ -59,11 +44,7 @@ namespace Commands
         else if (field == "config")   doc["val"] = *m_api.fixtureConfig(id);
         else if (field == "presets")  doc["val"] = *m_api.fixturePresets(id);
         else if (field == "outputs")  doc["val"] = *m_api.fixtureOutputs(id);
-        else
-        {
-            sendError(transport, "unknown value");
-            return;
-        }
-        transport.send(doc);
+        else return std::unexpected("unknown value");
+        return doc;
     }
 }

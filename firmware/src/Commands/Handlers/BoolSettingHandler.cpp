@@ -6,14 +6,14 @@ namespace Commands
         : m_api(api), m_name(name), m_member(member), m_setter(setter)
     {}
 
-    void BoolSettingHandler::handle(JsonDocument& req, Interface::Transport& transport)
+    Interface::Reply BoolSettingHandler::handle(const JsonDocument& req, const Interface::Context& ctx)
     {
         if (req["value"].is<bool>())
-            (m_api.*m_setter)(req["value"].as<bool>(), transport.remoteAddress());
+            (m_api.*m_setter)(req["value"].as<bool>(), ctx.from);
 
         JsonDocument doc;
         doc["req"] = m_name;
         doc["val"] = m_api.settings().*m_member;
-        transport.send(doc);
+        return doc;
     }
 }

@@ -6,10 +6,13 @@ namespace Commands
         : m_api(api)
     {}
 
-    void FactoryResetHandler::handle(JsonDocument& req, Interface::Transport& transport)
+    Interface::Reply FactoryResetHandler::handle(const JsonDocument& req, const Interface::Context& ctx)
     {
-        // Restarts after a delay, so the reply still gets out.
-        m_api.factoryReset(transport.remoteAddress());
-        transport.send("{\"status\":\"factory reset, rebooting\"}");
+        // Restarts after a delay, so the dispatcher still gets the reply out.
+        m_api.factoryReset(ctx.from);
+
+        JsonDocument doc;
+        doc["status"] = "factory reset, rebooting";
+        return doc;
     }
 }

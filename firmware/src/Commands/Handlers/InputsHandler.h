@@ -9,7 +9,7 @@ namespace Commands
     {
     public:
         InputsHandler(API& api);
-        void handle(JsonDocument& req, Interface::Transport& transport) override;
+        Interface::Reply handle(const JsonDocument& req, const Interface::Context& ctx) override;
 
     private:
         const API& m_api;

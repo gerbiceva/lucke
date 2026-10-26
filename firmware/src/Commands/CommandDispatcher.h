@@ -15,6 +15,8 @@ namespace Commands
         void dispatch(const std::string& data, Interface::Transport& transport);
 
     private:
+        Interface::Reply run(const std::string& data, const Interface::Context& ctx);
+
         std::unordered_map<std::string, Interface::CommandHandler*> m_handlers;
         // Serial and TCP commands arrive on different tasks. Running one at a
         // time means handlers never race each other on fixtures or settings.

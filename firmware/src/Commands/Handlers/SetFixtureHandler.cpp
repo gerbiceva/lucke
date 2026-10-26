@@ -1,28 +1,15 @@
 #include "SetFixtureHandler.h"
 
-namespace
-{
-    void sendError(Interface::Transport& transport, const char* err)
-    {
-        JsonDocument doc;
-        doc["err"] = err;
-        transport.send(doc);
-    }
-}
-
 namespace Commands
 {
     SetFixtureHandler::SetFixtureHandler(API& api)
         : m_api(api)
     {}
 
-    void SetFixtureHandler::handle(JsonDocument& req, Interface::Transport& transport)
+    Interface::Reply SetFixtureHandler::handle(const JsonDocument& req, const Interface::Context& ctx)
     {
         if (!req["id"].is<uint8_t>())
-        {
-            sendError(transport, "missing id");
-            return;
-        }
+            return std::unexpected("missing id");
 
         FixturePatch patch;
         if (req["universe"].is<uint16_t>()) patch.universe = req["universe"].as<uint16_t>();
@@ -32,17 +19,14 @@ namespace Commands
         if (req["leds"].is<uint16_t>()) patch.leds = req["leds"].as<uint16_t>();
         if (req["highlight"].is<bool>()) patch.highlight = req["highlight"].as<bool>();
 
-        auto result = m_api.setFixture(req["id"], patch, transport.remoteAddress());
+        auto result = m_api.setFixture(req["id"].as<uint8_t>(), patch, ctx.from);
         if (!result)
-        {
-            sendError(transport, toString(result.error()));
-            return;
-        }
+            return std::unexpected(toString(result.error()));
 
         JsonDocument doc;
         JsonObject obj = doc.to<JsonObject>();
         obj["status"] = result->rebooting ? "ok, rebooting" : result->changed ? "ok" : "no changes";
         result->fixture.toJson(obj);
-        transport.send(doc);
+        return doc;
     }
 }

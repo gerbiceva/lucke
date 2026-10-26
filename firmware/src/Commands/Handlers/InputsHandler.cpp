@@ -6,11 +6,11 @@ namespace Commands
         : m_api(api)
     {}
 
-    void InputsHandler::handle(JsonDocument& req, Interface::Transport& transport)
+    Interface::Reply InputsHandler::handle(const JsonDocument& req, const Interface::Context& ctx)
     {
         JsonDocument doc;
         JsonObject obj = doc.to<JsonObject>();
         m_api.inputs().toJson(obj);
-        transport.send(doc);
+        return doc;
     }
 }
