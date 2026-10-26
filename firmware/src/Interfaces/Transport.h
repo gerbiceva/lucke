@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <ArduinoJson.h>
 
 namespace Interface
 {
@@ -11,6 +12,13 @@ namespace Interface
         virtual bool isAvailable() = 0;
         virtual std::string remoteAddress() = 0;
         virtual void close() = 0;
+
+        void send(const JsonDocument& doc)
+        {
+            std::string data;
+            serializeJson(doc, data);
+            send(data);
+        }
     };
 
 }

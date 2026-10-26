@@ -15,9 +15,6 @@ namespace Commands
         JsonDocument doc;
         JsonObject obj = doc.to<JsonObject>();
         m_api.logs(since).toJson(obj);
-
-        std::string response;
-        serializeJson(doc, response);
-        transport.send(response);
+        transport.send(doc);
     }
 }

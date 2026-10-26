@@ -2,18 +2,11 @@
 
 namespace
 {
-    void send(Interface::Transport& transport, const JsonDocument& doc)
-    {
-        std::string response;
-        serializeJson(doc, response);
-        transport.send(response);
-    }
-
     void sendError(Interface::Transport& transport, const char* err)
     {
         JsonDocument doc;
         doc["err"] = err;
-        send(transport, doc);
+        transport.send(doc);
     }
 }
 
@@ -50,6 +43,6 @@ namespace Commands
         JsonObject obj = doc.to<JsonObject>();
         obj["status"] = result->rebooting ? "ok, rebooting" : result->changed ? "ok" : "no changes";
         result->fixture.toJson(obj);
-        send(transport, doc);
+        transport.send(doc);
     }
 }

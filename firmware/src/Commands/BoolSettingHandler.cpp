@@ -14,9 +14,6 @@ namespace Commands
         JsonDocument doc;
         doc["req"] = m_name;
         doc["val"] = m_api.settings().*m_member;
-
-        std::string response;
-        serializeJson(doc, response);
-        transport.send(response);
+        transport.send(doc);
     }
 }

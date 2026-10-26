@@ -17,9 +17,6 @@ namespace Commands
         doc["status"] = "ota open";
         doc["minutes"] = minutes;
         doc["port"] = OTA_PORT;
-
-        std::string response;
-        serializeJson(doc, response);
-        transport.send(response);
+        transport.send(doc);
     }
 }

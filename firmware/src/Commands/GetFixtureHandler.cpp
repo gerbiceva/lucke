@@ -2,18 +2,11 @@
 
 namespace
 {
-    void send(Interface::Transport& transport, const JsonDocument& doc)
-    {
-        std::string response;
-        serializeJson(doc, response);
-        transport.send(response);
-    }
-
     void sendError(Interface::Transport& transport, const char* err)
     {
         JsonDocument doc;
         doc["err"] = err;
-        send(transport, doc);
+        transport.send(doc);
     }
 }
 
@@ -32,7 +25,7 @@ namespace Commands
         if (!req["id"].is<uint8_t>())
         {
             m_api.fixtures().toJson(obj);
-            send(transport, doc);
+            transport.send(doc);
             return;
         }
 
@@ -48,7 +41,7 @@ namespace Commands
         if (!req["value"].is<const char*>())
         {
             fixture->toJson(obj);
-            send(transport, doc);
+            transport.send(doc);
             return;
         }
 
@@ -71,6 +64,6 @@ namespace Commands
             sendError(transport, "unknown value");
             return;
         }
-        send(transport, doc);
+        transport.send(doc);
     }
 }

@@ -22,9 +22,6 @@ namespace Commands
         if (dirty) obj["status"] = "ok";
         m_api.wifi().toJson(obj);
         obj["ssid"] = m_api.settings().ssid;
-
-        std::string response;
-        serializeJson(doc, response);
-        transport.send(response);
+        transport.send(doc);
     }
 }

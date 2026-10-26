@@ -80,8 +80,8 @@ timing table.
 - ⬜ `Commands/CommandDispatcher.h` — `unordered_map<std::string, ...>` builds
   a `std::string` per lookup → transparent hash / `std::equal_to<>`, or a
   small sorted `std::array` (11 commands).
-- ⬜ "Serialize doc → send" repeated in most handlers →
-  `transport.send(const JsonDocument&)` helper.
+- ✅ "Serialize doc → send" repeated in most handlers →
+  `Interface::Transport::send(const JsonDocument&)`.
 - ⬜ Handlers return `std::expected<JsonDocument, std::string_view>`; the
   dispatcher sends and formats errors instead of hand-written `"{\"err\":...}"`.
 
