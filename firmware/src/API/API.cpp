@@ -1,49 +1,68 @@
 #include "API.h"
+#include <algorithm>
 #include <memory>
+#include <string>
 #include "Input/SacnReceiver.h"
+#include "API/Wire.h"
 #include "Utils/Logger.h"
 
 namespace
 {
     constexpr Utils::Log s_log{"API"};
+
+    // Last DMX channel a fixture can start at (512 channels per universe, 0-based).
+    constexpr int32_t c_maxAddress = 511;
 }
 
-const char* toString(ApiError error)
+namespace
 {
-    switch (error)
+    using Interface::SettingDesc;
+
+    ApiError noFixture()
     {
-        case ApiError::FixtureNotFound:    return "fixture not found";
-        case ApiError::UniverseOutOfRange: return "universe must be 1-63999";
-        case ApiError::LedCountOutOfRange: return "leds must be 1-1000";
+        return ApiError::notFound("id", "fixture not found");
     }
-    return "unknown error";
-}
 
-void DeviceInfo::toJson(JsonObject& obj)
-{
-    settings.toJson(obj);
-    obj.remove("password");
-    obj["protocol"] = PROTOCOL_VERSION;
-
-    JsonObject wifiObj = obj["wifi"].to<JsonObject>();
-    wifi.toJson(wifiObj);
-
-    JsonObject fixturesObj = obj["fixtures"].to<JsonObject>();
-    fixtures.toJson(fixturesObj);
-
-    JsonObject inputsObj = obj["inputs"].to<JsonObject>();
-    inputs.toJson(inputsObj);
-}
-
-void LogsInfo::toJson(JsonObject& obj)
-{
-    obj["first"] = first;
-    obj["next"] = next;
-    obj["lost"] = lost;
-    JsonArray arr = obj["lines"].to<JsonArray>();
-    for (const std::string& line : lines)
+    // Checks one `settings` entry against the output's descriptor.
+    std::expected<void, ApiError> checkSetting(const Interface::Output& output, std::string_view key,
+                                               JsonVariantConst value)
     {
-        arr.add(line);
+        const std::string arg = "settings." + std::string(key);
+
+        const auto settings = output.settings();
+        const auto it = std::ranges::find(settings, key, &SettingDesc::key);
+        if (it == settings.end())
+            return std::unexpected(ApiError::invalidArg(arg, "unknown setting"));
+        if (!it->writable)
+            return std::unexpected(ApiError::forbidden(arg, "setting is read-only"));
+
+        switch (it->type)
+        {
+            case SettingDesc::Type::Bool:
+                if (!value.is<bool>())
+                    return std::unexpected(ApiError::invalidArg(arg, std::string(key) + " must be true or false"));
+                break;
+            case SettingDesc::Type::Int:
+            {
+                if (!value.is<int32_t>())
+                    return std::unexpected(ApiError::invalidArg(arg, std::string(key) + " must be an integer"));
+                const int32_t v = value.as<int32_t>();
+                if (v < it->min || v > it->max)
+                {
+                    return std::unexpected(ApiError::outOfRange(
+                        arg, std::string(key) + " must be " + std::to_string(it->min) + "-" + std::to_string(it->max)));
+                }
+                break;
+            }
+            case SettingDesc::Type::Enum:
+            {
+                const std::string_view v = value.is<const char*>() ? value.as<const char*>() : std::string_view{};
+                if (!std::ranges::contains(it->options, v))
+                    return std::unexpected(ApiError::invalidArg(arg, std::string(key) + " is not one of its options"));
+                break;
+            }
+        }
+        return {};
     }
 }
 
@@ -78,28 +97,21 @@ Handler::FixturesInfo API::fixtures() const
 std::expected<FixtureInfo, ApiError> API::fixture(uint8_t id) const
 {
     Fixture* fix = m_fixtures.get(id);
-    if (!fix) return std::unexpected(ApiError::FixtureNotFound);
+    if (!fix) return std::unexpected(noFixture());
     return fix->info();
-}
-
-std::expected<JsonDocument, ApiError> API::fixtureConfig(uint8_t id) const
-{
-    Fixture* fix = m_fixtures.get(id);
-    if (!fix) return std::unexpected(ApiError::FixtureNotFound);
-    return fix->configJson();
 }
 
 std::expected<JsonDocument, ApiError> API::fixturePresets(uint8_t id) const
 {
     Fixture* fix = m_fixtures.get(id);
-    if (!fix) return std::unexpected(ApiError::FixtureNotFound);
+    if (!fix) return std::unexpected(noFixture());
     return fix->presetsJson();
 }
 
 std::expected<JsonDocument, ApiError> API::fixtureOutputs(uint8_t id) const
 {
     Fixture* fix = m_fixtures.get(id);
-    if (!fix) return std::unexpected(ApiError::FixtureNotFound);
+    if (!fix) return std::unexpected(noFixture());
     return fix->outputsJson();
 }
 
@@ -108,12 +120,17 @@ Handler::InputsInfo API::inputs() const
     return m_inputs.inputs();
 }
 
-LogsInfo API::logs(uint32_t since) const
+LogsInfo API::logs(uint32_t since, std::string_view bootId) const
 {
     const Utils::LogHistory& history = Utils::Log::history();
-    if (since > history.nextSeq()) since = 0;
 
     LogsInfo info;
+    if ((!bootId.empty() && bootId != Wire::bootId()) || since > history.nextSeq())
+    {
+        since = 0;
+        info.reset = true;
+    }
+
     char buf[Utils::LogHistory::MaxLine];
     uint32_t seq = since;
     while (auto line = history.read(seq, buf))
@@ -132,33 +149,71 @@ LogsInfo API::logs(uint32_t since) const
 
 std::expected<FixtureUpdate, ApiError> API::setFixture(uint8_t id, const FixturePatch& patch, Origin from)
 {
-    if (!m_fixtures.exists(id)) return std::unexpected(ApiError::FixtureNotFound);
+    Fixture* fix = m_fixtures.get(id);
+    if (!fix) return std::unexpected(noFixture());
+
+    // Check everything first, so a bad argument leaves the fixture untouched.
     if (patch.universe &&
         (*patch.universe < Input::SacnReceiver::c_minUniverse || *patch.universe > Input::SacnReceiver::c_maxUniverse))
     {
-        return std::unexpected(ApiError::UniverseOutOfRange);
+        return std::unexpected(ApiError::outOfRange("universe", "universe must be 1-63999"));
     }
-    if (patch.leds && (*patch.leds == 0 || *patch.leds > Handler::FixtureManager::c_maxLeds))
+    if (patch.address && (*patch.address < 0 || *patch.address > c_maxAddress))
     {
-        return std::unexpected(ApiError::LedCountOutOfRange);
+        return std::unexpected(ApiError::outOfRange("address", "address must be 0-511"));
+    }
+    if (patch.preset && (*patch.preset < 0 || *patch.preset >= fix->getNumPresets()))
+    {
+        return std::unexpected(ApiError::outOfRange("preset_index", "preset_index out of range"));
+    }
+    if (patch.output)
+    {
+        if (*patch.output < 0 || static_cast<size_t>(*patch.output) >= fix->getOutputs().size())
+            return std::unexpected(ApiError::notFound("output", "no such output"));
+
+        const Interface::Output& output = *fix->getOutputs()[*patch.output];
+        for (JsonPairConst kv : patch.settings.as<JsonObjectConst>())
+        {
+            if (auto ok = checkSetting(output, kv.key().c_str(), kv.value()); !ok)
+                return std::unexpected(std::move(ok.error()));
+        }
     }
 
-    bool changed = false;
-    if (patch.universe) changed |= m_fixtures.setUniverse(id, *patch.universe);
-    if (patch.address) changed |= m_fixtures.setAddress(id, *patch.address);
-    if (patch.preset) changed |= m_fixtures.setPreset(id, *patch.preset);
-    if (patch.name) changed |= m_fixtures.setName(id, *patch.name);
-    if (patch.highlight) changed |= m_fixtures.setHighlight(id, *patch.highlight);
+    // The manager setters only say whether the fixture exists, so compare
+    // before and after to tell whether anything really changed.
+    const Config::Fixture before = fix->info().config;
+    if (patch.universe) (void)m_fixtures.setUniverse(id, *patch.universe);
+    if (patch.address) (void)m_fixtures.setAddress(id, *patch.address);
+    if (patch.preset) (void)m_fixtures.setPreset(id, *patch.preset);
+    if (patch.name) (void)m_fixtures.setName(id, *patch.name);
+    if (patch.highlight) (void)m_fixtures.setHighlight(id, *patch.highlight);
+    const Config::Fixture after = fix->info().config;
+    bool changed = before.universe != after.universe || before.address != after.address ||
+                   before.selectedPreset != after.selectedPreset || before.name != after.name ||
+                   before.highlighted != after.highlighted;
 
-    // The strip is built with its count at boot, so a new one needs a restart.
+    // A requiresReboot setting (a strip's LED count) is read when the output is
+    // built, so it only takes effect after a restart.
     bool rebooting = false;
-    if (patch.leds && *patch.leds != m_fixtures.get(id)->ledCount())
+    if (patch.output)
     {
-        changed |= m_fixtures.setLedCount(id, *patch.leds);
-        rebooting = true;
+        const size_t output = *patch.output;
+        for (JsonPairConst kv : patch.settings.as<JsonObjectConst>())
+        {
+            const std::string_view key = kv.key().c_str();
+            if (!m_fixtures.setOutputSetting(id, output, key, kv.value())) continue;
+
+            changed = true;
+            const auto settings = fix->getOutputs()[output]->settings();
+            const auto desc = std::ranges::find(settings, key, &SettingDesc::key);
+            rebooting |= desc != settings.end() && desc->requiresReboot;
+        }
     }
 
-    FixtureInfo info = m_fixtures.get(id)->info();
+    // The current presets are for the old size; 0 ("group by 1") exists for every size.
+    if (rebooting) (void)m_fixtures.setPreset(id, 0);
+
+    FixtureInfo info = fix->info();
     if (changed)
     {
         s_log.info("fixture %u changed via %.*s: universe %u, address %u, preset %u, name '%s', highlighted %s", id,
@@ -167,7 +222,7 @@ std::expected<FixtureUpdate, ApiError> API::setFixture(uint8_t id, const Fixture
     }
     if (rebooting)
     {
-        s_log.warn("fixture %u: %u LEDs via %.*s, rebooting to apply", id, *patch.leds,
+        s_log.warn("fixture %u: output settings via %.*s need a restart, rebooting", id,
                    static_cast<int>(from.size()), from.data());
         m_settings.flush();
         runLater(1000, [] { ESP.restart(); });

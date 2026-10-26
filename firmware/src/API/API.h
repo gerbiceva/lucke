@@ -20,14 +20,32 @@
 #include "Services/Telemetry.h"
 #include "Services/OtaService.h"
 
-enum class ApiError : uint8_t
+// Why a call failed. `code` is one of the codes in docs/apiv2.md (a
+// literal); `arg` names the request argument at fault ("universe",
+// "settings.invert", ...).
+struct ApiError
 {
-    FixtureNotFound,
-    UniverseOutOfRange,
-    LedCountOutOfRange
-};
+    std::string_view code;
+    std::string arg;
+    std::string msg;
 
-const char* toString(ApiError error);
+    static ApiError notFound(std::string arg, std::string msg)
+    {
+        return {"not_found", std::move(arg), std::move(msg)};
+    }
+    static ApiError invalidArg(std::string arg, std::string msg)
+    {
+        return {"invalid_arg", std::move(arg), std::move(msg)};
+    }
+    static ApiError outOfRange(std::string arg, std::string msg)
+    {
+        return {"out_of_range", std::move(arg), std::move(msg)};
+    }
+    static ApiError forbidden(std::string arg, std::string msg)
+    {
+        return {"forbidden", std::move(arg), std::move(msg)};
+    }
+};
 
 // Who asked for a change, for the log: "serial", "192.168.0.5", ...
 using Origin = std::string_view;
@@ -39,20 +57,20 @@ struct DeviceInfo
     Net::WifiInfo wifi;
     Handler::FixturesInfo fixtures;
     Handler::InputsInfo inputs;
-
-    // Same layout as the describe reply.
-    void toJson(JsonObject& obj);
 };
 
-// Fields to change on a fixture; unset ones are left alone.
+// Fields to change on a fixture; unset ones are left alone. Numbers are wide
+// so setFixture can reject out-of-range values instead of the caller wrapping them.
 struct FixturePatch
 {
-    std::optional<uint16_t> universe;
-    std::optional<uint16_t> address;
-    std::optional<uint8_t> preset;
+    std::optional<int32_t> universe;
+    std::optional<int32_t> address;
+    std::optional<int32_t> preset;
     std::optional<std::string> name;
-    // Strip LED count. Saved, then the device reboots to apply it.
-    std::optional<uint16_t> leds;
+    // Output settings: `settings` (key -> value) for output `output`. Both set or
+    // both unset; the caller checks that.
+    std::optional<int32_t> output;
+    JsonDocument settings;
     // All LEDs white while on. Not saved.
     std::optional<bool> highlight;
 };
@@ -61,7 +79,7 @@ struct FixtureUpdate
 {
     FixtureInfo fixture;
     bool changed = false;
-    bool rebooting = false;   // a new LED count is applied by restarting
+    bool rebooting = false;   // a requiresReboot setting is applied by restarting
 };
 
 // Lines from the log history (Info and up), oldest first.
@@ -70,9 +88,8 @@ struct LogsInfo
     uint32_t first = 0;   // number of lines[0]
     uint32_t next = 0;    // pass as `since` to get only newer lines
     uint32_t lost = 0;    // lines after `since` already overwritten
+    bool reset = false;   // `since` was from another boot and was ignored
     std::vector<std::string> lines;
-
-    void toJson(JsonObject& obj);
 };
 
 // What the device can do, without JSON or transports. Command handlers,
@@ -89,12 +106,14 @@ public:
     [[nodiscard]] Net::WifiInfo wifi() const;
     [[nodiscard]] Handler::FixturesInfo fixtures() const;
     [[nodiscard]] std::expected<FixtureInfo, ApiError> fixture(uint8_t id) const;
-    [[nodiscard]] std::expected<JsonDocument, ApiError> fixtureConfig(uint8_t id) const;
+    // Array of {name, settings: [...]}, index = preset index.
     [[nodiscard]] std::expected<JsonDocument, ApiError> fixturePresets(uint8_t id) const;
+    // Array, one entry per output.
     [[nodiscard]] std::expected<JsonDocument, ApiError> fixtureOutputs(uint8_t id) const;
     [[nodiscard]] Handler::InputsInfo inputs() const;
-    // Lines numbered >= since. A since from before a reboot starts over.
-    [[nodiscard]] LogsInfo logs(uint32_t since = 0) const;
+    // Lines numbered >= since. If bootId is given and isn't this boot's, since
+    // is from before a reboot: it is ignored and the result has reset set.
+    [[nodiscard]] LogsInfo logs(uint32_t since = 0, std::string_view bootId = {}) const;
 
     // Writes
     std::expected<FixtureUpdate, ApiError> setFixture(uint8_t id, const FixturePatch& patch, Origin from);

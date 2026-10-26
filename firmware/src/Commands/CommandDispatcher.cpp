@@ -16,16 +16,26 @@ namespace Commands
     void CommandDispatcher::dispatch(const std::string& data, Interface::Transport& transport)
     {
         std::scoped_lock lock(m_mutex);
-        const Interface::Reply reply = run(data, Interface::Context{transport.remoteAddress()});
+        Interface::Reply reply = run(data, Interface::Context{transport.remoteAddress()});
+
+        JsonDocument out;
         if (reply)
         {
-            transport.send(*reply);
-            return;
+            out["ok"] = true;
+            if (reply->rebooting) out["rebooting"] = true;
+            if (reply->data.isNull()) out["data"].to<JsonObject>();
+            else out["data"].set(reply->data);
         }
-
-        JsonDocument err;
-        err["err"] = reply.error();
-        transport.send(err);
+        else
+        {
+            const Interface::Error& e = reply.error();
+            out["ok"] = false;
+            JsonObject err = out["err"].to<JsonObject>();
+            err["code"] = e.code;
+            if (!e.arg.empty()) err["arg"] = e.arg;
+            err["msg"] = e.msg;
+        }
+        transport.send(out);
     }
 
     Interface::Reply CommandDispatcher::run(const std::string& data, const Interface::Context& ctx)
@@ -35,21 +45,21 @@ namespace Commands
         if (err)
         {
             s_log.warn("JSON parse error: %s", err.c_str());
-            return std::unexpected("invalid json");
+            return Interface::fail(Interface::Code::InvalidJson, "invalid json");
         }
 
-        const char* cmd = doc["request"] | "";
+        const char* cmd = doc["cmd"] | "";
         if (cmd[0] == '\0')
         {
-            s_log.warn("missing 'request' field");
-            return std::unexpected("missing cmd");
+            s_log.warn("missing 'cmd' field");
+            return Interface::fail(Interface::Code::MissingCmd, "missing cmd", "cmd");
         }
 
         auto it = m_handlers.find(std::string_view{cmd});
         if (it == m_handlers.end())
         {
             s_log.warn("unknown command: %s", cmd);
-            return std::unexpected("unknown cmd");
+            return Interface::fail(Interface::Code::UnknownCmd, "unknown cmd");
         }
 
         return it->second->handle(doc, ctx);

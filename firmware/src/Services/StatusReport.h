@@ -15,15 +15,13 @@ namespace Services
         StatusReport(const SettingsStore& settings, Net::Wifi& wifi,
                      Handler::FixtureManager& fixtures, Handler::InputManager& inputs);
 
-        // Full status: settings, wifi, fixtures, inputs.
+        // Full status: the same document as the describe command's data.
         std::string build();
 
-        // Engine settings only.
+        // Version, report switches and ssid only.
         std::string settings();
 
     private:
-        void writeSettings(JsonObject& obj);
-
         const SettingsStore& m_settings;
         Net::Wifi& m_wifi;
         Handler::FixtureManager& m_fixtures;

@@ -18,8 +18,8 @@ namespace Fixtures
         constexpr FixedString(const char (&s)[N]) { std::copy_n(s, N, value); }
     };
 
-    // The LED count comes from the stored record, or the default passed to
-    // addFixture (see FixtureManager::addFixture).
+    // The LED count is the strip output's num_leds setting: from the stored
+    // record, or the default passed to addFixture (see FixtureManager::addFixture).
     template <FixedString Type, typename TDriver, uint8_t Pin>
     struct Strip : public Fixture
     {
@@ -27,7 +27,6 @@ namespace Fixtures
             : Fixture("name", Type.value, Presets::groupPresets(numLeds)),
               m_animBuf(numLeds * 3, 0)
         {
-            setLedCount(numLeds);
             addOutput<Output::Strip1D<TDriver, Pin>>(numLeds);
         }
 

@@ -252,8 +252,8 @@ pairs for that output. Both are required together.
   `options`, `writable`). Fixture fields and settings in one request are
   checked together, and nothing is applied if any of them is invalid.
 - A setting with `requires_reboot` saves, then the device restarts after
-  1 s and the reply has `"rebooting": true`. Changing `num_leds` also resets
-  the preset to 0.
+  1 s and the reply has `"rebooting": true`. The preset also resets to 0, because
+  presets depend on the setting (`num_leds` sets which group sizes exist).
 - Setting a key to the value it already has is not a change.
 
 Errors:
@@ -281,7 +281,7 @@ Errors:
 <- {"ok": false, "err": {"code": "out_of_range", "arg": "settings.num_leds", "msg": "num_leds must be 1-1000"}}
 
 -> {"cmd": "set_fixture", "id": 0, "settings": {"invert": true}}
-<- {"ok": false, "err": {"code": "missing_arg", "arg": "output", "msg": "settings needs output"}}
+<- {"ok": false, "err": {"code": "missing_arg", "arg": "output", "msg": "missing output"}}
 ```
 
 ## inputs

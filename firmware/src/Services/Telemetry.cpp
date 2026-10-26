@@ -1,5 +1,6 @@
 #include "Telemetry.h"
 #include <ArduinoJson.h>
+#include "API/Wire.h"
 #include "Utils/Logger.h"
 
 namespace
@@ -86,6 +87,7 @@ namespace Services
         JsonDocument doc;
         doc["version"] = ENGINE_VERSION;
         doc["protocol"] = PROTOCOL_VERSION;
+        doc["boot_id"] = Wire::bootId();
         JsonArray arr = doc["fixtures"].to<JsonArray>();
         for (const auto& fix : m_fixtures.all())
         {

@@ -8,6 +8,7 @@
 #include <vector>
 #include <cstring>
 #include <mutex>
+#include <string_view>
 
 // Snapshot of a fixture, safe to hand to another task.
 struct FixtureInfo
@@ -53,9 +54,12 @@ public:
     void setPreset(uint8_t new_preset);
     void setName(const std::string& other);
     void setHighlight(bool on);
-    // Takes effect on the next boot; see FixtureManager::setLedCount.
-    void setLedCount(uint16_t numLeds);
-    [[nodiscard]] uint16_t ledCount() const;
+
+    // Output settings (see Interface::SettingDesc). The caller has already
+    // checked the key and value against the output's descriptor. Returns true
+    // if the value changed. A requiresReboot setting is only saved; the others
+    // are applied now. Saved with the fixture record.
+    bool setOutputSetting(size_t output, std::string_view key, JsonVariantConst value);
 
     void setId(uint8_t id);
     [[nodiscard]] uint8_t id() const;
@@ -69,9 +73,10 @@ public:
 
 
     void fromConfig();
+    // The stored record: config plus the saved output settings.
     void fromJson(const std::string& json) override;
     JsonDocument toJsonDoc() override;
-    JsonDocument configJson();
+    // API shapes: an array of {name, settings}, and an array of outputs.
     JsonDocument presetsJson();
     JsonDocument outputsJson();
     void toJson(JsonObject& doc) override;
@@ -91,6 +96,8 @@ private:
     std::vector<uint8_t> m_buffer;
     std::vector<std::unique_ptr<Interface::Output>> m_outputs;
     JsonDocument m_jsonPresets;
+    // Saved output settings: one object per output index, key -> value.
+    JsonDocument m_savedOutputs;
 
     uint16_t m_lastOffset = 0;
 };

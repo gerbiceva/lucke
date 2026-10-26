@@ -44,18 +44,16 @@ Engine::Engine()
       m_ota(m_render, m_wifi, m_tasks),
       m_api(m_settings, m_fixtures, m_inputs, m_wifi, m_telemetry, m_ota),
       m_describeHandler(m_api),
+      m_fixturesHandler(m_api),
       m_getFixtureHandler(m_api),
       m_setFixtureHandler(m_api),
       m_inputsHandler(m_api),
-      m_wifiConfigHandler(m_api),
+      m_getWifiHandler(m_api, Commands::WifiHandler::Mode::Get),
+      m_setWifiHandler(m_api, Commands::WifiHandler::Mode::Set),
       m_rebootHandler(m_api),
       m_factoryResetHandler(m_api),
-      m_serialReportHandler(m_api, "serial_report_task",
-                            &Config::Engine::serial_report_task, &API::setSerialReport),
-      m_wirelessReportHandler(m_api, "wireless_report_task",
-                              &Config::Engine::wireless_report_task, &API::setWirelessReport),
-      m_wifiAnimationHandler(m_api, "wifi_animation",
-                             &Config::Engine::wifi_animation, &API::setWifiAnimation),
+      m_getSettingsHandler(m_api, Commands::SettingsHandler::Mode::Get),
+      m_setSettingsHandler(m_api, Commands::SettingsHandler::Mode::Set),
       m_logsHandler(m_api),
       m_otaHandler(m_api),
       m_serialSession(m_serial, m_dispatcher, m_tasks, "serial_cmd"),
@@ -91,18 +89,18 @@ void Engine::init()
 void Engine::registerCommands()
 {
     m_dispatcher.registerHandler("describe", &m_describeHandler);
-    m_dispatcher.registerHandler("fixtures", &m_getFixtureHandler);
-    m_dispatcher.registerHandler("getfixture", &m_getFixtureHandler);
-    m_dispatcher.registerHandler("setfixture", &m_setFixtureHandler);
+    m_dispatcher.registerHandler("fixtures", &m_fixturesHandler);
+    m_dispatcher.registerHandler("get_fixture", &m_getFixtureHandler);
+    m_dispatcher.registerHandler("set_fixture", &m_setFixtureHandler);
     m_dispatcher.registerHandler("logs", &m_logsHandler);
     m_dispatcher.registerHandler("ota", &m_otaHandler);
     m_dispatcher.registerHandler("inputs", &m_inputsHandler);
-    m_dispatcher.registerHandler("wifi", &m_wifiConfigHandler);
+    m_dispatcher.registerHandler("get_wifi", &m_getWifiHandler);
+    m_dispatcher.registerHandler("set_wifi", &m_setWifiHandler);
     m_dispatcher.registerHandler("reboot", &m_rebootHandler);
     m_dispatcher.registerHandler("factory_reset", &m_factoryResetHandler);
-    m_dispatcher.registerHandler("serial_report_task", &m_serialReportHandler);
-    m_dispatcher.registerHandler("wireless_report_task", &m_wirelessReportHandler);
-    m_dispatcher.registerHandler("wifi_animation", &m_wifiAnimationHandler);
+    m_dispatcher.registerHandler("get_settings", &m_getSettingsHandler);
+    m_dispatcher.registerHandler("set_settings", &m_setSettingsHandler);
 }
 
 // Everything that reacts to the wifi link. Listeners run on the

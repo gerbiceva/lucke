@@ -5,7 +5,7 @@
     python3 helper/flash.py --usb                # serial upload, first port pio finds
     python3 helper/flash.py --build-only
 
-OTA: opens the fixture's update window ({"request":"ota"} on TCP 8888),
+OTA: opens the fixture's update window ({"cmd":"ota"} on TCP 8888),
 uploads with the lolin_c3_mini_ota env, waits for the fixture to come back
 with the new version, then waits for "new firmware confirmed" (~30 s after
 boot; an unconfirmed image rolls back on the next reboot).
@@ -42,8 +42,7 @@ def source_version() -> str:
     return m.group(1) if m else "?"
 
 
-def request(host: str, req: dict, timeout: float = 5) -> dict:
-    """Sends one command, returns the parsed reply."""
+def _send(host: str, req: dict, timeout: float) -> dict:
     with socket.create_connection((host, COMMAND_PORT), timeout=timeout) as s:
         f = s.makefile("rwb")
         f.write(json.dumps(req).encode() + b"\n")
@@ -52,6 +51,23 @@ def request(host: str, req: dict, timeout: float = 5) -> dict:
     if not line:
         raise ConnectionError("connection closed without a reply")
     return json.loads(line)
+
+
+def request(host: str, cmd: str, timeout: float = 5, **args) -> dict:
+    """Sends one command, returns its data. Raises ValueError on an error reply.
+
+    Speaks protocol 2 ({"cmd": ...}). A protocol 1 device (the firmware being
+    replaced) answers that with "missing cmd", so the command is sent again in
+    the old form, and its bare reply is returned as the data."""
+    reply = _send(host, {"cmd": cmd, **args}, timeout)
+    if reply.get("err") == "missing cmd":
+        reply = _send(host, {"request": cmd, **args}, timeout)
+        if "err" in reply:
+            raise ValueError(reply["err"])
+        return reply
+    if not reply.get("ok"):
+        raise ValueError(reply.get("err"))
+    return reply["data"]
 
 
 def run_pio(env: str, target: str | None, upload_port: str | None = None) -> None:
@@ -70,7 +86,7 @@ def wait_for_reboot(host: str, timeout: float) -> bool:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         try:
-            request(host, {"request": "describe"}, timeout=1)
+            request(host, "describe", timeout=1)
         except (OSError, ValueError):
             return True
         time.sleep(0.3)
@@ -81,7 +97,7 @@ def wait_for_version(host: str, version: str, timeout: float) -> bool:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         try:
-            if request(host, {"request": "describe"}, timeout=2).get("version") == version:
+            if request(host, "describe", timeout=2).get("version") == version:
                 return True
         except (OSError, ValueError):
             pass  # still rebooting
@@ -93,7 +109,7 @@ def wait_for_confirm(host: str, timeout: float) -> bool:
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         try:
-            if "new firmware confirmed" in json.dumps(request(host, {"request": "logs"})):
+            if "new firmware confirmed" in json.dumps(request(host, "logs")):
                 return True
         except (OSError, ValueError):
             pass
@@ -104,12 +120,12 @@ def wait_for_confirm(host: str, timeout: float) -> bool:
 def flash_ota(host: str, env: str, args) -> bool:
     version = source_version()
     try:
-        before = request(host, {"request": "describe"}).get("version", "?")
-        reply = request(host, {"request": "ota", "minutes": args.minutes})
+        before = request(host, "describe").get("version", "?")
+        reply = request(host, "ota", minutes=args.minutes)
     except (OSError, ValueError) as e:
         print(f"[{host}] not reachable: {e}")
         return False
-    if reply.get("status") != "ota open":
+    if "port" not in reply:
         print(f"[{host}] couldn't open the OTA window: {reply}")
         return False
     print(f"[{host}] {before} -> {version}, OTA window open")

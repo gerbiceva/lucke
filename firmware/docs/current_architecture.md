@@ -2,7 +2,7 @@
 
 > Branch `cpp23`, October 2026. Scope: `src/`. `unused/src_prev/` is the old
 > tree and is not described here. Diagram: [`current_architecture.puml`](./current_architecture.puml).
-> Wire protocol: [`api.md`](./api.md). Open work: [`modernization.md`](./modernization.md),
+> Wire protocol: [`apiv2.md`](./apiv2.md). Open work: [`modernization.md`](./modernization.md),
 > [`improvement.md`](./improvement.md).
 
 Target: ESP32-C3 (`lolin_c3_mini`), Arduino core on pioarduino, GCC 14,
@@ -110,7 +110,7 @@ UDP 5568 ─► SacnReceiver ─► InputHandler ─► SyncBuffer ─► Fixtur
 ## 5. Commands
 
 Line protocol: one JSON object per line, reply one JSON line on the same
-transport (TCP 8888 or serial). See [`api.md`](./api.md).
+transport (TCP 8888 or serial). See [`apiv2.md`](./apiv2.md).
 
 - `CommandDispatcher` parses once, routes on `"request"`, and **runs one
   command at a time** (a mutex), so serial and TCP handlers never race each

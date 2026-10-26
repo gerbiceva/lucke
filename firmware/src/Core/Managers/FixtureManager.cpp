@@ -20,7 +20,7 @@ namespace Handler
         if (!stored) return 0;
         JsonDocument doc;
         if (deserializeJson(doc, *stored)) return 0;
-        const uint16_t leds = doc["num_leds"] | 0;
+        const uint16_t leds = doc["outputs"][0]["num_leds"] | (doc["num_leds"] | 0);
         return leds <= c_maxLeds ? leds : 0;
     }
 
@@ -164,15 +164,14 @@ namespace Handler
         return true;
     }
 
-    bool FixtureManager::setLedCount(uint8_t id, uint16_t leds)
+    bool FixtureManager::setOutputSetting(uint8_t id, size_t output, std::string_view key, JsonVariantConst value)
     {
         Fixture* fix = get(id);
         if (!fix) return false;
 
-        fix->setLedCount(leds);
-        // The current presets are for the old count; 0 ("group by 1")
-        // exists for every count. Also persists the record.
-        return setPreset(id, 0);
+        const bool changed = fix->setOutputSetting(output, key, value);
+        if (changed) persistFixture(id);
+        return changed;
     }
 
     void FixtureManager::update()
@@ -217,16 +216,4 @@ namespace Handler
         return info;
     }
 
-    void FixtureManager::toJson(JsonObject& obj)
-    {
-        fixtures().toJson(obj);
-    }
-
-    JsonDocument FixtureManager::toJsonDoc()
-    {
-        JsonDocument doc;
-        JsonObject obj = doc.to<JsonObject>();
-        toJson(obj);
-        return doc;
-    }
 }

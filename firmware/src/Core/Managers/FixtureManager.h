@@ -7,7 +7,6 @@
 #include <type_traits>
 #include "Core/Fixture.h"
 #include "Core/Managers/InputManager.h"
-#include "Interfaces/Serializable.h"
 #include "Interfaces/Deserializable.h"
 #include "Services/SettingsStore.h"
 #include "Utils/Logger.h"
@@ -17,24 +16,15 @@ namespace Handler
     struct FixturesInfo
     {
         std::vector<FixtureInfo> fixtures;
-
-        void toJson(JsonObject& obj)
-        {
-            JsonArray arr = obj["fixtures"].to<JsonArray>();
-            for (FixtureInfo& fix : fixtures)
-            {
-                JsonObject entry = arr.add<JsonObject>();
-                fix.toJson(entry);
-            }
-        }
     };
 
-    class FixtureManager : public Interface::Serializable, public Interface::Deserializable
+    class FixtureManager : public Interface::Deserializable
     {
         void _addFixture(std::unique_ptr<Fixture> fix, const std::optional<std::string>& stored);
         // The record for the fixture about to be added, if any.
         std::optional<std::string> loadStored();
-        // "num_leds" from a stored record, or 0 if there is none.
+        // The first output's "num_leds" from a stored record (or the top-level
+        // one older records have), or 0 if there is none.
         static uint16_t storedLedCount(const std::optional<std::string>& stored);
         void persistFixture(uint8_t id);
 
@@ -56,7 +46,7 @@ namespace Handler
         }
 
         // A strip: built with its stored LED count, or defaultLeds until one
-        // is stored (setfixture "leds").
+        // is stored (the output's num_leds setting).
         template<typename TFixture>
             requires std::is_constructible_v<TFixture, uint16_t>
         void addFixture(uint16_t defaultLeds)
@@ -77,15 +67,15 @@ namespace Handler
         [[nodiscard]] bool setPreset(uint8_t id, uint8_t preset);
         [[nodiscard]] bool setName(uint8_t id, const std::string& name);
         [[nodiscard]] bool setHighlight(uint8_t id, bool on);
-        // Saves a new LED count and resets the preset to 0. Applied after a reboot.
-        [[nodiscard]] bool setLedCount(uint8_t id, uint16_t leds);
+        // See Fixture::setOutputSetting. Also saves the record. `changed`
+        // is false if nothing was set (no such fixture, output or key, or the
+        // same value).
+        [[nodiscard]] bool setOutputSetting(uint8_t id, size_t output, std::string_view key, JsonVariantConst value);
 
         void update();
         void wifiAnimation();
 
         void fromJson(const std::string& json) override;
-        void toJson(JsonObject& obj) override;
-        JsonDocument toJsonDoc() override;
 
     private:
         InputManager& m_inputs;

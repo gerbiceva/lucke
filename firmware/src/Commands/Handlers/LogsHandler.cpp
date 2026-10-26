@@ -1,4 +1,6 @@
 #include "LogsHandler.h"
+#include "API/Wire.h"
+#include "Commands/ApiReply.h"
 
 namespace Commands
 {
@@ -8,13 +10,17 @@ namespace Commands
 
     Interface::Reply LogsHandler::handle(const JsonDocument& req, const Interface::Context& ctx)
     {
-        // {"request":"logs"} for everything kept, or "since": <next from
-        // the previous reply> for only what's new.
-        const uint32_t since = req["since"] | 0u;
+        // {"cmd":"logs"} for everything kept, or "since": <next from the
+        // previous reply> with its "boot_id" for only what's new.
+        auto since = optInt(req, "since");
+        auto bootId = optString(req, "boot_id");
+        if (!since) return std::unexpected(since.error());
+        if (!bootId) return std::unexpected(bootId.error());
+        if (*since && **since < 0)
+            return Interface::fail(Interface::Code::OutOfRange, "since must be 0 or more", "since");
 
-        JsonDocument doc;
-        JsonObject obj = doc.to<JsonObject>();
-        m_api.logs(since).toJson(obj);
-        return doc;
+        Interface::Success reply;
+        Wire::logs(reply.data.to<JsonObject>(), m_api.logs(since->value_or(0), bootId->value_or("")));
+        return reply;
     }
 }

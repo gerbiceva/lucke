@@ -68,30 +68,29 @@ namespace Output
         }
 
         const char* name() const override { return "LED1D"; }
+        const char* typeName() const override { return c_type.data(); }
         int hardwarePin() const override { return Pin; }
 
-        void describe(JsonObject& desc) override
-        {
-            Base::describe(desc);
-            desc["num_leds"] = m_numLeds;
-            desc["num_groups"] = m_numGroups;
-        }
+        std::span<const Interface::SettingDesc> settings() const override { return c_settings; }
 
-        // Same fields as LED1D, so client tools see no change.
-        void toJson(JsonObject& doc) override
+        bool getSetting(std::string_view key, JsonVariant out) const override
         {
-            doc["uuid"] = m_uuid;
-            doc["type"] = c_type.data();
-            doc["hardware_pin"] = Pin;
-            doc["num_leds"] = m_numLeds;
-            doc["num_groups"] = m_numGroups;
-
-            JsonObject desc = doc["description"].to<JsonObject>();
-            describe(desc);
+            if (key == "num_leds") out.set(m_numLeds);
+            else if (key == "num_groups") out.set(m_numGroups);
+            else return false;
+            return true;
         }
 
     private:
         static constexpr Utils::Log s_log{"STRIP"};
+
+        using Desc = Interface::SettingDesc;
+        // num_leds sizes the pixel buffer, so a new value is read at boot.
+        // num_groups follows the preset.
+        static constexpr std::array<Desc, 2> c_settings{{
+            {"num_leds", Desc::Type::Int, 1, 1000, {}, true, true},
+            {"num_groups", Desc::Type::Int, 1, 1000, {}, false, false},
+        }};
 
         // "<driver kind>-1D", built at compile time.
         static constexpr auto c_type = [] {

@@ -1,5 +1,6 @@
 #include "StatusReport.h"
 #include <ArduinoJson.h>
+#include "API/Wire.h"
 
 namespace Services
 {
@@ -10,18 +11,13 @@ namespace Services
 
     std::string StatusReport::build()
     {
+        // Runs on the report task, so read a locked copy of the settings.
+        Config::Engine config = m_settings.snapshot();
+        config.password.clear();
+
         JsonDocument doc;
-        JsonObject settingsDoc = doc["settings"].to<JsonObject>();
-        writeSettings(settingsDoc);
-
-        JsonObject wifiDoc = doc["wifi"].to<JsonObject>();
-        m_wifi.toJson(wifiDoc);
-
-        JsonObject fixtureDoc = doc["fixture_handler"].to<JsonObject>();
-        m_fixtures.toJson(fixtureDoc);
-
-        JsonObject inputDoc = doc["input_handler"].to<JsonObject>();
-        m_inputs.toJson(inputDoc);
+        Wire::describe(doc.to<JsonObject>(),
+                       DeviceInfo{std::move(config), m_wifi.info(), m_fixtures.fixtures(), m_inputs.inputs()});
 
         std::string out;
         serializeJson(doc, out);
@@ -30,22 +26,17 @@ namespace Services
 
     std::string StatusReport::settings()
     {
+        const Config::Engine config = m_settings.snapshot();
+
         JsonDocument doc;
         JsonObject obj = doc.to<JsonObject>();
-        writeSettings(obj);
+        obj["version"] = ENGINE_VERSION;
+        obj["protocol"] = PROTOCOL_VERSION;
+        Wire::settings(obj["settings"].to<JsonObject>(), config);
+        obj["ssid"] = config.ssid;
 
         std::string out;
         serializeJson(doc, out);
         return out;
-    }
-
-    void StatusReport::writeSettings(JsonObject& obj)
-    {
-        // Runs on the report task, so read a locked copy. Config::Engine::toJson
-        // is also the NVS format, so it must keep the password; strip it here
-        // for anything that leaves the device.
-        Config::Engine config = m_settings.snapshot();
-        config.toJson(obj);
-        obj.remove("password");
     }
 }

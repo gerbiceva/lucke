@@ -143,9 +143,4 @@ namespace Handler
         }
         return info;
     }
-
-    void InputManager::toJson(JsonObject& obj)
-    {
-        inputs().toJson(obj);
-    }
 }

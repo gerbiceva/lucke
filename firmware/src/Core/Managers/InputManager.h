@@ -5,7 +5,6 @@
 #include <mutex>
 #include <unordered_map>
 #include <vector>
-#include "Interfaces/Serializable.h"
 #include "Input/SacnReceiver.h"
 #include "Utils/SyncBuffer.h"
 #include "Tasks/TaskExecutor.h"
@@ -18,34 +17,16 @@ namespace Handler
         uint32_t packets = 0;
         bool active = false;   // data within the last 2.5 s
 
-        void toJson(JsonObject& obj)
-        {
-            obj["type"] = "SACN";
-            obj["universe"] = universe;
-            obj["packets"] = packets;
-            obj["active"] = active;
-        }
     };
 
     struct InputsInfo
     {
         std::vector<InputInfo> inputs;
-
-        void toJson(JsonObject& obj)
-        {
-            obj["num_inputs"] = inputs.size();
-            JsonArray arr = obj["inputs"].to<JsonArray>();
-            for (InputInfo& input : inputs)
-            {
-                JsonObject item = arr.add<JsonObject>();
-                input.toJson(item);
-            }
-        }
     };
 
     // Owns the sACN socket and one SyncBuffer per subscribed universe.
     // Packets are routed by the universe field they carry.
-    class InputManager : public Interface::Serializable
+    class InputManager
     {
         void update();
         void reopen();
@@ -65,7 +46,6 @@ namespace Handler
 
         [[nodiscard]] InputsInfo inputs();
 
-        void toJson(JsonObject& obj) override;
     private:
         struct Entry
         {

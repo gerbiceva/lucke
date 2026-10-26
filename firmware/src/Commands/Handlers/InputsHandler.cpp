@@ -1,4 +1,5 @@
 #include "InputsHandler.h"
+#include "API/Wire.h"
 
 namespace Commands
 {
@@ -8,9 +9,8 @@ namespace Commands
 
     Interface::Reply InputsHandler::handle(const JsonDocument& req, const Interface::Context& ctx)
     {
-        JsonDocument doc;
-        JsonObject obj = doc.to<JsonObject>();
-        m_api.inputs().toJson(obj);
-        return doc;
+        Interface::Success reply;
+        Wire::inputs(reply.data.to<JsonArray>(), m_api.inputs());
+        return reply;
     }
 }

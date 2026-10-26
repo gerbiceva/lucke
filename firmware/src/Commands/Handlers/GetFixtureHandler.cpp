@@ -1,29 +1,6 @@
 #include "GetFixtureHandler.h"
-#include <algorithm>
-#include <array>
-#include <string_view>
-
-namespace
-{
-    // One readable field of {"request":"getfixture","id":..,"value": name}.
-    struct Field
-    {
-        std::string_view name;
-        void (*get)(JsonVariant out, const API& api, uint8_t id, const Config::Fixture& config);
-    };
-
-    constexpr std::array c_fields{
-        Field{"universe", [](JsonVariant out, const API&, uint8_t, const Config::Fixture& c) { out.set(c.universe); }},
-        Field{"address",  [](JsonVariant out, const API&, uint8_t, const Config::Fixture& c) { out.set(c.address); }},
-        Field{"preset",   [](JsonVariant out, const API&, uint8_t, const Config::Fixture& c) { out.set(c.selectedPreset); }},
-        Field{"name",     [](JsonVariant out, const API&, uint8_t, const Config::Fixture& c) { out.set(c.name); }},
-        Field{"type",     [](JsonVariant out, const API&, uint8_t, const Config::Fixture& c) { out.set(c.type); }},
-        Field{"leds",     [](JsonVariant out, const API&, uint8_t, const Config::Fixture& c) { out.set(c.numLeds); }},
-        Field{"config",   [](JsonVariant out, const API& api, uint8_t id, const Config::Fixture&) { out.set(*api.fixtureConfig(id)); }},
-        Field{"presets",  [](JsonVariant out, const API& api, uint8_t id, const Config::Fixture&) { out.set(*api.fixturePresets(id)); }},
-        Field{"outputs",  [](JsonVariant out, const API& api, uint8_t id, const Config::Fixture&) { out.set(*api.fixtureOutputs(id)); }},
-    };
-}
+#include "API/Wire.h"
+#include "Commands/ApiReply.h"
 
 namespace Commands
 {
@@ -33,37 +10,36 @@ namespace Commands
 
     Interface::Reply GetFixtureHandler::handle(const JsonDocument& req, const Interface::Context& ctx)
     {
-        JsonDocument doc;
-        JsonObject obj = doc.to<JsonObject>();
+        auto id = optInt(req, "id");
+        if (!id) return std::unexpected(id.error());
+        if (!*id || **id < 0 || **id > 255) return missing("id");
 
-        // No id: every fixture.
-        if (!req["id"].is<uint8_t>())
+        // "include": any of "outputs" and "presets" adds that key to the fixture.
+        bool outputs = false;
+        bool presets = false;
+        const JsonVariantConst include = req["include"];
+        if (!include.isNull())
         {
-            m_api.fixtures().toJson(obj);
-            return doc;
+            if (!include.is<JsonArrayConst>()) return wrongType("include", "an array");
+            for (JsonVariantConst entry : include.as<JsonArrayConst>())
+            {
+                const std::string_view name = entry.is<const char*>() ? entry.as<const char*>() : "";
+                if (name == "outputs") outputs = true;
+                else if (name == "presets") presets = true;
+                else return Interface::fail(Interface::Code::InvalidArg, "include has an unknown entry", "include");
+            }
         }
 
-        const uint8_t id = req["id"].as<uint8_t>();
-        auto fixture = m_api.fixture(id);
-        if (!fixture)
-            return std::unexpected(toString(fixture.error()));
+        const uint8_t fixtureId = static_cast<uint8_t>(**id);
+        auto fixture = m_api.fixture(fixtureId);
+        if (!fixture) return fail(fixture.error());
 
-        // No value: the whole fixture.
-        if (!req["value"].is<const char*>())
-        {
-            fixture->toJson(obj);
-            return doc;
-        }
+        Interface::Success reply;
+        JsonObject obj = reply.data.to<JsonObject>();
+        Wire::fixture(obj, *fixture);
 
-        // One field: {"req": field, "val": ...}
-        const std::string_view field = req["value"].as<const char*>();
-        const auto it = std::ranges::find(c_fields, field, &Field::name);
-        if (it == c_fields.end())
-            return std::unexpected("unknown value");
-
-        doc.clear();
-        doc["req"] = field;
-        it->get(doc["val"].to<JsonVariant>(), m_api, id, fixture->config);
-        return doc;
+        if (outputs) obj["outputs"].set(*m_api.fixtureOutputs(fixtureId));
+        if (presets) obj["presets"].set(*m_api.fixturePresets(fixtureId));
+        return reply;
     }
 }

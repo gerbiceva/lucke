@@ -1,5 +1,5 @@
 #include "OtaHandler.h"
-#include <algorithm>
+#include "Commands/ApiReply.h"
 
 namespace Commands
 {
@@ -9,14 +9,19 @@ namespace Commands
 
     Interface::Reply OtaHandler::handle(const JsonDocument& req, const Interface::Context& ctx)
     {
-        // {"request":"ota"} or {"request":"ota","minutes":10}; 1..30, default 5.
-        const uint32_t minutes = std::clamp<uint32_t>(req["minutes"] | 5u, 1, 30);
+        // {"cmd":"ota"} or {"cmd":"ota","minutes":10}; 1..30, default 5.
+        auto requested = optInt(req, "minutes");
+        if (!requested) return std::unexpected(requested.error());
+        const int32_t minutes = requested->value_or(5);
+        if (minutes < 1 || minutes > 30)
+            return Interface::fail(Interface::Code::OutOfRange, "minutes must be 1-30", "minutes");
+
         m_api.enableOta(minutes, ctx.from);
 
-        JsonDocument doc;
-        doc["status"] = "ota open";
-        doc["minutes"] = minutes;
-        doc["port"] = OTA_PORT;
-        return doc;
+        Interface::Success reply;
+        JsonObject data = reply.data.to<JsonObject>();
+        data["minutes"] = minutes;
+        data["port"] = OTA_PORT;
+        return reply;
     }
 }

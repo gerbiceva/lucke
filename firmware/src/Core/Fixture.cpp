@@ -7,6 +7,46 @@
 namespace
 {
     constexpr Utils::Log s_log{"FIXTURE"};
+
+    using Interface::SettingDesc;
+
+    const SettingDesc* findSetting(const Interface::Output& output, std::string_view key)
+    {
+        const auto settings = output.settings();
+        const auto it = std::ranges::find(settings, key, &SettingDesc::key);
+        return it != settings.end() ? &*it : nullptr;
+    }
+
+    const char* typeName(SettingDesc::Type type)
+    {
+        switch (type)
+        {
+            case SettingDesc::Type::Bool: return "bool";
+            case SettingDesc::Type::Int:  return "int";
+            case SettingDesc::Type::Enum: return "enum";
+        }
+        return "bool";
+    }
+
+    // {key, type, value, min/max or options, writable, requires_reboot}
+    void describeSetting(JsonObject entry, const Interface::Output& output, const SettingDesc& desc)
+    {
+        entry["key"] = desc.key;
+        entry["type"] = typeName(desc.type);
+        output.getSetting(desc.key, entry["value"].to<JsonVariant>());
+        if (desc.type == SettingDesc::Type::Int)
+        {
+            entry["min"] = desc.min;
+            entry["max"] = desc.max;
+        }
+        else if (desc.type == SettingDesc::Type::Enum)
+        {
+            JsonArray options = entry["options"].to<JsonArray>();
+            for (std::string_view option : desc.options) options.add(option);
+        }
+        entry["writable"] = desc.writable;
+        entry["requires_reboot"] = desc.requiresReboot;
+    }
 }
 
 Fixture::Fixture() 
@@ -99,6 +139,33 @@ void Fixture::fromJson(const std::string& json)
     Utils::Json::updateElement<uint8_t>(doc, "presetIndex", m_config.selectedPreset);
 
     setName(name);
+
+    {
+        std::scoped_lock lock(m_mutex);
+        JsonArray saved = m_savedOutputs.to<JsonArray>();
+        const JsonArrayConst stored = doc["outputs"].as<JsonArrayConst>();
+        for (size_t i = 0; i < m_outputs.size(); i++)
+        {
+            JsonObject entry = saved.add<JsonObject>();
+            for (JsonPairConst kv : stored[i].as<JsonObjectConst>())
+            {
+                const SettingDesc* desc = findSetting(*m_outputs[i], kv.key().c_str());
+                if (!desc || !desc->writable) continue;
+
+                entry[kv.key().c_str()].set(kv.value());
+                // A requiresReboot value was already used to build the output.
+                if (!desc->requiresReboot) m_outputs[i]->applySetting(kv.key().c_str(), kv.value());
+            }
+        }
+
+        // Records from before output settings kept the LED count at the top level.
+        if (!m_outputs.empty() && findSetting(*m_outputs[0], "num_leds") && saved[0]["num_leds"].isNull() &&
+            doc["num_leds"].is<int>())
+        {
+            saved[0]["num_leds"] = doc["num_leds"];
+        }
+    }
+
     setPreset(m_config.selectedPreset);
 }
 
@@ -112,21 +179,39 @@ JsonDocument Fixture::toJsonDoc()
     JsonDocument doc;
     JsonObject obj = doc.to<JsonObject>();
     toJson(obj);
+
+    std::scoped_lock lock(m_mutex);
+    if (!m_savedOutputs.isNull()) obj["outputs"].set(m_savedOutputs);
     return doc;
 }
 
-JsonDocument Fixture::configJson()
+bool Fixture::setOutputSetting(size_t output, std::string_view key, JsonVariantConst value)
 {
     std::scoped_lock lock(m_mutex);
-    JsonDocument doc = m_config.toJsonDoc();
-    doc["footprint"] = m_lastOffset;
-    JsonArray outputs = doc["outputs"].to<JsonArray>();
-    for (auto& o : m_outputs)
+    if (output >= m_outputs.size()) return false;
+    Interface::Output& out = *m_outputs[output];
+    const SettingDesc* desc = findSetting(out, key);
+    if (!desc) return false;
+
+    JsonArray saved = m_savedOutputs.isNull() ? m_savedOutputs.to<JsonArray>() : m_savedOutputs.as<JsonArray>();
+    while (saved.size() <= output) saved.add<JsonObject>();
+    JsonObject entry = saved[output];
+
+    // Compare with what is saved, or with the live value if nothing is.
+    JsonDocument live;
+    if (entry[key].isNull())
     {
-        JsonObject entry = outputs.add<JsonObject>();
-        o->toJson(entry);
+        JsonVariant liveValue = live.to<JsonVariant>();
+        out.getSetting(key, liveValue);
     }
-    return doc;
+    std::string before, after;
+    serializeJson(entry[key].isNull() ? live.as<JsonVariantConst>() : JsonVariantConst(entry[key]), before);
+    serializeJson(value, after);
+    const bool changed = before != after;
+
+    entry[key].set(value);
+    if (changed && !desc->requiresReboot) out.applySetting(key, value);
+    return changed;
 }
 
 JsonDocument Fixture::outputsJson()
@@ -139,18 +224,28 @@ JsonDocument Fixture::outputsJson()
 
     for (size_t j = 0; j < m_outputs.size(); j++)
     {
+        const Interface::Output& output = *m_outputs[j];
         JsonObject entry = outputs.add<JsonObject>();
-        m_outputs[j]->describe(entry);
+        entry["index"] = j;
+        entry["type"] = output.typeName();
+        entry["name"] = output.name();
+        if (output.hardwarePin() >= 0) entry["hardware_pin"] = output.hardwarePin();
 
-        // footprint is per-preset: index i holds the footprint under preset i.
-        JsonArray fps = entry["footprint"].to<JsonArray>();
+        // Per preset: index i holds the footprint under preset i.
+        JsonArray fps = entry["footprints"].to<JsonArray>();
         for (JsonObjectConst g : groups)
         {
             JsonArrayConst settings = g["settings"].as<JsonArrayConst>();
             JsonDocument s;
             if (j < settings.size())
                 s.set(settings[j]);
-            fps.add(m_outputs[j]->footprintFor(s));
+            fps.add(output.footprintFor(s));
+        }
+
+        JsonArray settings = entry["settings"].to<JsonArray>();
+        for (const SettingDesc& desc : output.settings())
+        {
+            describeSetting(settings.add<JsonObject>(), output, desc);
         }
     }
     return doc;
@@ -160,8 +255,7 @@ JsonDocument Fixture::presetsJson()
 {
     std::scoped_lock lock(m_mutex);
     JsonDocument doc;
-    doc["selected"] = m_config.selectedPreset;
-    doc["presets"] = m_jsonPresets;
+    doc.set(m_jsonPresets["groups"]);
     return doc;
 }
 
@@ -250,18 +344,6 @@ std::string Fixture::getName() const
 const std::string& Fixture::getType() const 
 { 
     return m_config.type; 
-}
-
-void Fixture::setLedCount(uint16_t numLeds)
-{
-    std::scoped_lock lock(m_mutex);
-    m_config.numLeds = numLeds;
-}
-
-uint16_t Fixture::ledCount() const
-{
-    std::scoped_lock lock(m_mutex);
-    return m_config.numLeds;
 }
 
 void Fixture::setHighlight(bool on)

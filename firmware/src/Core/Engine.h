@@ -6,12 +6,13 @@
 #include "Network/BleTransport.h"
 #include "Commands/CommandDispatcher.h"
 #include "Commands/Handlers/DescribeHandler.h"
+#include "Commands/Handlers/FixturesHandler.h"
 #include "Commands/Handlers/GetFixtureHandler.h"
 #include "Commands/Handlers/SetFixtureHandler.h"
 #include "Commands/Handlers/InputsHandler.h"
-#include "Commands/Handlers/WifiConfigHandler.h"
+#include "Commands/Handlers/WifiHandler.h"
 #include "Commands/Handlers/RebootHandler.h"
-#include "Commands/Handlers/BoolSettingHandler.h"
+#include "Commands/Handlers/SettingsHandler.h"
 #include "Commands/Handlers/FactoryResetHandler.h"
 #include "Commands/Handlers/LogsHandler.h"
 #include "Commands/Handlers/OtaHandler.h"
@@ -68,15 +69,16 @@ private:
 
     Commands::CommandDispatcher m_dispatcher;
     Commands::DescribeHandler m_describeHandler;
+    Commands::FixturesHandler m_fixturesHandler;
     Commands::GetFixtureHandler m_getFixtureHandler;
     Commands::SetFixtureHandler m_setFixtureHandler;
     Commands::InputsHandler m_inputsHandler;
-    Commands::WifiConfigHandler m_wifiConfigHandler;
+    Commands::WifiHandler m_getWifiHandler;
+    Commands::WifiHandler m_setWifiHandler;
     Commands::RebootHandler m_rebootHandler;
     Commands::FactoryResetHandler m_factoryResetHandler;
-    Commands::BoolSettingHandler m_serialReportHandler;
-    Commands::BoolSettingHandler m_wirelessReportHandler;
-    Commands::BoolSettingHandler m_wifiAnimationHandler;
+    Commands::SettingsHandler m_getSettingsHandler;
+    Commands::SettingsHandler m_setSettingsHandler;
     Commands::LogsHandler m_logsHandler;
     Commands::OtaHandler m_otaHandler;
 

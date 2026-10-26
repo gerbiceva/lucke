@@ -4,13 +4,17 @@
 
 namespace Commands
 {
-    class WifiConfigHandler : public Interface::CommandHandler
+    // "get_wifi" and "set_wifi".
+    class WifiHandler : public Interface::CommandHandler
     {
     public:
-        explicit WifiConfigHandler(API& api);
+        enum class Mode { Get, Set };
+
+        WifiHandler(API& api, Mode mode);
         Interface::Reply handle(const JsonDocument& req, const Interface::Context& ctx) override;
 
     private:
         API& m_api;
+        Mode m_mode;
     };
 }

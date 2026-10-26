@@ -4,6 +4,7 @@
 
 namespace Commands
 {
+    // "get_fixture": one fixture, optionally with its outputs and presets.
     class GetFixtureHandler : public Interface::CommandHandler
     {
     public:

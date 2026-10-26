@@ -11,27 +11,28 @@ More information about PlatformIO Unit Testing:
 - https://docs.platformio.org/en/latest/advanced/unit-testing/index.html
 
 
-request (full reference with examples: docs/api.md):
+cmd (full reference with examples: docs/apiv2.md):
  - describe
  - fixtures
+ - get_fixture
+   - id[number]
+   - include[array of "outputs", "presets"]
+ - set_fixture
+   - id[number]
+   - universe[number], address[number], preset_index[number]
+   - name[string], highlight[bool]
+   - output[number] + settings[object]: output settings by key
  - inputs
+ - get_wifi
+ - set_wifi
+   - ssid[string], password[string], confirm[true]
+ - get_settings
+ - set_settings
+   - serial_report[bool], wireless_report[bool], wifi_animation[bool]
  - reboot
  - factory_reset
- - serial_report_task
-   - value[bool]
- - wireless_report_task
-   - value[bool]
- - wifi_animation
-   - value[bool]
- - wifi
-   - ssid[string]
-   - password[string]
- - getfixture
-   - id[number]
- - setfixture
-   - id[number],
-     - universe[number]
-     - address[number]
-     - presetIndex[number]
-     - name[string]
-     - highlight[bool] (toggles, whatever the value)
+   - confirm[true]
+ - ota
+   - minutes[number]
+ - logs
+   - since[number], boot_id[string]

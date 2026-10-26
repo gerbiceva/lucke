@@ -36,56 +36,48 @@ class ESPClient:
         except json.JSONDecodeError:
             return line
 
-    # ---- commands ----
+    # ---- commands (protocol 2, see docs/apiv2.md) ----
     def describe(self):
-        return self.send({"request": "describe"})
+        return self.send({"cmd": "describe"})
 
     def fixtures(self):
-        return self.send({"request": "fixtures"})
+        return self.send({"cmd": "fixtures"})
 
-    def get_fixture(self, fid: int, field: str = None):
-        req = {"request": "getfixture", "id": fid}
-        if field:
-            req["value"] = field
+    def get_fixture(self, fid: int, include: list = None):
+        req = {"cmd": "get_fixture", "id": fid}
+        if include:
+            req["include"] = include
         return self.send(req)
 
     def set_fixture(self, fid: int, **kwargs):
-        return self.send({"request": "setfixture", "id": fid, **kwargs})
+        return self.send({"cmd": "set_fixture", "id": fid, **kwargs})
+
+    def set_output_setting(self, fid: int, output: int, key: str, value):
+        return self.set_fixture(fid, output=output, settings={key: value})
 
     def inputs(self):
-        return self.send({"request": "inputs"})
+        return self.send({"cmd": "inputs"})
 
-    def wifi(self, ssid: str = None, password: str = None):
-        req = {"request": "wifi"}
-        if ssid:
-            req["ssid"] = ssid
-        if password:
+    def get_wifi(self):
+        return self.send({"cmd": "get_wifi"})
+
+    def set_wifi(self, ssid: str, password: str = None):
+        req = {"cmd": "set_wifi", "ssid": ssid, "confirm": True}
+        if password is not None:
             req["password"] = password
         return self.send(req)
 
     def reboot(self):
-        return self.send({"request": "reboot"}, timeout=2.0)
+        return self.send({"cmd": "reboot"}, timeout=2.0)
 
     def factory_reset(self):
-        return self.send({"request": "factory_reset"}, timeout=2.0)
+        return self.send({"cmd": "factory_reset", "confirm": True}, timeout=2.0)
 
-    def serial_report(self, value: bool = None):
-        req = {"request": "serial_report_task"}
-        if value is not None:
-            req["value"] = value
-        return self.send(req)
+    def get_settings(self):
+        return self.send({"cmd": "get_settings"})
 
-    def wireless_report(self, value: bool = None):
-        req = {"request": "wireless_report_task"}
-        if value is not None:
-            req["value"] = value
-        return self.send(req)
-
-    def wifi_animation(self, value: bool = None):
-        req = {"request": "wifi_animation"}
-        if value is not None:
-            req["value"] = value
-        return self.send(req)
+    def set_settings(self, **kwargs):
+        return self.send({"cmd": "set_settings", **kwargs})
 
 
 def pretty(obj):
@@ -119,11 +111,15 @@ def main():
     p.add_argument("--set-address", nargs="+", metavar="V")
     p.add_argument("--set-preset", nargs="+", metavar="V")
     p.add_argument("--set-name", nargs="+", metavar="V")
+    p.add_argument("--outputs", type=int, metavar="ID", help="show a fixture's outputs and their settings")
+    p.add_argument("--set-setting", nargs=4, metavar=("ID", "OUTPUT", "KEY", "VALUE"),
+                   help="VALUE is parsed as JSON (true, 120, \"smooth\")")
 
     p.add_argument("--wifi", nargs="*", metavar=("SSID", "PASS"))
-    p.add_argument("--serial-report", nargs="?", const="query", metavar="BOOL")
-    p.add_argument("--wireless-report", nargs="?", const="query", metavar="BOOL")
-    p.add_argument("--wifi-animation", nargs="?", const="query", metavar="BOOL")
+    p.add_argument("--settings", action="store_true")
+    p.add_argument("--serial-report", metavar="BOOL")
+    p.add_argument("--wireless-report", metavar="BOOL")
+    p.add_argument("--wifi-animation", metavar="BOOL")
 
     args = p.parse_args()
     c = ESPClient(args.ip)
@@ -160,29 +156,36 @@ def main():
 
     if args.set_preset:
         fid, val = parse_id_value(args.set_preset)
-        pretty(c.set_fixture(fid, presetIndex=val))
+        pretty(c.set_fixture(fid, preset_index=val))
 
     if args.set_name:
         fid, val = parse_id_value(args.set_name, cast=str)
         pretty(c.set_fixture(fid, name=val))
 
+    if args.outputs is not None:
+        pretty(c.get_fixture(args.outputs, include=["outputs"]))
+
+    if args.set_setting:
+        fid, output, key, value = args.set_setting
+        pretty(c.set_output_setting(int(fid), int(output), key, json.loads(value)))
+
     if args.wifi is not None:
-        if len(args.wifi) >= 2:
-            pretty(c.wifi(args.wifi[0], args.wifi[1]))
+        if len(args.wifi) >= 1:
+            pretty(c.set_wifi(args.wifi[0], args.wifi[1] if len(args.wifi) > 1 else None))
         else:
-            pretty(c.wifi())
+            pretty(c.get_wifi())
 
-    if args.serial_report is not None:
-        val = None if args.serial_report == "query" else args.serial_report.lower() in ("true", "1")
-        pretty(c.serial_report(val))
+    if args.settings:
+        pretty(c.get_settings())
 
-    if args.wireless_report is not None:
-        val = None if args.wireless_report == "query" else args.wireless_report.lower() in ("true", "1")
-        pretty(c.wireless_report(val))
-
-    if args.wifi_animation is not None:
-        val = None if args.wifi_animation == "query" else args.wifi_animation.lower() in ("true", "1")
-        pretty(c.wifi_animation(val))
+    switches = {
+        "serial_report": args.serial_report,
+        "wireless_report": args.wireless_report,
+        "wifi_animation": args.wifi_animation,
+    }
+    switches = {k: v.lower() in ("true", "1") for k, v in switches.items() if v is not None}
+    if switches:
+        pretty(c.set_settings(**switches))
 
 
 if __name__ == "__main__":

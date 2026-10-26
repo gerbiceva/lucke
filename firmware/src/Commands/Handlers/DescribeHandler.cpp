@@ -1,4 +1,5 @@
 #include "DescribeHandler.h"
+#include "API/Wire.h"
 
 namespace Commands
 {
@@ -8,9 +9,8 @@ namespace Commands
 
     Interface::Reply DescribeHandler::handle(const JsonDocument& req, const Interface::Context& ctx)
     {
-        JsonDocument doc;
-        JsonObject obj = doc.to<JsonObject>();
-        m_api.describe().toJson(obj);
-        return doc;
+        Interface::Success reply;
+        Wire::describe(reply.data.to<JsonObject>(), m_api.describe());
+        return reply;
     }
 }

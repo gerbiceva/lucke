@@ -11,8 +11,8 @@ namespace Commands
         // Restarts after a delay, so the dispatcher still gets the reply out.
         m_api.reboot(ctx.from);
 
-        JsonDocument doc;
-        doc["status"] = "rebooting";
-        return doc;
+        Interface::Success reply;
+        reply.rebooting = true;
+        return reply;
     }
 }
