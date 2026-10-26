@@ -45,7 +45,7 @@ namespace Commands
             return std::unexpected("missing cmd");
         }
 
-        auto it = m_handlers.find(cmd);
+        auto it = m_handlers.find(std::string_view{cmd});
         if (it == m_handlers.end())
         {
             s_log.warn("unknown command: %s", cmd);

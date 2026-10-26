@@ -1,4 +1,29 @@
 #include "GetFixtureHandler.h"
+#include <algorithm>
+#include <array>
+#include <string_view>
+
+namespace
+{
+    // One readable field of {"request":"getfixture","id":..,"value": name}.
+    struct Field
+    {
+        std::string_view name;
+        void (*get)(JsonVariant out, const API& api, uint8_t id, const Config::Fixture& config);
+    };
+
+    constexpr std::array c_fields{
+        Field{"universe", [](JsonVariant out, const API&, uint8_t, const Config::Fixture& c) { out.set(c.universe); }},
+        Field{"address",  [](JsonVariant out, const API&, uint8_t, const Config::Fixture& c) { out.set(c.address); }},
+        Field{"preset",   [](JsonVariant out, const API&, uint8_t, const Config::Fixture& c) { out.set(c.selectedPreset); }},
+        Field{"name",     [](JsonVariant out, const API&, uint8_t, const Config::Fixture& c) { out.set(c.name); }},
+        Field{"type",     [](JsonVariant out, const API&, uint8_t, const Config::Fixture& c) { out.set(c.type); }},
+        Field{"leds",     [](JsonVariant out, const API&, uint8_t, const Config::Fixture& c) { out.set(c.numLeds); }},
+        Field{"config",   [](JsonVariant out, const API& api, uint8_t id, const Config::Fixture&) { out.set(*api.fixtureConfig(id)); }},
+        Field{"presets",  [](JsonVariant out, const API& api, uint8_t id, const Config::Fixture&) { out.set(*api.fixturePresets(id)); }},
+        Field{"outputs",  [](JsonVariant out, const API& api, uint8_t id, const Config::Fixture&) { out.set(*api.fixtureOutputs(id)); }},
+    };
+}
 
 namespace Commands
 {
@@ -31,20 +56,14 @@ namespace Commands
         }
 
         // One field: {"req": field, "val": ...}
-        const std::string field = req["value"].as<const char*>();
-        const Config::Fixture& config = fixture->config;
+        const std::string_view field = req["value"].as<const char*>();
+        const auto it = std::ranges::find(c_fields, field, &Field::name);
+        if (it == c_fields.end())
+            return std::unexpected("unknown value");
+
         doc.clear();
         doc["req"] = field;
-        if (field == "universe")      doc["val"] = config.universe;
-        else if (field == "address")  doc["val"] = config.address;
-        else if (field == "preset")   doc["val"] = config.selectedPreset;
-        else if (field == "name")     doc["val"] = config.name;
-        else if (field == "type")     doc["val"] = config.type;
-        else if (field == "leds")     doc["val"] = config.numLeds;
-        else if (field == "config")   doc["val"] = *m_api.fixtureConfig(id);
-        else if (field == "presets")  doc["val"] = *m_api.fixturePresets(id);
-        else if (field == "outputs")  doc["val"] = *m_api.fixtureOutputs(id);
-        else return std::unexpected("unknown value");
+        it->get(doc["val"].to<JsonVariant>(), m_api, id, fixture->config);
         return doc;
     }
 }

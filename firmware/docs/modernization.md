@@ -18,7 +18,7 @@ commented-out BLE transport, the commented-out grid output.
 | 3 | Raw buffers → `std::span` / `std::array` | ✅ |
 | 4 | Macros → `constexpr` | ✅ |
 | 5 | `enum` → `enum class` | ✅ |
-| 6 | Command dispatch | 🟡 |
+| 6 | Command dispatch | ✅ |
 | 7 | Parameters and signatures | ✅ |
 | 8 | Concurrency | 🟡 |
 | 9 | Small C++20/23 idioms | 🟡 |
@@ -70,16 +70,15 @@ timing table.
 `Utils::Level`, `Tasks::TaskId` (strong id, `Invalid = 0` never handed out),
 `RenderLoop::Mode`.
 
-## 6. Command dispatch 🟡
+## 6. Command dispatch ✅
 
 - ✅ `EngineConfigHandler` (re-dispatched on `"request"` with a `strcmp`
   chain) split into `FactoryResetHandler` and one `BoolSettingHandler` per
   setting, built with `{name, bool Config::Engine::*member, API setter}`.
-- ⬜ `Commands/GetFixtureHandler.cpp` — `if (field == "...")` chain → table of
-  `{name, lambda}`.
-- ⬜ `Commands/CommandDispatcher.h` — `unordered_map<std::string, ...>` builds
-  a `std::string` per lookup → transparent hash / `std::equal_to<>`, or a
-  small sorted `std::array` (11 commands).
+- ✅ `Commands/Handlers/GetFixtureHandler.cpp` — `if (field == "...")` chain →
+  `constexpr` table of `{name, getter}` searched with `ranges::find`.
+- ✅ `Commands/CommandDispatcher.h` — handler map uses a transparent hash +
+  `std::equal_to<>`, so `find(string_view)` no longer builds a `std::string`.
 - ✅ "Serialize doc → send" repeated in most handlers →
   `Interface::Transport::send(const JsonDocument&)`.
 - ✅ Handlers return `Interface::Reply` (`std::expected<JsonDocument,
