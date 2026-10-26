@@ -124,9 +124,9 @@ fallible setters, `Config::Engine::version` as `static constexpr`.
   `TaskStatus`; `SacnParser::getSeqDiffs` (whole class replaced);
   `Output::appendBasicInfo`, `Output::bind`; old Wi-Fi credentials comment;
   `RESPONSE_PORT`; `helper/sender.py`.
-- ⬜ `Net::Wifi::m_connection_status_callback` and its commented-out API.
-- ⬜ `Utils::Storage` — `putChar/UChar/UShort`, the getters and the whole
-  `putIfNExist*` family are unused (only `isKey/putString/getString/clear`).
+- ✅ `Net::Wifi::m_connection_status_callback` and its commented-out API.
+- ✅ `Utils::Storage` — `putChar/UChar/UShort`, their getters and the whole
+  `putIfNExist*` family; only `isKey/putString/getString/clear` remain.
 - ⬜ Commented-out BLE transport (`Network/BleTransport.*`), in git history.
 
 ---
