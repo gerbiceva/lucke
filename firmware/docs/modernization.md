@@ -13,21 +13,21 @@ commented-out BLE transport, the commented-out grid output.
 
 | # | Area | Status |
 |---|------|--------|
-| 1 | Hand-rolled utilities → standard library | 🟡 |
+| 1 | Hand-rolled utilities → standard library | ✅ |
 | 2 | Raw `new` → RAII ownership | ✅ |
 | 3 | Raw buffers → `std::span` / `std::array` | ✅ |
 | 4 | Macros → `constexpr` | ✅ |
 | 5 | `enum` → `enum class` | ✅ |
 | 6 | Command dispatch | ✅ |
 | 7 | Parameters and signatures | ✅ |
-| 8 | Concurrency | 🟡 |
-| 9 | Small C++20/23 idioms | 🟡 |
+| 8 | Concurrency | ✅ |
+| 9 | Small C++20/23 idioms | ✅ |
 | 10 | Dead code | 🟡 |
 | — | Bugs found along the way | 🟡 |
 
 ---
 
-## 1. Hand-rolled utilities → standard library 🟡
+## 1. Hand-rolled utilities → standard library ✅
 
 | Status | Where | What |
 |---|---|---|
@@ -35,7 +35,7 @@ commented-out BLE transport, the commented-out grid output.
 | ✅ | `Utils/StringUtils.h` | Deleted (was unused). |
 | ✅ | `Utils/PresetMaker.h` | `Presets::c_groupPresets<N>`: one `constexpr` writer run twice (measure, then fill an exactly-sized `std::array`), stored in flash. The old runtime builder overflowed its fixed 1024-byte buffer from N = 120 (e.g. 300 LEDs); it's kept commented out below the new code. Output is byte-identical for every N it could handle. |
 | ✅ | `Utils/Logger.h` — `printf` | C-variadic `Log::info/warn/...` with `[[gnu::format(printf, 2, 3)]]` + `-Werror=format`: a format/argument mismatch is a compile error. `std::format` was tried and measured at +411 KB flash (float/locale/unicode tables), so printf stays. |
-| ⬜ | `Output/Strip1D.h` — `toJson` | `char type[24]; snprintf(...)` → `std::format("{}-1D", TDriver::kind)` (or build the string at compile time). |
+| ✅ | `Output/Strip1D.h` — `toJson` | `char type[24]; snprintf(...)` → `"<kind>-1D"` built at compile time into a `static constexpr std::array` (`std::format` is out, see the Logger row). |
 
 ## 2. Raw `new` → RAII ownership ✅
 
@@ -92,7 +92,7 @@ Virtual destructors on all interfaces, `JsonUtils` templates over
 `JsonVariantConst`, `const&` / moved strings, `[[nodiscard]]` on getters and
 fallible setters, `Config::Engine::version` as `static constexpr`.
 
-## 8. Concurrency 🟡
+## 8. Concurrency ✅
 
 - ✅ `std::lock_guard<std::mutex>` → `std::scoped_lock` (CTAD) everywhere.
 - ✅ `InputHandler`: three parallel maps → one
@@ -100,12 +100,12 @@ fallible setters, `Config::Engine::version` as `static constexpr`.
 - ✅ Locking model documented in `current_architecture.md` §7 (dispatcher
   mutex, recursive fixture lock held across change + resubscribe,
   `SettingsStore::snapshot()` / `update()`).
-- ⬜ `Handlers/PinHandler.cpp` — `find == end` + `emplace` →
+- ✅ `Core/Managers/PinManager.cpp` — `find == end` + `emplace` →
   `return m_usedPins.insert(pin).second;`.
-- ⬜ `Tasks/TaskExecutor.h` — `std::function` → `std::move_only_function`
-  would allow move-only captures. Not needed by any task today.
+- ✅ `Tasks/TaskExecutor.h` — `std::function` → `std::move_only_function`,
+  so tasks may capture move-only state.
 
-## 9. Small C++20/23 idioms 🟡
+## 9. Small C++20/23 idioms ✅
 
 - ✅ `ranges::find` with projection in `FixtureHandler::get`.
 - ✅ `Tasks::Manager` reduced to `spawnTask` (checks `xTaskCreate`).
@@ -113,9 +113,9 @@ fallible setters, `Config::Engine::version` as `static constexpr`.
 - ✅ C-style casts → `reinterpret_cast` (`WS2815`, FastLED driver).
 - ✅ C++20 class-type template parameter (`Fixtures::FixedString`) for fixture
   type names.
-- ⬜ `Hardware/WS2815.h` — anonymous struct in a union is a GNU extension
-  relying on type punning → `struct RGB { uint8_t r, g, b; }` +
-  `static_assert(sizeof(RGB) == 3)` (check `raw` users first).
+- ✅ `Hardware/WS2815.h` — anonymous struct in a union (GNU extension, type
+  punning) → `struct RGB { uint8_t r, g, b; }` + `static_assert` on size and
+  layout. `raw` had no users.
 
 ## 10. Dead code 🟡
 
