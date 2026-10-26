@@ -4,7 +4,7 @@
 #include "Core/Config/EngineConfig.h"
 #include "Network/Wifi.h"
 #include "Network/UdpBroadcaster.h"
-#include "Handlers/FixtureHandler.h"
+#include "Core/Managers/FixtureManager.h"
 #include "Services/StatusReport.h"
 #include "Tasks/TaskExecutor.h"
 
@@ -16,7 +16,7 @@ namespace Services
     class Telemetry
     {
     public:
-        Telemetry(const Config::Engine& config, const Net::Wifi& wifi, const Handler::FixtureHandler& fixtures,
+        Telemetry(const Config::Engine& config, const Net::Wifi& wifi, const Handler::FixtureManager& fixtures,
                   StatusReport& report, Tasks::Manager& tasks);
 
         // Opens the UDP sockets and spawns the heartbeat and report tasks,
@@ -36,7 +36,7 @@ namespace Services
 
         const Config::Engine& m_config;
         const Net::Wifi& m_wifi;
-        const Handler::FixtureHandler& m_fixtures;
+        const Handler::FixtureManager& m_fixtures;
         StatusReport& m_report;
         Tasks::Manager& m_tasks;
 
@@ -44,7 +44,7 @@ namespace Services
         Net::UdpBroadcaster m_udpReport;
 
         // The report task runs forever and checks these: deleting it from
-        // outside could kill it while it holds a lock (InputHandler's mutex
+        // outside could kill it while it holds a lock (InputManager's mutex
         // during build()), freezing whoever needs that lock next.
         std::atomic<bool> m_serialReport{false};
         std::atomic<bool> m_wirelessReport{false};

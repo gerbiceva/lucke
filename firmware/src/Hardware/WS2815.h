@@ -14,15 +14,10 @@ namespace Core
 {
     struct RGB
     {
-        union
-        {
-            struct
-            {
-                uint8_t r, g, b;
-            };
-            uint8_t raw[3];
-        };
+        uint8_t r, g, b;
     };
+    // Pixel buffers are reinterpreted as raw bytes (DMA) and as FastLED's CRGB.
+    static_assert(sizeof(RGB) == 3 && std::is_trivially_copyable_v<RGB> && std::is_standard_layout_v<RGB>);
 
     // Drives a WS2815 strip over SPI. The pixel buffer is borrowed — the
     // caller (LEDBase) owns it and must keep it alive for this object's

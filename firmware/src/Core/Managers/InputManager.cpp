@@ -1,4 +1,4 @@
-#include "InputHandler.h"
+#include "InputManager.h"
 #include <algorithm>
 #include "Utils/Logger.h"
 
@@ -17,11 +17,11 @@ namespace
 
 namespace Handler
 {
-    InputHandler::InputHandler(Tasks::Manager& tasks)
+    InputManager::InputManager(Tasks::Manager& tasks)
         : m_tasks(tasks)
     {}
 
-    void InputHandler::start()
+    void InputManager::start()
     {
         // No delay in the loop: receive() blocks until traffic arrives.
         m_tasks.spawnTask("input_update", [this]() {
@@ -32,7 +32,7 @@ namespace Handler
         }, 3, 30000);
     }
 
-    std::shared_ptr<SyncBuffer> InputHandler::subscribe(uint16_t uni)
+    std::shared_ptr<SyncBuffer> InputManager::subscribe(uint16_t uni)
     {
         std::scoped_lock lock(m_mutex);
         auto [it, inserted] = m_universes.try_emplace(uni);
@@ -42,7 +42,7 @@ namespace Handler
         return it->second.buffer;
     }
 
-    void InputHandler::unsubscribe(uint16_t uni)
+    void InputManager::unsubscribe(uint16_t uni)
     {
         std::scoped_lock lock(m_mutex);
         auto it = m_universes.find(uni);
@@ -55,12 +55,12 @@ namespace Handler
         }
     }
 
-    void InputHandler::reconnect()
+    void InputManager::reconnect()
     {
         m_reopen.store(true);
     }
 
-    void InputHandler::reopen()
+    void InputManager::reopen()
     {
         std::scoped_lock lock(m_mutex);
         m_sacn.close();
@@ -77,7 +77,7 @@ namespace Handler
         }
     }
 
-    void InputHandler::update()
+    void InputManager::update()
     {
         if (m_reopen.exchange(false)) reopen();
         checkLoss();
@@ -116,7 +116,7 @@ namespace Handler
         }
     }
 
-    void InputHandler::checkLoss()
+    void InputManager::checkLoss()
     {
         const TickType_t now = xTaskGetTickCount();
         if (now - m_lastLossCheck < c_lossCheckInterval) return;
@@ -132,7 +132,7 @@ namespace Handler
         }
     }
 
-    InputsInfo InputHandler::inputs()
+    InputsInfo InputManager::inputs()
     {
         std::scoped_lock lock(m_mutex);
         InputsInfo info;
@@ -144,7 +144,7 @@ namespace Handler
         return info;
     }
 
-    void InputHandler::toJson(JsonObject& obj)
+    void InputManager::toJson(JsonObject& obj)
     {
         inputs().toJson(obj);
     }

@@ -19,7 +19,7 @@ namespace Fixtures
     };
 
     // The LED count comes from the stored record, or the default passed to
-    // addFixture (see FixtureHandler::addFixture).
+    // addFixture (see FixtureManager::addFixture).
     template <FixedString Type, typename TDriver, uint8_t Pin>
     struct Strip : public Fixture
     {

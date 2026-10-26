@@ -6,7 +6,7 @@ namespace Commands
         : m_api(api)
     {}
 
-    void LogsHandler::handle(JsonDocument& req, Interface::Transport& transport)
+    Interface::Reply LogsHandler::handle(const JsonDocument& req, const Interface::Context& ctx)
     {
         // {"request":"logs"} for everything kept, or "since": <next from
         // the previous reply> for only what's new.
@@ -15,9 +15,6 @@ namespace Commands
         JsonDocument doc;
         JsonObject obj = doc.to<JsonObject>();
         m_api.logs(since).toJson(obj);
-
-        std::string response;
-        serializeJson(doc, response);
-        transport.send(response);
+        return doc;
     }
 }

@@ -6,7 +6,7 @@
 #include <optional>
 #include <type_traits>
 #include "Core/Fixture.h"
-#include "Handlers/InputHandler.h"
+#include "Core/Managers/InputManager.h"
 #include "Interfaces/Serializable.h"
 #include "Interfaces/Deserializable.h"
 #include "Services/SettingsStore.h"
@@ -29,7 +29,7 @@ namespace Handler
         }
     };
 
-    class FixtureHandler : public Interface::Serializable, public Interface::Deserializable
+    class FixtureManager : public Interface::Serializable, public Interface::Deserializable
     {
         void _addFixture(std::unique_ptr<Fixture> fix, const std::optional<std::string>& stored);
         // The record for the fixture about to be added, if any.
@@ -43,7 +43,7 @@ namespace Handler
         void resubscribe(Fixture* fix, uint16_t oldBase, uint8_t oldCount);
 
     public:
-        FixtureHandler(InputHandler& inputs, Services::SettingsStore& settings);
+        FixtureManager(InputManager& inputs, Services::SettingsStore& settings);
 
         static constexpr uint16_t c_maxLeds = 1000;
 
@@ -88,7 +88,7 @@ namespace Handler
         JsonDocument toJsonDoc() override;
 
     private:
-        InputHandler& m_inputs;
+        InputManager& m_inputs;
         Services::SettingsStore& m_settings;
         std::vector<std::unique_ptr<Fixture>> m_fixtures;
         uint8_t m_nextId = 0;

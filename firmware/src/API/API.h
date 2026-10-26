@@ -13,8 +13,8 @@
 #include <ArduinoJson.h>
 #include "Core/Config/EngineConfig.h"
 #include "Core/Fixture.h"
-#include "Handlers/FixtureHandler.h"
-#include "Handlers/InputHandler.h"
+#include "Core/Managers/FixtureManager.h"
+#include "Core/Managers/InputManager.h"
 #include "Network/Wifi.h"
 #include "Services/SettingsStore.h"
 #include "Services/Telemetry.h"
@@ -80,7 +80,7 @@ struct LogsInfo
 class API
 {
 public:
-    API(Services::SettingsStore& settings, Handler::FixtureHandler& fixtures, Handler::InputHandler& inputs,
+    API(Services::SettingsStore& settings, Handler::FixtureManager& fixtures, Handler::InputManager& inputs,
         Net::Wifi& wifi, Services::Telemetry& telemetry, Services::OtaService& ota);
 
     // Reads
@@ -117,8 +117,8 @@ private:
     static void runLater(uint32_t delayMs, std::function<void()> fn);
 
     Services::SettingsStore& m_settings;
-    Handler::FixtureHandler& m_fixtures;
-    Handler::InputHandler& m_inputs;
+    Handler::FixtureManager& m_fixtures;
+    Handler::InputManager& m_inputs;
     Net::Wifi& m_wifi;
     Services::Telemetry& m_telemetry;
     Services::OtaService& m_ota;

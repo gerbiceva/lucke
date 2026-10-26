@@ -2,8 +2,8 @@
 #include <string>
 #include "Services/SettingsStore.h"
 #include "Network/Wifi.h"
-#include "Handlers/FixtureHandler.h"
-#include "Handlers/InputHandler.h"
+#include "Core/Managers/FixtureManager.h"
+#include "Core/Managers/InputManager.h"
 
 namespace Services
 {
@@ -13,7 +13,7 @@ namespace Services
     {
     public:
         StatusReport(const SettingsStore& settings, Net::Wifi& wifi,
-                     Handler::FixtureHandler& fixtures, Handler::InputHandler& inputs);
+                     Handler::FixtureManager& fixtures, Handler::InputManager& inputs);
 
         // Full status: settings, wifi, fixtures, inputs.
         std::string build();
@@ -26,7 +26,7 @@ namespace Services
 
         const SettingsStore& m_settings;
         Net::Wifi& m_wifi;
-        Handler::FixtureHandler& m_fixtures;
-        Handler::InputHandler& m_inputs;
+        Handler::FixtureManager& m_fixtures;
+        Handler::InputManager& m_inputs;
     };
 }

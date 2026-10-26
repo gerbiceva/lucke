@@ -53,7 +53,7 @@ public:
     void setPreset(uint8_t new_preset);
     void setName(const std::string& other);
     void setHighlight(bool on);
-    // Takes effect on the next boot; see FixtureHandler::setLedCount.
+    // Takes effect on the next boot; see FixtureManager::setLedCount.
     void setLedCount(uint16_t numLeds);
     [[nodiscard]] uint16_t ledCount() const;
 

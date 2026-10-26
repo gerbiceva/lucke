@@ -1,7 +1,9 @@
 #pragma once
-#include <cstdio>
+#include <algorithm>
+#include <array>
 #include <memory>
 #include <span>
+#include <string_view>
 #include "Output/Base/Base.h"
 #include "Output/Driver.h"
 #include "Hardware/WS2815.h"      // Core::RGB
@@ -78,11 +80,8 @@ namespace Output
         // Same fields as LED1D, so client tools see no change.
         void toJson(JsonObject& doc) override
         {
-            char type[24];
-            snprintf(type, sizeof(type), "%s-1D", TDriver::kind);
-
             doc["uuid"] = m_uuid;
-            doc["type"] = type;
+            doc["type"] = c_type.data();
             doc["hardware_pin"] = Pin;
             doc["num_leds"] = m_numLeds;
             doc["num_groups"] = m_numGroups;
@@ -93,6 +92,16 @@ namespace Output
 
     private:
         static constexpr Utils::Log s_log{"STRIP"};
+
+        // "<driver kind>-1D", built at compile time.
+        static constexpr auto c_type = [] {
+            constexpr std::string_view kind = TDriver::kind;
+            constexpr std::string_view suffix = "-1D";
+            std::array<char, kind.size() + suffix.size() + 1> out{};
+            std::ranges::copy(kind, out.begin());
+            std::ranges::copy(suffix, out.begin() + kind.size());
+            return out;
+        }();
 
         uint16_t m_numLeds;
         uint16_t m_numGroups;

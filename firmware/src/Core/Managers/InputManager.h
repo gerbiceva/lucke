@@ -45,13 +45,13 @@ namespace Handler
 
     // Owns the sACN socket and one SyncBuffer per subscribed universe.
     // Packets are routed by the universe field they carry.
-    class InputHandler : public Interface::Serializable
+    class InputManager : public Interface::Serializable
     {
         void update();
         void reopen();
         void checkLoss();
     public:
-        explicit InputHandler(Tasks::Manager& tasks);
+        explicit InputManager(Tasks::Manager& tasks);
 
         // Spawns the input task. Call once, after everything is constructed.
         void start();

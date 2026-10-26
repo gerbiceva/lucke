@@ -4,7 +4,7 @@
 #include <FastLED.h>
 #include "Output/Driver.h"
 #include "Hardware/WS2815.h"      // Core::RGB
-#include "Handlers/PinHandler.h"
+#include "Core/Managers/PinManager.h"
 #include "Utils/Logger.h"
 
 namespace Drivers

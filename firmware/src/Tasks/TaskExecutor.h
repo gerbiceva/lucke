@@ -37,7 +37,7 @@ public:
         // Tasks are expected to loop forever. If one ever returns, self-delete
         // so the scheduler doesn't run off the end of the task function. The
         // record is intentionally left in place — a task cannot safely erase
-        // its own record (that would destroy this very std::function mid-call).
+        // its own record (that would destroy this very function mid-call).
         rec.fn = [invocable = std::move(invocable)]()
         {
             invocable();
@@ -85,12 +85,12 @@ private:
         TaskId id = TaskId::Invalid;
         std::string name;
         TaskHandle_t handle = nullptr;
-        std::function<void()> fn;
+        std::move_only_function<void()> fn;
     };
 
     static void trampoline(void* fn)
     {
-        (*reinterpret_cast<std::function<void()>*>(fn))();
+        (*reinterpret_cast<std::move_only_function<void()>*>(fn))();
     }
 
     // Guards m_tasks: tasks are spawned from setup() and from other tasks.

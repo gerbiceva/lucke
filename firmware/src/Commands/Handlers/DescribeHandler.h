@@ -1,5 +1,5 @@
 #pragma once
-#include "Interfaces/Command.h"
+#include "Commands/Command.h"
 #include "API/API.h"
 
 namespace Commands
@@ -8,7 +8,7 @@ namespace Commands
     {
     public:
         explicit DescribeHandler(const API& api);
-        void handle(JsonDocument& req, Interface::Transport& transport) override;
+        Interface::Reply handle(const JsonDocument& req, const Interface::Context& ctx) override;
 
     private:
         const API& m_api;

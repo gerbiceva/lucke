@@ -9,7 +9,7 @@ namespace
 
 namespace Services
 {
-    Telemetry::Telemetry(const Config::Engine& config, const Net::Wifi& wifi, const Handler::FixtureHandler& fixtures,
+    Telemetry::Telemetry(const Config::Engine& config, const Net::Wifi& wifi, const Handler::FixtureManager& fixtures,
                          StatusReport& report, Tasks::Manager& tasks)
         : m_config(config), m_wifi(wifi), m_fixtures(fixtures), m_report(report), m_tasks(tasks)
     {}

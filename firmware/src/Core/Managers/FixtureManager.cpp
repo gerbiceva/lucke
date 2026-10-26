@@ -1,21 +1,21 @@
-#include "FixtureHandler.h"
+#include "FixtureManager.h"
 #include "Utils/Logger.h"
 #include <algorithm>
 
 namespace Handler
 {
-    FixtureHandler::FixtureHandler(InputHandler& inputs, Services::SettingsStore& settings)
+    FixtureManager::FixtureManager(InputManager& inputs, Services::SettingsStore& settings)
         : m_inputs(inputs), m_settings(settings)
     {}
 
-    std::optional<std::string> FixtureHandler::loadStored()
+    std::optional<std::string> FixtureManager::loadStored()
     {
         // Fixtures are added from setup(), before Engine::init().
         m_settings.load();
         return m_settings.loadFixture(m_nextId);
     }
 
-    uint16_t FixtureHandler::storedLedCount(const std::optional<std::string>& stored)
+    uint16_t FixtureManager::storedLedCount(const std::optional<std::string>& stored)
     {
         if (!stored) return 0;
         JsonDocument doc;
@@ -24,7 +24,7 @@ namespace Handler
         return leds <= c_maxLeds ? leds : 0;
     }
 
-    void FixtureHandler::_addFixture(std::unique_ptr<Fixture> fix, const std::optional<std::string>& stored)
+    void FixtureManager::_addFixture(std::unique_ptr<Fixture> fix, const std::optional<std::string>& stored)
     {
         fix->setId(m_nextId++);
 
@@ -50,7 +50,7 @@ namespace Handler
         if (!stored) persistFixture(id);
     }
 
-    void FixtureHandler::resubscribe(Fixture* fix, uint16_t oldBase, uint8_t oldCount)
+    void FixtureManager::resubscribe(Fixture* fix, uint16_t oldBase, uint8_t oldCount)
     {
         for (uint8_t i = 0; i < oldCount; i++)
             m_inputs.unsubscribe(oldBase + i);
@@ -66,7 +66,7 @@ namespace Handler
         fix->setSyncBuffers(std::move(bufs));
     }
 
-    void FixtureHandler::persistFixture(uint8_t id)
+    void FixtureManager::persistFixture(uint8_t id)
     {
         Fixture* fix = get(id);
         if (!fix) return;
@@ -78,23 +78,23 @@ namespace Handler
         m_settings.saveFixture(id, std::move(serialized));
     }
 
-    Fixture* FixtureHandler::get(uint8_t id)
+    Fixture* FixtureManager::get(uint8_t id)
     {
         auto it = std::ranges::find(m_fixtures, id, &Fixture::id);
         return it != m_fixtures.end() ? it->get() : nullptr;
     }
 
-    const std::vector<std::unique_ptr<Fixture>>& FixtureHandler::all() const
+    const std::vector<std::unique_ptr<Fixture>>& FixtureManager::all() const
     {
         return m_fixtures;
     }
 
-    bool FixtureHandler::exists(uint8_t id)
+    bool FixtureManager::exists(uint8_t id)
     {
         return get(id) != nullptr;
     }
 
-    bool FixtureHandler::setUniverse(uint8_t id, uint16_t uni)
+    bool FixtureManager::setUniverse(uint8_t id, uint16_t uni)
     {
         Fixture* fix = get(id);
         if (!fix) return false;
@@ -112,7 +112,7 @@ namespace Handler
         return true;
     }
 
-    bool FixtureHandler::setAddress(uint8_t id, uint16_t addr)
+    bool FixtureManager::setAddress(uint8_t id, uint16_t addr)
     {
         Fixture* fix = get(id);
         if (!fix) return false;
@@ -129,7 +129,7 @@ namespace Handler
         return true;
     }
 
-    bool FixtureHandler::setPreset(uint8_t id, uint8_t preset)
+    bool FixtureManager::setPreset(uint8_t id, uint8_t preset)
     {
         Fixture* fix = get(id);
         if (!fix) return false;
@@ -145,7 +145,7 @@ namespace Handler
         return true;
     }
 
-    bool FixtureHandler::setName(uint8_t id, const std::string& name)
+    bool FixtureManager::setName(uint8_t id, const std::string& name)
     {
         Fixture* fix = get(id);
         if (!fix) return false;
@@ -155,7 +155,7 @@ namespace Handler
         return true;
     }
 
-    bool FixtureHandler::setHighlight(uint8_t id, bool on)
+    bool FixtureManager::setHighlight(uint8_t id, bool on)
     {
         Fixture* fix = get(id);
         if (!fix) return false;
@@ -164,7 +164,7 @@ namespace Handler
         return true;
     }
 
-    bool FixtureHandler::setLedCount(uint8_t id, uint16_t leds)
+    bool FixtureManager::setLedCount(uint8_t id, uint16_t leds)
     {
         Fixture* fix = get(id);
         if (!fix) return false;
@@ -175,7 +175,7 @@ namespace Handler
         return setPreset(id, 0);
     }
 
-    void FixtureHandler::update()
+    void FixtureManager::update()
     {
         for (auto& fix : m_fixtures)
         {
@@ -188,7 +188,7 @@ namespace Handler
         }
     }
 
-    void FixtureHandler::wifiAnimation()
+    void FixtureManager::wifiAnimation()
     {
         for (auto& fix : m_fixtures)
         {
@@ -201,12 +201,12 @@ namespace Handler
         }
     }
 
-    void FixtureHandler::fromJson(const std::string& json)
+    void FixtureManager::fromJson(const std::string& json)
     {
         // Handled per-fixture via Fixture::fromJson
     }
 
-    FixturesInfo FixtureHandler::fixtures() const
+    FixturesInfo FixtureManager::fixtures() const
     {
         FixturesInfo info;
         info.fixtures.reserve(m_fixtures.size());
@@ -217,12 +217,12 @@ namespace Handler
         return info;
     }
 
-    void FixtureHandler::toJson(JsonObject& obj)
+    void FixtureManager::toJson(JsonObject& obj)
     {
         fixtures().toJson(obj);
     }
 
-    JsonDocument FixtureHandler::toJsonDoc()
+    JsonDocument FixtureManager::toJsonDoc()
     {
         JsonDocument doc;
         JsonObject obj = doc.to<JsonObject>();
