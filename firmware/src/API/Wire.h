@@ -3,7 +3,7 @@
 #include <ArduinoJson.h>
 #include "API/API.h"
 
-// The JSON shapes of protocol 2 (docs/apiv2.md) for what the API returns.
+// The JSON shapes of protocol 2 (docs/api.md) for what the API returns.
 // Separate from the stored formats, which keep their own keys so flash
 // written by older firmware still loads.
 namespace Wire

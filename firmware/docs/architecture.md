@@ -1,9 +1,8 @@
 # Lucke Firmware — Current Architecture
 
-> Branch `cpp23`, October 2026. Scope: `src/`. `unused/src_prev/` is the old
-> tree and is not described here. Diagram: [`current_architecture.puml`](./current_architecture.puml).
-> Wire protocol: [`apiv2.md`](./apiv2.md). Open work: [`modernization.md`](./modernization.md),
-> [`improvement.md`](./improvement.md).
+> October 2026. Scope: `src/`. `unused/src_prev/` is the old tree and is not
+> described here. Diagram: [`architecture.puml`](./architecture.puml).
+> Wire protocol: [`api.md`](./api.md). Open work: [`improvements.md`](./improvements.md).
 
 Target: ESP32-C3 (`lolin_c3_mini`), Arduino core on pioarduino, GCC 14,
 `-std=gnu++23`, `-fno-rtti -fexceptions`.
@@ -110,7 +109,7 @@ UDP 5568 ─► SacnReceiver ─► InputHandler ─► SyncBuffer ─► Fixtur
 ## 5. Commands
 
 Line protocol: one JSON object per line, reply one JSON line on the same
-transport (TCP 8888 or serial). See [`apiv2.md`](./apiv2.md).
+transport (TCP 8888 or serial). See [`api.md`](./api.md).
 
 - `CommandDispatcher` parses once, routes on `"request"`, and **runs one
   command at a time** (a mutex), so serial and TCP handlers never race each
@@ -136,7 +135,7 @@ Everything goes through `Services::SettingsStore`.
 - `highlighted` is stored but has no effect on boot.
 - The record is **config only**. Outputs and presets come from the compiled
   fixture type, and records bind by position (`fixture0` = first
-  `addFixture`). Fixing that is [`improvement.md`](./improvement.md).
+  `addFixture`). Fixing that is [`improvements.md`](./improvements.md).
 
 ## 7. Locking
 
@@ -170,17 +169,10 @@ Each line (`I   12.345 [WIFI] message`) is formatted once, then:
 ## 9. Known gaps
 
 - Fixtures are compiled-in types; stored records can't rebuild a fixture
-  (see [`improvement.md`](./improvement.md)).
+  (see [`improvements.md`](./improvements.md)).
 - No grid output (commented out, needs porting to `Output::Driver`).
 - Only one WS2815 strip (SPI2); more strips must use FastLED.
 - sACN: one source per universe, no priority merge. Source loss is detected
   and logged, but LEDs still hold the last frame.
 - Serialization overlaps: `toJson` / `describe` / `configJson` /
   `outputsJson` emit overlapping fields.
-
-## 10. Other diagrams in this folder
-
-`architecture.puml` and `proposed_architecture.puml` are the original
-pre-refactor design and proposal, kept for history. `json_fixture_architecture.puml`
-belongs to [`improvement.md`](./improvement.md). `led_grid*.puml` belong to
-[`led_grid.md`](./led_grid.md).

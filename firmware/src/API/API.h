@@ -20,7 +20,7 @@
 #include "Services/Telemetry.h"
 #include "Services/OtaService.h"
 
-// Why a call failed. `code` is one of the codes in docs/apiv2.md (a
+// Why a call failed. `code` is one of the codes in docs/api.md (a
 // literal); `arg` names the request argument at fault ("universe",
 // "settings.invert", ...).
 struct ApiError

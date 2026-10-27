@@ -31,7 +31,7 @@ namespace Interface
 
     using Reply = std::expected<Success, Error>;
 
-    // Error codes, as documented in docs/apiv2.md.
+    // Error codes, as documented in docs/api.md.
     namespace Code
     {
         inline constexpr std::string_view InvalidJson = "invalid_json";

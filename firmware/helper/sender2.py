@@ -36,7 +36,7 @@ class ESPClient:
         except json.JSONDecodeError:
             return line
 
-    # ---- commands (protocol 2, see docs/apiv2.md) ----
+    # ---- commands (protocol 2, see docs/api.md) ----
     def describe(self):
         return self.send({"cmd": "describe"})
 
