@@ -102,7 +102,7 @@ Everything in one reply (never the wifi password).
 ```
 -> {"cmd": "describe"}
 <- {"ok": true, "data": {
-     "version": "1.1.0", "protocol": 2, "boot_id": "a3f91c20",
+     "version": "1.1.0", "protocol": 2, "device_id": "a0b765c3d1e4", "boot_id": "a3f91c20",
      "settings": {"serial_report": true, "wireless_report": true, "wifi_animation": false},
      "wifi": {"ssid": "Ledique", "rssi": -55, "local_ip": "192.168.0.140", "connected": true},
      "fixtures": [{"id": 0, "name": "miza", "type": "StripWS2815", "universe": 10,
@@ -111,7 +111,9 @@ Everything in one reply (never the wifi password).
      "inputs": [{"type": "SACN", "universe": 10, "packets": 68, "active": true}]}}
 ```
 
-`boot_id` changes on every boot (see [`logs`](#logs)). `fixtures` and `inputs`
+`device_id` is the chip's factory MAC as 12 lowercase hex digits: fixed per
+device, so key devices by it rather than by IP. `boot_id` changes on every
+boot (see [`logs`](#logs)). `fixtures` and `inputs`
 are plain arrays, with no `num_fixtures`/`num_inputs` and no nested
 `fixtures.fixtures`.
 
@@ -397,11 +399,12 @@ Sent while wifi is connected. The shape is deliberately the same as in
 protocol 1: it's how a client learns `protocol` before any command.
 
 ```
-{"version": "1.1.0", "protocol": 2, "boot_id": "a3f91c20",
+{"version": "1.1.0", "protocol": 2, "device_id": "a0b765c3d1e4", "boot_id": "a3f91c20",
  "fixtures": [{"name": "miza", "type": "StripWS2815"}]}
 ```
 
-`boot_id` is new; a client can use a change in it to notice a reboot.
+`device_id` and `boot_id` are new: `device_id` tells devices apart (see
+[`describe`](#describe)), and a change in `boot_id` means a reboot.
 
 ### Wireless report (UDP broadcast, port 12344, every 10 s)
 
@@ -409,7 +412,7 @@ Settings only (no password). Sent when `wireless_report` is on and wifi is
 connected. It is a bare object, not an envelope, like the heartbeat.
 
 ```
-{"version": "1.1.0", "protocol": 2,
+{"version": "1.1.0", "protocol": 2, "device_id": "a0b765c3d1e4",
  "settings": {"serial_report": true, "wireless_report": true, "wifi_animation": false},
  "ssid": "Ledique"}
 ```
@@ -420,7 +423,7 @@ One line, active when `serial_report` is on. It is exactly `describe`'s `data`
 (not wrapped in an envelope), so one parser covers both.
 
 ```
-{"version": "1.1.0", "protocol": 2, "boot_id": "a3f91c20", "settings": {...}, "wifi": {...},
+{"version": "1.1.0", "protocol": 2, "device_id": "a0b765c3d1e4", "boot_id": "a3f91c20", "settings": {...}, "wifi": {...},
  "fixtures": [...], "inputs": [...]}
 ```
 
@@ -453,7 +456,8 @@ One line, active when `serial_report` is on. It is exactly `describe`'s `data`
 | `describe` `fixtures: {fixtures: [...]}`, `inputs: {num_inputs, inputs}` | `fixtures: [...]`, `inputs: [...]` |
 | `describe` flat settings keys | `settings` object |
 | `logs` after a reboot restarted silently | `boot_id` in the reply; send it back, `reset` flags a mismatch |
-| Heartbeat | adds `boot_id`; `protocol` is `2` |
+| Heartbeat | adds `device_id` and `boot_id`; `protocol` is `2` |
+| No stable device identity | `device_id` in heartbeat, `describe`, wireless and serial reports |
 | Serial report with `fixture_handler`/`input_handler` | `describe`'s `data` shape |
 | Dispatcher `missing cmd` / `unknown cmd` text | `missing_cmd` / `unknown_cmd` codes |
 

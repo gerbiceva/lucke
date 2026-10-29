@@ -32,6 +32,7 @@ namespace Services
         JsonObject obj = doc.to<JsonObject>();
         obj["version"] = ENGINE_VERSION;
         obj["protocol"] = PROTOCOL_VERSION;
+        obj["device_id"] = Wire::deviceId();
         Wire::settings(obj["settings"].to<JsonObject>(), config);
         obj["ssid"] = config.ssid;
 

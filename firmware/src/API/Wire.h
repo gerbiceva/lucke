@@ -8,6 +8,10 @@
 // written by older firmware still loads.
 namespace Wire
 {
+    // The factory MAC from eFuse as 12 hex digits. Unique per chip and
+    // survives flash erases, so a client can key devices by it instead of IP.
+    std::string_view deviceId();
+
     // Changes on every boot. Lets a client tell a restarted device from one that
     // kept running (logs `since`, heartbeat).
     std::string_view bootId();

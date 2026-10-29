@@ -1,8 +1,21 @@
 #include "Wire.h"
+#include <esp_mac.h>
 #include <esp_random.h>
 
 namespace Wire
 {
+    std::string_view deviceId()
+    {
+        static const std::string id = [] {
+            uint8_t mac[6];
+            esp_efuse_mac_get_default(mac);
+            char buf[13];
+            snprintf(buf, sizeof(buf), "%02x%02x%02x%02x%02x%02x", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+            return std::string(buf);
+        }();
+        return id;
+    }
+
     std::string_view bootId()
     {
         static const std::string id = [] {
@@ -66,6 +79,7 @@ namespace Wire
     {
         obj["version"] = ENGINE_VERSION;
         obj["protocol"] = PROTOCOL_VERSION;
+        obj["device_id"] = deviceId();
         obj["boot_id"] = bootId();
         settings(obj["settings"].to<JsonObject>(), info.settings);
         wifi(obj["wifi"].to<JsonObject>(), info.wifi, info.settings.ssid);
