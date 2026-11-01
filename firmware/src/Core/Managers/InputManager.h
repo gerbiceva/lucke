@@ -1,6 +1,7 @@
 #pragma once
 #include <atomic>
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <unordered_map>
@@ -37,6 +38,10 @@ namespace Handler
         // Spawns the input task. Call once, after everything is constructed.
         void start();
 
+        // Called on the input task after a batch of packets changed any
+        // universe's data; once per batch, not per packet. Set before start().
+        void onFrame(std::function<void()> listener);
+
         std::shared_ptr<SyncBuffer> subscribe(uint16_t uni);
         void unsubscribe(uint16_t uni);
 
@@ -59,6 +64,7 @@ namespace Handler
         };
 
         Tasks::Manager& m_tasks;
+        std::function<void()> m_onFrame;
         // Guards m_universes and the socket's open/close against join/leave:
         // subscribe/unsubscribe run on the command task, update()/reopen()
         // on the input task.

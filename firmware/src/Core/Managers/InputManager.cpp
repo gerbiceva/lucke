@@ -32,6 +32,11 @@ namespace Handler
         }, 3, 30000);
     }
 
+    void InputManager::onFrame(std::function<void()> listener)
+    {
+        m_onFrame = std::move(listener);
+    }
+
     std::shared_ptr<SyncBuffer> InputManager::subscribe(uint16_t uni)
     {
         std::scoped_lock lock(m_mutex);
@@ -88,7 +93,8 @@ namespace Handler
         }
 
         // Waits here, without the lock, until traffic arrives; then drains
-        // the queue.
+        // the queue. Universes that arrive together are rendered together.
+        bool changed = false;
         for (auto pkt = m_sacn.receive(c_waitMs); pkt; pkt = m_sacn.receive(0))
         {
             std::scoped_lock lock(m_mutex);
@@ -112,8 +118,10 @@ namespace Handler
 
             Dmx::Universe frame{};   // slots the sender didn't send read as 0
             std::ranges::copy(pkt->slots, frame.begin());
-            e.buffer->write(frame);
+            changed |= e.buffer->write(frame);
         }
+
+        if (changed && m_onFrame) m_onFrame();
     }
 
     void InputManager::checkLoss()

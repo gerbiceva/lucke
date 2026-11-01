@@ -15,12 +15,14 @@ class SyncBuffer
     std::atomic<uint32_t> m_version{0};
 public:
     // Identical data (a sender repeating a static frame) is not a change.
-    void write(Dmx::UniverseCView src)
+    // Returns whether the data changed.
+    bool write(Dmx::UniverseCView src)
     {
         std::scoped_lock lock(m_mutex);
-        if (std::ranges::equal(src, m_buffer)) return;
+        if (std::ranges::equal(src, m_buffer)) return false;
         std::ranges::copy(src, m_buffer.begin());
         m_version.fetch_add(1, std::memory_order_relaxed);
+        return true;
     }
 
     [[nodiscard]] uint32_t version() const

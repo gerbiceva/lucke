@@ -111,6 +111,9 @@ void Engine::startServices()
 {
     m_settings.start(m_tasks);
     m_crashLog.start(m_tasks);
+
+    // New DMX is rendered as soon as the input task has it.
+    m_inputs.onFrame([this] { m_render.wake(); });
     m_inputs.start();
 
     // Animation until wifi first connects, then live DMX (see wireConnectivity)

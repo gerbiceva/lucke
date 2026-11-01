@@ -3,9 +3,10 @@
 
 namespace
 {
-    // Live mode re-checks the fixtures this often without a wake(). Nothing
-    // calls wake() on new DMX yet, so this is still the polling interval.
-    constexpr TickType_t c_liveWaitTicks = pdMS_TO_TICKS(1);
+    // Live mode re-checks the fixtures this often without a wake(), for the
+    // periodic refresh (Fixture, 1 s) and for changes that don't wake it yet
+    // (presets, output settings, highlight). New DMX wakes it right away.
+    constexpr TickType_t c_liveWaitTicks = pdMS_TO_TICKS(250);
     constexpr TickType_t c_animationTicks = pdMS_TO_TICKS(20);
     constexpr TickType_t c_statsTicks = pdMS_TO_TICKS(60000);
 
