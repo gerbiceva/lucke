@@ -18,9 +18,10 @@ namespace Services
 
     void TcpListener::start()
     {
+        // Low, so commands never delay a frame.
         m_tasks.spawnTask("tcp_cmd", [this]() {
             loop();
-        }, 2, 8192);
+        }, 1, 8192);
     }
 
     void TcpListener::begin()

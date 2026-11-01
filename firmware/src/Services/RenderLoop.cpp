@@ -3,9 +3,8 @@
 
 namespace
 {
-    // Live mode re-checks the fixtures this often without a wake(), for the
-    // periodic refresh (Fixture, 1 s) and for changes that don't wake it yet
-    // (presets, output settings, highlight). New DMX wakes it right away.
+    // Live-mode fallback for the 1 s Fixture refresh; DMX and fixture
+    // changes wake() it directly.
     constexpr TickType_t c_liveWaitTicks = pdMS_TO_TICKS(250);
     constexpr TickType_t c_animationTicks = pdMS_TO_TICKS(20);
     constexpr TickType_t c_statsTicks = pdMS_TO_TICKS(60000);
@@ -21,9 +20,10 @@ namespace Services
 
     void RenderLoop::start()
     {
+        // Below input only, so wake() never waits behind other tasks.
         m_tasks.spawnTask("render", [this]() {
             loop();
-        }, 2, 30000);
+        }, 4, 30000);
     }
 
     void RenderLoop::setMode(Mode mode)

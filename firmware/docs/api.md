@@ -355,7 +355,8 @@ Saves pending fixture changes, restarts after 1 s.
 
 Erases all stored settings and fixture records, restarts after 1 s. Changes
 made in that second are not saved. The next boot uses defaults (default wifi,
-universe `id + 1` per fixture).
+universe `id + 1` per fixture). The [crash log](#crash_log--clear_crash_log)
+is kept.
 
 ### ota
 
@@ -381,7 +382,7 @@ Recent log lines (Info and up) kept in a 4 KB ring buffer, oldest first.
 ```
 -> {"cmd": "logs"}
 <- {"ok": true, "data": {"boot_id": "a3f91c20", "first": 0, "next": 6, "lost": 0, "reset": false,
-                         "lines": ["I    0.023 [ENGINE] reset reason: USB", ...]}}
+                         "lines": ["I    0.023 [CRASH] reset reason: USB", ...]}}
 
 -> {"cmd": "logs", "since": 6, "boot_id": "a3f91c20"}
 <- {"ok": true, "data": {"boot_id": "a3f91c20", "first": 6, "next": 11, "lost": 0, "reset": false, "lines": [...]}}
@@ -392,6 +393,49 @@ Pass the previous `next` as `since`, and the `boot_id` you got with it. If
 the current boot, the device ignores `since`, returns every line from the
 start, and sets `reset: true` so the client can discard what it held. `lost`
 counts lines after `since` that were already overwritten.
+
+### crash_log / clear_crash_log
+
+What went wrong, kept in flash across reboots and power cuts: the last
+abnormal reset and recent error lines.
+
+```
+-> {"cmd": "crash_log"}
+<- {"ok": true, "data": {
+     "crash_count": 2,
+     "crash": {"reset_reason": "panic", "boot_id": "5e01c2aa", "version": "1.0.9-dev", "uptime_ms": 734512,
+               "panic": {"task": "render", "reason": "Load access fault", "pc": "0x42012a3c",
+                         "ra": "0x42012a10", "sp": "0x3fc9d8e0", "mcause": 5, "mtval": "0x00000000",
+                         "elf_sha": "8f3c21d0"},
+               "lines": ["I  730.101 [INPUT] universe 10 receiving", ...]},
+     "errors": [{"boot_id": "a3f91c20", "line": "E   12.345 [INPUT] sACN socket failed to open"}]}}
+
+-> {"cmd": "clear_crash_log"}
+<- {"ok": true, "data": {"crash_count": 0, "crash": null, "errors": []}}
+```
+
+- `crash_count`: abnormal resets since the log was last cleared.
+- `crash`: the last abnormal reset, or `null` if there was none.
+  - `reset_reason`: `panic`, `int_wdt`, `task_wdt`, `wdt`, `brownout`,
+    `power_glitch`, `cpu_lockup`, `efuse` or `unknown`. Normal resets
+    (power on, software restart, USB, external pin, ...) aren't recorded.
+  - `boot_id`, `version`, `uptime_ms`: the boot that went down, and how long
+    it had run at its last log line. Empty (`""`, `0`) if it went down very
+    early in boot or the brownout also cleared RTC memory.
+  - `panic`: present for `panic`, `int_wdt` and `task_wdt`, read from the core
+    dump; `null` otherwise. `pc` and `ra` are addresses for `addr2line` against
+    the `firmware.elf` of that `version`; `mcause`/`mtval` are the RISC-V trap
+    registers. The full core dump stays in the `coredump` partition, to be read
+    over USB (`esp-coredump info_corefile`) until the next crash overwrites it.
+  - `lines`: the last log lines (Info and up, about 1.5 KB) before the reset,
+    oldest first.
+- `errors`: Error lines from this and earlier boots, oldest first, at most 10.
+  They are saved at most once every 5 s and 12 times a boot, so a recurring
+  error can't wear out the flash; past that, new ones are still returned
+  but are lost on reboot.
+
+`clear_crash_log` forgets all of it, including the core dump, and returns the
+empty log. `factory_reset` doesn't touch it.
 
 ### Heartbeat (UDP broadcast, port 12343, every 500 ms)
 

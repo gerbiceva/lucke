@@ -8,6 +8,16 @@ namespace Handler
         : m_inputs(inputs), m_settings(settings)
     {}
 
+    void FixtureManager::onChange(std::function<void()> listener)
+    {
+        m_onChange = std::move(listener);
+    }
+
+    void FixtureManager::notifyChange()
+    {
+        if (m_onChange) m_onChange();
+    }
+
     std::optional<std::string> FixtureManager::loadStored()
     {
         // Fixtures are added from setup(), before Engine::init().
@@ -108,6 +118,7 @@ namespace Handler
             fix->setUniverse(uni);
             resubscribe(fix, oldBase, oldCount);
         }
+        notifyChange();
         persistFixture(id);
         return true;
     }
@@ -125,6 +136,7 @@ namespace Handler
             // Address shifts totalBytes, so the span may grow/shrink.
             resubscribe(fix, fix->getUniverse(), fix->getNumUniverses());
         }
+        notifyChange();
         persistFixture(id);
         return true;
     }
@@ -141,6 +153,7 @@ namespace Handler
             // how many universes the fixture spans.
             resubscribe(fix, fix->getUniverse(), fix->getNumUniverses());
         }
+        notifyChange();
         persistFixture(id);
         return true;
     }
@@ -161,6 +174,7 @@ namespace Handler
         if (!fix) return false;
 
         fix->setHighlight(on);
+        notifyChange();
         return true;
     }
 
@@ -170,7 +184,11 @@ namespace Handler
         if (!fix) return false;
 
         const bool changed = fix->setOutputSetting(output, key, value);
-        if (changed) persistFixture(id);
+        if (changed)
+        {
+            notifyChange();
+            persistFixture(id);
+        }
         return changed;
     }
 

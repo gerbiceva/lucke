@@ -24,12 +24,13 @@ namespace Handler
     void InputManager::start()
     {
         // No delay in the loop: receive() blocks until traffic arrives.
+        // Highest of ours: the socket queues only a few packets.
         m_tasks.spawnTask("input_update", [this]() {
             while (true)
             {
                 update();
             }
-        }, 3, 30000);
+        }, 5, 30000);
     }
 
     void InputManager::onFrame(std::function<void()> listener)

@@ -2,6 +2,7 @@
 #include <vector>
 #include <memory>
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <optional>
 #include <type_traits>
@@ -27,6 +28,8 @@ namespace Handler
         // one older records have), or 0 if there is none.
         static uint16_t storedLedCount(const std::optional<std::string>& stored);
         void persistFixture(uint8_t id);
+        // Calls the onChange listener, if any.
+        void notifyChange();
 
         // Resubscribes to the universes the fixture now spans. Call after any
         // universe, address or preset change.
@@ -36,6 +39,10 @@ namespace Handler
         FixtureManager(InputManager& inputs, Services::SettingsStore& settings);
 
         static constexpr uint16_t c_maxLeds = 1000;
+
+        // Called on the caller's task when a setter changes output (not name).
+        // Set before any setter runs.
+        void onChange(std::function<void()> listener);
 
         template<typename TFixture>
             requires std::is_default_constructible_v<TFixture>
@@ -84,6 +91,7 @@ namespace Handler
     private:
         InputManager& m_inputs;
         Services::SettingsStore& m_settings;
+        std::function<void()> m_onChange;
         std::vector<std::unique_ptr<Fixture>> m_fixtures;
         uint8_t m_nextId = 0;
     };
