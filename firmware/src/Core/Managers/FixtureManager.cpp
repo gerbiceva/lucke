@@ -174,16 +174,27 @@ namespace Handler
         return changed;
     }
 
-    void FixtureManager::update()
+    bool FixtureManager::update()
     {
+        bool sent = false;
         for (auto& fix : m_fixtures)
         {
-            fix->update();
+            if (!fix->update()) continue;
 
             for (auto& o : fix->getOutputs())
             {
                 o->postupdate();
             }
+            sent = true;
+        }
+        return sent;
+    }
+
+    void FixtureManager::invalidate()
+    {
+        for (auto& fix : m_fixtures)
+        {
+            fix->invalidate();
         }
     }
 

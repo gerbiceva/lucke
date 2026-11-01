@@ -72,7 +72,11 @@ namespace Handler
         // same value).
         [[nodiscard]] bool setOutputSetting(uint8_t id, size_t output, std::string_view key, JsonVariantConst value);
 
-        void update();
+        // Sends the outputs of every fixture that rendered. Returns true if
+        // any did.
+        bool update();
+        // Every fixture renders on the next update().
+        void invalidate();
         void wifiAnimation();
 
         void fromJson(const std::string& json) override;

@@ -50,7 +50,7 @@ members above it), so the constructor initializer list is the wiring diagram.
 | Task | Owner | Prio | Stack | Does |
 |---|---|---|---|---|
 | `input_update` | InputHandler | 3 | 30000 | waits on the sACN socket, drains packets into SyncBuffers |
-| `render` | RenderLoop | 2 | 30000 | per mode: fixtures `update()` + `show()`, or the wifi animation, or nothing |
+| `render` | RenderLoop | 2 | 30000 | per mode: fixtures `update()` + `show()` when they changed (polled every 1 ms), or the wifi animation, or nothing |
 | `tcp_cmd` | TcpListener | 2 | 8192 | accepts one client at a time, line in / line out |
 | `serial_cmd` | CommandSession | 1 | 8192 | same protocol over USB serial |
 | `wifi_monitor` | Connectivity | 1 | 4096 | woken by wifi events, calls listeners on link change |
@@ -86,11 +86,15 @@ UDP 5568 ─► SacnReceiver ─► InputHandler ─► SyncBuffer ─► Fixtur
   is opened/closed only by the input task; `reconnect()` (wifi task) just
   sets a flag.
 - **`SyncBuffer`** — mutex-protected 512-byte copy in / copy out; no torn
-  frames between the input and render tasks.
+  frames between the input and render tasks. A version counter goes up only
+  when a write changes the data, so a repeated static frame is not news.
 - **`Fixture`** — config (`Config::Fixture`), its outputs, preset JSON, and
   the SyncBuffers of every universe its `address + footprint` spans.
-  `update()` copies those universes into one flat buffer and hands each
-  output its slice. Highlight fills the slice with 255.
+  `update()` copies the universes whose version moved into one flat buffer
+  and hands each output its slice. Highlight fills the slice with 255. It
+  renders (and the outputs are sent) only on new data, after a setter or a
+  mode switch back to Live (`invalidate()`), or once a second as a refresh;
+  otherwise it returns false and nothing is sent.
 - **Outputs** — `Interface::Output`: `footprint()`, `update(span)`,
   `postupdate()` (= show), `setPreset(json)`. Only `Output::Strip1D<TDriver,
   Pin>` exists today: N LEDs, `num_groups` source colors spread evenly.

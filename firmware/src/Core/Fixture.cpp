@@ -3,10 +3,15 @@
 #include "Utils/Logger.h"
 #include <algorithm>
 #include <span>
+#include <utility>
 
 namespace
 {
     constexpr Utils::Log s_log{"FIXTURE"};
+
+    // Resend an unchanged frame this often, so a strip that glitched or was
+    // replugged recovers without new data.
+    constexpr TickType_t c_refreshTicks = pdMS_TO_TICKS(1000);
 
     using Interface::SettingDesc;
 
@@ -62,10 +67,10 @@ Fixture::Fixture(std::string name, std::string type, std::string presets)
     countPresets();
 }
 
-void Fixture::update()
+bool Fixture::update()
 {
     std::scoped_lock lock(m_mutex);
-    if (m_syncBuffers.empty()) return;
+    if (m_syncBuffers.empty()) return false;
 
     size_t footprint = 0;
     for (auto& o : m_outputs)
@@ -74,11 +79,15 @@ void Fixture::update()
     }
 
     // Guards against a mis-set address reading past the end of m_buffer.
-    if (m_config.address + footprint > m_buffer.size()) return;
+    if (m_config.address + footprint > m_buffer.size()) return false;
 
     std::span<uint8_t> all{m_buffer};
     std::span<uint8_t> fixture = all.subspan(m_config.address, footprint);
 
+    // After a setter every buffer is read again: highlight overwrote
+    // m_buffer, and a resubscribe swapped the buffers.
+    const bool dirty = std::exchange(m_dirty, false);
+    bool changed = dirty;
     if (m_config.highlighted)
     {
         std::ranges::fill(fixture, 255);
@@ -87,9 +96,16 @@ void Fixture::update()
     {
         for (size_t i = 0; i < m_syncBuffers.size(); i++)
         {
-            m_syncBuffers[i]->read(all.subspan(i * Dmx::c_universeSize).first<Dmx::c_universeSize>());
+            SyncBuffer& buf = *m_syncBuffers[i];
+            if (!dirty && buf.version() == m_seenVersions[i]) continue;
+            m_seenVersions[i] = buf.read(all.subspan(i * Dmx::c_universeSize).first<Dmx::c_universeSize>());
+            changed = true;
         }
     }
+
+    const TickType_t now = xTaskGetTickCount();
+    if (!changed && now - m_lastRender < c_refreshTicks) return false;
+    m_lastRender = now;
 
     std::span<const uint8_t> src = fixture;
     for (auto& o : m_outputs)
@@ -97,6 +113,13 @@ void Fixture::update()
         o->update(src.first(o->footprint()));
         src = src.subspan(o->footprint());
     }
+    return true;
+}
+
+void Fixture::invalidate()
+{
+    std::scoped_lock lock(m_mutex);
+    m_dirty = true;
 }
 
 std::unique_lock<std::recursive_mutex> Fixture::lock()
@@ -108,13 +131,16 @@ void Fixture::setSyncBuffers(std::vector<std::shared_ptr<SyncBuffer>> bufs)
 {
     std::scoped_lock lock(m_mutex);
     m_syncBuffers = std::move(bufs);
+    m_seenVersions.resize(m_syncBuffers.size());
     m_buffer.resize(m_syncBuffers.size() * Dmx::c_universeSize, 0);
+    m_dirty = true;
 }
 
 void Fixture::setUniverse(uint16_t new_universe)
 {
     std::scoped_lock lock(m_mutex);
     m_config.universe = new_universe;
+    m_dirty = true;
 }
 
 std::vector<std::unique_ptr<Interface::Output>>& Fixture::getOutputs()
@@ -210,7 +236,11 @@ bool Fixture::setOutputSetting(size_t output, std::string_view key, JsonVariantC
     const bool changed = before != after;
 
     entry[key].set(value);
-    if (changed && !desc->requiresReboot) out.applySetting(key, value);
+    if (changed && !desc->requiresReboot)
+    {
+        out.applySetting(key, value);
+        m_dirty = true;
+    }
     return changed;
 }
 
@@ -263,6 +293,7 @@ void Fixture::setAddress(uint16_t new_address)
 {
     std::scoped_lock lock(m_mutex);
     m_config.address = new_address;
+    m_dirty = true;
 }
 
 void Fixture::setPreset(uint8_t new_preset)
@@ -297,6 +328,7 @@ void Fixture::setPreset(uint8_t new_preset)
         m_outputs[i]->setPreset(d);
         m_lastOffset += m_outputs[i]->footprint();
     }
+    m_dirty = true;
 }
 
 void Fixture::setName(const std::string& other) 
@@ -350,6 +382,7 @@ void Fixture::setHighlight(bool on)
 {
     std::scoped_lock lock(m_mutex);
     m_config.highlighted = on;
+    m_dirty = true;
 }
 
 uint16_t Fixture::getFootprint() const

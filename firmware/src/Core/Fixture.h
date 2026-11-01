@@ -9,6 +9,7 @@
 #include <cstring>
 #include <mutex>
 #include <string_view>
+#include "freertos/FreeRTOS.h"
 
 // Snapshot of a fixture, safe to hand to another task.
 struct FixtureInfo
@@ -31,7 +32,13 @@ public:
     Fixture(std::string name, std::string type, std::string presets);
     virtual ~Fixture() = default;
 
-    void update();
+    // Maps the DMX data to the outputs. Returns false, doing nothing, when
+    // neither the data nor the fixture changed and a refresh isn't due; the
+    // caller sends the outputs only on true.
+    bool update();
+    // Makes the next update() render, e.g. after the wifi animation drew
+    // over the LEDs.
+    void invalidate();
     virtual void wifiAnimation() {};
 
     template<std::derived_from<Interface::Output> TOutput, typename... Args>
@@ -93,7 +100,13 @@ private:
     mutable std::recursive_mutex m_mutex;
     Config::Fixture m_config;
     std::vector<std::shared_ptr<SyncBuffer>> m_syncBuffers;
+    // Per sync buffer: the version last copied into m_buffer.
+    std::vector<uint32_t> m_seenVersions;
     std::vector<uint8_t> m_buffer;
+    // A setter changed what the fixture shows. Starts set so the first
+    // update() renders.
+    bool m_dirty = true;
+    TickType_t m_lastRender = 0;
     std::vector<std::unique_ptr<Interface::Output>> m_outputs;
     JsonDocument m_jsonPresets;
     // Saved output settings: one object per output index, key -> value.
