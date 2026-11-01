@@ -40,7 +40,7 @@ Engine::Engine()
       m_render(m_fixtures, m_tasks),
       m_connectivity(m_wifi, m_tasks),
       m_statusReport(m_settings, m_wifi, m_fixtures, m_inputs),
-      m_telemetry(m_settings.engine(), m_wifi, m_fixtures, m_statusReport, m_tasks),
+      m_telemetry(m_settings.engine(), m_wifi, m_statusReport, m_tasks),
       m_ota(m_render, m_wifi, m_tasks),
       m_api(m_settings, m_fixtures, m_inputs, m_wifi, m_telemetry, m_ota),
       m_describeHandler(m_api),

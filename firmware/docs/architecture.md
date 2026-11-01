@@ -142,7 +142,7 @@ Everything goes through `Services::SettingsStore`.
 | Lock | Guards | Taken by |
 |---|---|---|
 | `CommandDispatcher::m_mutex` | one command at a time | `tcp_cmd`, `serial_cmd` |
-| `Fixture::m_mutex` (recursive) | buffers, outputs, config | render, commands, report/heartbeat readers. `FixtureHandler` holds it across a change **and** its resubscribe, so the render task never sees a new footprint with an old buffer |
+| `Fixture::m_mutex` (recursive) | buffers, outputs, config | render, commands, report readers. `FixtureHandler` holds it across a change **and** its resubscribe, so the render task never sees a new footprint with an old buffer |
 | `InputHandler::m_mutex` | universe map; socket open/close vs join/leave | input task (per packet, not while waiting), commands |
 | `SyncBuffer` mutex | one universe's bytes | input (write), render (read) |
 | `SettingsStore::m_mutex` | NVS, engine settings, pending fixture records | everyone; readers use `snapshot()` |

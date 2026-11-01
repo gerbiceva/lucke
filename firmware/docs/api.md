@@ -73,7 +73,7 @@ Error:
 
 #### Versions
 
-Two numbers, in the heartbeat and in `describe`:
+Two numbers, both in `describe`; only `protocol` is in the heartbeat:
 
 - `version`: the firmware build (`"1.1.0"`). Changes every release.
 - `protocol`: the command API (`2`). Bumped only for a breaking change.
@@ -395,16 +395,17 @@ counts lines after `since` that were already overwritten.
 
 ### Heartbeat (UDP broadcast, port 12343, every 500 ms)
 
-Sent while wifi is connected. The shape is deliberately the same as in
-protocol 1: it's how a client learns `protocol` before any command.
+Sent while wifi is connected. A light ping: it's how a client finds devices
+and learns `protocol` before any command. Fixtures are in
+[`describe`](#describe).
 
 ```
-{"version": "1.1.0", "protocol": 2, "device_id": "a0b765c3d1e4", "boot_id": "a3f91c20",
- "fixtures": [{"name": "miza", "type": "StripWS2815"}]}
+{"protocol": 2, "device_id": "a0b765c3d1e4", "boot_id": "a3f91c20"}
 ```
 
 `device_id` and `boot_id` are new: `device_id` tells devices apart (see
-[`describe`](#describe)), and a change in `boot_id` means a reboot.
+[`describe`](#describe)), and a change in `boot_id` means a reboot. `version`
+and the `fixtures` list are gone; both are in `describe`.
 
 ### Wireless report (UDP broadcast, port 12344, every 10 s)
 
@@ -456,7 +457,7 @@ One line, active when `serial_report` is on. It is exactly `describe`'s `data`
 | `describe` `fixtures: {fixtures: [...]}`, `inputs: {num_inputs, inputs}` | `fixtures: [...]`, `inputs: [...]` |
 | `describe` flat settings keys | `settings` object |
 | `logs` after a reboot restarted silently | `boot_id` in the reply; send it back, `reset` flags a mismatch |
-| Heartbeat | adds `device_id` and `boot_id`; `protocol` is `2` |
+| Heartbeat with `version` and `fixtures` | adds `device_id` and `boot_id`, drops `version` and `fixtures` (use `describe`); `protocol` is `2` |
 | No stable device identity | `device_id` in heartbeat, `describe`, wireless and serial reports |
 | Serial report with `fixture_handler`/`input_handler` | `describe`'s `data` shape |
 | Dispatcher `missing cmd` / `unknown cmd` text | `missing_cmd` / `unknown_cmd` codes |

@@ -4,7 +4,6 @@
 #include "Core/Config/EngineConfig.h"
 #include "Network/Wifi.h"
 #include "Network/UdpBroadcaster.h"
-#include "Core/Managers/FixtureManager.h"
 #include "Services/StatusReport.h"
 #include "Tasks/TaskExecutor.h"
 
@@ -16,8 +15,7 @@ namespace Services
     class Telemetry
     {
     public:
-        Telemetry(const Config::Engine& config, const Net::Wifi& wifi, const Handler::FixtureManager& fixtures,
-                  StatusReport& report, Tasks::Manager& tasks);
+        Telemetry(const Config::Engine& config, const Net::Wifi& wifi, StatusReport& report, Tasks::Manager& tasks);
 
         // Opens the UDP sockets and spawns the heartbeat and report tasks,
         // with the reports enabled in config. Call once, after everything
@@ -32,11 +30,10 @@ namespace Services
     private:
         void heartbeatLoop();
         void reportLoop();
-        std::string buildHeartbeat() const;
+        static std::string buildHeartbeat();
 
         const Config::Engine& m_config;
         const Net::Wifi& m_wifi;
-        const Handler::FixtureManager& m_fixtures;
         StatusReport& m_report;
         Tasks::Manager& m_tasks;
 

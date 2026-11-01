@@ -10,9 +10,9 @@ namespace
 
 namespace Services
 {
-    Telemetry::Telemetry(const Config::Engine& config, const Net::Wifi& wifi, const Handler::FixtureManager& fixtures,
-                         StatusReport& report, Tasks::Manager& tasks)
-        : m_config(config), m_wifi(wifi), m_fixtures(fixtures), m_report(report), m_tasks(tasks)
+    Telemetry::Telemetry(const Config::Engine& config, const Net::Wifi& wifi, StatusReport& report,
+                         Tasks::Manager& tasks)
+        : m_config(config), m_wifi(wifi), m_report(report), m_tasks(tasks)
     {}
 
     void Telemetry::start()
@@ -71,31 +71,24 @@ namespace Services
 
     void Telemetry::heartbeatLoop()
     {
+        // Nothing in it changes during a boot, so it's built once.
+        const std::string heartbeat = buildHeartbeat();
         while (true)
         {
-            // Rebuilt every beat so renamed fixtures show up without a reboot.
             if (m_wifi.isConnected())
             {
-                m_udpHeartbeat.send(buildHeartbeat());
+                m_udpHeartbeat.send(heartbeat);
             }
             vTaskDelay(500);
         }
     }
 
-    std::string Telemetry::buildHeartbeat() const
+    std::string Telemetry::buildHeartbeat()
     {
         JsonDocument doc;
-        doc["version"] = ENGINE_VERSION;
         doc["protocol"] = PROTOCOL_VERSION;
         doc["device_id"] = Wire::deviceId();
         doc["boot_id"] = Wire::bootId();
-        JsonArray arr = doc["fixtures"].to<JsonArray>();
-        for (const auto& fix : m_fixtures.all())
-        {
-            JsonObject entry = arr.add<JsonObject>();
-            entry["name"] = fix->getName();
-            entry["type"] = fix->getType();
-        }
 
         std::string out;
         serializeJson(doc, out);
