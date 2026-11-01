@@ -3,6 +3,10 @@
 
 namespace
 {
+    // Live mode re-checks the fixtures this often without a wake(). Nothing
+    // calls wake() on new DMX yet, so this is still the polling interval.
+    constexpr TickType_t c_liveWaitTicks = pdMS_TO_TICKS(1);
+    constexpr TickType_t c_animationTicks = pdMS_TO_TICKS(20);
     constexpr TickType_t c_statsTicks = pdMS_TO_TICKS(60000);
 
     constexpr Utils::Log s_log{"RENDER"};
@@ -24,6 +28,7 @@ namespace Services
     void RenderLoop::setMode(Mode mode)
     {
         m_mode.store(mode);
+        wake();
     }
 
     RenderLoop::Mode RenderLoop::mode() const
@@ -31,8 +36,15 @@ namespace Services
         return m_mode.load();
     }
 
+    void RenderLoop::wake()
+    {
+        if (TaskHandle_t task = m_task.load()) xTaskNotifyGive(task);
+    }
+
     void RenderLoop::loop()
     {
+        m_task.store(xTaskGetCurrentTaskHandle());
+
         Mode previous = m_mode.load();
         uint32_t frames = 0;
         TickType_t statsStart = xTaskGetTickCount();
@@ -48,14 +60,16 @@ namespace Services
                 // Cheap when nothing changed: fixtures only render on new
                 // data, a setting change or the periodic refresh.
                 if (m_fixtures.update()) ++frames;
-                vTaskDelay(1);
+                // Wakes that came in while rendering are kept, so nothing
+                // is missed: the next wait returns right away.
+                ulTaskNotifyTake(pdTRUE, c_liveWaitTicks);
                 break;
             case Mode::Animation:
                 m_fixtures.wifiAnimation();
-                vTaskDelay(20);
+                ulTaskNotifyTake(pdTRUE, c_animationTicks);
                 break;
             case Mode::Off:
-                vTaskDelay(20);
+                ulTaskNotifyTake(pdTRUE, c_animationTicks);
                 break;
             }
             previous = mode;

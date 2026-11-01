@@ -28,11 +28,18 @@ namespace Services
         void setMode(Mode mode);
         [[nodiscard]] Mode mode() const;
 
+        // Renders now instead of at the end of the current wait: there is
+        // new data, or a change to show. Safe to call from any task, and
+        // before start() (it does nothing then).
+        void wake();
+
     private:
         void loop();
 
         Handler::FixtureManager& m_fixtures;
         Tasks::Manager& m_tasks;
+        // Set by the render task itself when it starts.
+        std::atomic<TaskHandle_t> m_task{nullptr};
         // Boot shows the animation until wifi first connects.
         std::atomic<Mode> m_mode{Mode::Animation};
     };
