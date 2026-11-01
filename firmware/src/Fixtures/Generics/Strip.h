@@ -31,24 +31,22 @@ namespace Fixtures
         }
 
         // Unchanged from StripWS2815 until the generic Effect replaces it.
+        // One step per call; RenderLoop sets the pace.
         void wifiAnimation() override
         {
-            {
-                // A preset change from the command task resizes the outputs.
-                auto guard = lock();
-                const uint16_t bytes = m_animBuf.size();
-                m_animBuf[m_animOff] = 255;
-                m_animBuf[m_animOff == 0 ? (bytes - 1) : m_animOff - 1] = 0;
-                m_animOff = (m_animOff + 1) % bytes;
+            // A preset change from the command task resizes the outputs.
+            auto guard = lock();
+            const uint16_t bytes = m_animBuf.size();
+            m_animBuf[m_animOff] = 255;
+            m_animBuf[m_animOff == 0 ? (bytes - 1) : m_animOff - 1] = 0;
+            m_animOff = (m_animOff + 1) % bytes;
 
-                std::span<const uint8_t> src{m_animBuf};
-                for (auto& o : getOutputs())
-                {
-                    o->update(src.first(o->footprint()));
-                    src = src.subspan(o->footprint());
-                }
+            std::span<const uint8_t> src{m_animBuf};
+            for (auto& o : getOutputs())
+            {
+                o->update(src.first(o->footprint()));
+                src = src.subspan(o->footprint());
             }
-            vTaskDelay(20);
         }
 
     private:

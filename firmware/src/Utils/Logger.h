@@ -61,6 +61,9 @@ namespace Utils
 
         static const LogHistory& history() { return s_history; }
 
+        // Whether a history line was logged with error().
+        static bool isError(std::string_view line);
+
         // Unprefixed serial output, not kept in history. Never blocks.
         static void raw(std::string_view text);
 

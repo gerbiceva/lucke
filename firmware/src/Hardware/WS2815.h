@@ -8,7 +8,6 @@
 #include "driver/spi_master.h"
 #include "esp_heap_caps.h"
 #include "freertos/FreeRTOS.h"
-#include "freertos/semphr.h"
 
 namespace Core
 {
@@ -21,8 +20,12 @@ namespace Core
 
     // Drives a WS2815 strip over SPI. The pixel buffer is borrowed — the
     // caller (LEDBase) owns it and must keep it alive for this object's
-    // lifetime. Everything else (SPI bus/device, DMA buffer, mutex) is owned
-    // here and released in the destructor or when init() fails.
+    // lifetime. Everything else (SPI bus/device, DMA buffer) is owned here
+    // and released in the destructor or when init() fails.
+    //
+    // Not thread-safe: show() must only be called from one task (the render
+    // task). Two concurrent spi_device_transmit() calls trip the
+    // "ret_trans == trans_desc" assert in spi_master.c.
     class WS2815
     {
         // SPI bit patterns for each 4-bit nibble of a color byte (LSB first).
@@ -38,14 +41,8 @@ namespace Core
             void operator()(void *p) const { heap_caps_free(p); }
         };
 
-        struct SemaphoreDelete
-        {
-            void operator()(SemaphoreHandle_t s) const { vSemaphoreDelete(s); }
-        };
-
         static constexpr spi_host_device_t c_host = SPI2_HOST;
 
-        std::unique_ptr<std::remove_pointer_t<SemaphoreHandle_t>, SemaphoreDelete> spiMutex;
         std::unique_ptr<uint16_t[], HeapCapsFree> dma_buffer;
         size_t dma_buf_size = 0;
 

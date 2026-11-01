@@ -56,8 +56,15 @@ namespace Services
         // Erases all stored settings and fixture records, and drops queued
         // ones. Nothing is written after this, so a change that lands before
         // the caller reboots can't survive the reset; the next boot starts
-        // from defaults.
+        // from defaults. The diagnostic records stay.
         void factoryReset();
+
+        // Crash and error records as JSON, for Services::CrashLog. Unlike the
+        // settings, they describe the device's history, so factoryReset()
+        // leaves them.
+        [[nodiscard]] std::optional<std::string> loadDiag(const std::string& key);
+        void saveDiag(const std::string& key, const std::string& json);
+        void clearDiag();
 
     private:
         static constexpr const char* c_settingsKey = "settings";
@@ -77,6 +84,7 @@ namespace Services
         Config::Engine m_engine;
         Utils::Storage m_engineNvs;
         Utils::Storage m_fixtureNvs;
+        Utils::Storage m_diagNvs;
 
         std::map<uint8_t, std::string> m_pendingFixtures;
         TickType_t m_lastFixtureChange = 0;

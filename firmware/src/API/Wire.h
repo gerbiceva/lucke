@@ -26,4 +26,5 @@ namespace Wire
     // The describe reply's data. Also the serial report.
     void describe(JsonObject obj, const DeviceInfo& info);
     void logs(JsonObject obj, const LogsInfo& info);
+    void crashLog(JsonObject obj, const Services::CrashLogInfo& info);
 }

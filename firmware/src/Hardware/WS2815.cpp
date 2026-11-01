@@ -28,15 +28,6 @@ namespace Core
 
     esp_err_t WS2815::initSPI(int pin)
     {
-        // Serializes show() across tasks (fixture_update / wifi_animation both
-        // drive the same SPI device); concurrent spi_device_transmit() trips
-        // the "ret_trans == trans_desc" assert in spi_master.c.
-        spiMutex.reset(xSemaphoreCreateMutex());
-        if (!spiMutex)
-        {
-            return ESP_ERR_NO_MEM;
-        }
-
         spi_device_interface_config_t devcfg{
             .command_bits = 0,
             .address_bits = 0,
@@ -102,8 +93,6 @@ namespace Core
             spi_bus_free(c_host);
             busInitialized = false;
         }
-
-        spiMutex.reset();
     }
 
     esp_err_t WS2815::update()
@@ -187,9 +176,7 @@ namespace Core
             return;
         }
 
-        xSemaphoreTake(spiMutex.get(), portMAX_DELAY);
         ESP_ERROR_CHECK_WITHOUT_ABORT(update());
-        xSemaphoreGive(spiMutex.get());
     }
 
 }

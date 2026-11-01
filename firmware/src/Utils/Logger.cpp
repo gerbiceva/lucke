@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <cstdio>
 #include <cstring>
+#include "CrashTrail.h"
 
 namespace
 {
@@ -82,6 +83,12 @@ namespace Utils
         return seq;
     }
 
+    bool Log::isError(std::string_view line)
+    {
+        // Lines start with the level letter (see write()).
+        return !line.empty() && line.front() == letter(Level::Error);
+    }
+
     void Log::begin(uint32_t baudrate)
     {
         if (s_serialReady.load()) return;
@@ -129,7 +136,11 @@ namespace Utils
         len = std::min(total, cap);
         if (total > cap) std::memcpy(line + len - 3, "...", 3);
 
-        if (level >= HistoryLevel) s_history.append({line, len});
+        if (level >= HistoryLevel)
+        {
+            s_history.append({line, len});
+            CrashTrail::append({line, len});
+        }
 
         line[len++] = '\r';
         line[len++] = '\n';

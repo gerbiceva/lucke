@@ -20,6 +20,7 @@ namespace Services
 
         m_engineNvs.setPartition("engine");
         m_fixtureNvs.setPartition("fixtures");
+        m_diagNvs.setPartition("diag");
 
         if (!m_engineNvs.isKey(c_settingsKey))
         {
@@ -91,6 +92,25 @@ namespace Services
         m_fixtureNvs.clear();
         m_wiped = true;
         s_log.info("factory reset: NVS cleared");
+    }
+
+    std::optional<std::string> SettingsStore::loadDiag(const std::string& key)
+    {
+        std::scoped_lock lock(m_mutex);
+        if (!m_diagNvs.isKey(key)) return std::nullopt;
+        return m_diagNvs.getString(key);
+    }
+
+    void SettingsStore::saveDiag(const std::string& key, const std::string& json)
+    {
+        std::scoped_lock lock(m_mutex);
+        m_diagNvs.putString(key, json);
+    }
+
+    void SettingsStore::clearDiag()
+    {
+        std::scoped_lock lock(m_mutex);
+        m_diagNvs.clear();
     }
 
     void SettingsStore::saveLoop()

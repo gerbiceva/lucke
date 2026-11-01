@@ -15,6 +15,7 @@
 #include "Commands/Handlers/SettingsHandler.h"
 #include "Commands/Handlers/FactoryResetHandler.h"
 #include "Commands/Handlers/LogsHandler.h"
+#include "Commands/Handlers/CrashLogHandler.h"
 #include "Commands/Handlers/OtaHandler.h"
 #include "Core/Managers/FixtureManager.h"
 #include "Core/Managers/InputManager.h"
@@ -27,6 +28,7 @@
 #include "Services/CommandSession.h"
 #include "Services/TcpListener.h"
 #include "Services/OtaService.h"
+#include "Services/CrashLog.h"
 #include "API/API.h"
 
 class Engine
@@ -65,6 +67,7 @@ private:
     Services::StatusReport m_statusReport;
     Services::Telemetry m_telemetry;
     Services::OtaService m_ota;
+    Services::CrashLog m_crashLog;
     API m_api;
 
     Commands::CommandDispatcher m_dispatcher;
@@ -80,6 +83,8 @@ private:
     Commands::SettingsHandler m_getSettingsHandler;
     Commands::SettingsHandler m_setSettingsHandler;
     Commands::LogsHandler m_logsHandler;
+    Commands::CrashLogHandler m_crashLogHandler;
+    Commands::CrashLogHandler m_clearCrashLogHandler;
     Commands::OtaHandler m_otaHandler;
 
     // Hold references to m_dispatcher, so they come after it.

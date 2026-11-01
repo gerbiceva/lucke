@@ -67,9 +67,9 @@ namespace
 }
 
 API::API(Services::SettingsStore& settings, Handler::FixtureManager& fixtures, Handler::InputManager& inputs,
-         Net::Wifi& wifi, Services::Telemetry& telemetry, Services::OtaService& ota)
+         Net::Wifi& wifi, Services::Telemetry& telemetry, Services::OtaService& ota, Services::CrashLog& crashLog)
     : m_settings(settings), m_fixtures(fixtures), m_inputs(inputs), m_wifi(wifi), m_telemetry(telemetry),
-      m_ota(ota)
+      m_ota(ota), m_crashLog(crashLog)
 {}
 
 DeviceInfo API::describe() const
@@ -145,6 +145,11 @@ LogsInfo API::logs(uint32_t since, std::string_view bootId) const
     }
     info.next = seq;
     return info;
+}
+
+Services::CrashLogInfo API::crashLog() const
+{
+    return m_crashLog.info();
 }
 
 std::expected<FixtureUpdate, ApiError> API::setFixture(uint8_t id, const FixturePatch& patch, Origin from)
@@ -269,6 +274,12 @@ void API::setWifiAnimation(bool enable, Origin from)
     s_log.info("wifi_animation set to %s via %.*s", enable ? "true" : "false", static_cast<int>(from.size()),
                from.data());
     m_settings.update([enable](Config::Engine& c) { c.wifi_animation = enable; });
+}
+
+void API::clearCrashLog(Origin from)
+{
+    s_log.info("crash log cleared via %.*s", static_cast<int>(from.size()), from.data());
+    m_crashLog.clear();
 }
 
 void API::reboot(Origin from, uint32_t delayMs)

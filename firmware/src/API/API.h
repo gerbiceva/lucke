@@ -19,6 +19,7 @@
 #include "Services/SettingsStore.h"
 #include "Services/Telemetry.h"
 #include "Services/OtaService.h"
+#include "Services/CrashLog.h"
 
 // Why a call failed. `code` is one of the codes in docs/api.md (a
 // literal); `arg` names the request argument at fault ("universe",
@@ -98,7 +99,7 @@ class API
 {
 public:
     API(Services::SettingsStore& settings, Handler::FixtureManager& fixtures, Handler::InputManager& inputs,
-        Net::Wifi& wifi, Services::Telemetry& telemetry, Services::OtaService& ota);
+        Net::Wifi& wifi, Services::Telemetry& telemetry, Services::OtaService& ota, Services::CrashLog& crashLog);
 
     // Reads
     [[nodiscard]] DeviceInfo describe() const;
@@ -114,6 +115,8 @@ public:
     // Lines numbered >= since. If bootId is given and isn't this boot's, since
     // is from before a reboot: it is ignored and the result has reset set.
     [[nodiscard]] LogsInfo logs(uint32_t since = 0, std::string_view bootId = {}) const;
+    // The last abnormal reset and recent Error lines, kept across reboots.
+    [[nodiscard]] Services::CrashLogInfo crashLog() const;
 
     // Writes
     std::expected<FixtureUpdate, ApiError> setFixture(uint8_t id, const FixturePatch& patch, Origin from);
@@ -124,6 +127,7 @@ public:
     void setSerialReport(bool enable, Origin from);
     void setWirelessReport(bool enable, Origin from);
     void setWifiAnimation(bool enable, Origin from);
+    void clearCrashLog(Origin from);
 
     // Actions. Both restart after delayMs, so the caller can still reply.
     void reboot(Origin from, uint32_t delayMs = 1000);
@@ -141,4 +145,5 @@ private:
     Net::Wifi& m_wifi;
     Services::Telemetry& m_telemetry;
     Services::OtaService& m_ota;
+    Services::CrashLog& m_crashLog;
 };

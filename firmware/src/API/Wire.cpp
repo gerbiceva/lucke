@@ -4,6 +4,17 @@
 
 namespace Wire
 {
+    namespace
+    {
+        // "0x4200a1b2", ready for addr2line.
+        std::string hex(uint32_t value)
+        {
+            char buf[11];
+            snprintf(buf, sizeof(buf), "0x%08lx", static_cast<unsigned long>(value));
+            return buf;
+        }
+    }
+
     std::string_view deviceId()
     {
         static const std::string id = [] {
@@ -98,6 +109,54 @@ namespace Wire
         for (const std::string& line : info.lines)
         {
             lines.add(line);
+        }
+    }
+
+    void crashLog(JsonObject obj, const Services::CrashLogInfo& info)
+    {
+        obj["crash_count"] = info.crashCount;
+
+        if (info.lastCrash)
+        {
+            const Services::CrashRecord& c = *info.lastCrash;
+            JsonObject crash = obj["crash"].to<JsonObject>();
+            crash["reset_reason"] = c.resetReason;
+            crash["boot_id"] = c.bootId;
+            crash["version"] = c.version;
+            crash["uptime_ms"] = c.uptimeMs;
+            if (c.panic)
+            {
+                JsonObject panic = crash["panic"].to<JsonObject>();
+                panic["task"] = c.panic->task;
+                panic["reason"] = c.panic->reason;
+                panic["pc"] = hex(c.panic->pc);
+                panic["ra"] = hex(c.panic->ra);
+                panic["sp"] = hex(c.panic->sp);
+                panic["mcause"] = c.panic->mcause;
+                panic["mtval"] = hex(c.panic->mtval);
+                panic["elf_sha"] = c.panic->elfSha;
+            }
+            else
+            {
+                crash["panic"] = nullptr;
+            }
+            JsonArray lines = crash["lines"].to<JsonArray>();
+            for (const std::string& line : c.lines)
+            {
+                lines.add(line);
+            }
+        }
+        else
+        {
+            obj["crash"] = nullptr;
+        }
+
+        JsonArray errors = obj["errors"].to<JsonArray>();
+        for (const Services::ErrorRecord& e : info.errors)
+        {
+            JsonObject item = errors.add<JsonObject>();
+            item["boot_id"] = e.bootId;
+            item["line"] = e.line;
         }
     }
 }
