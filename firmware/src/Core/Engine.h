@@ -37,7 +37,15 @@ public:
     Engine();
     void init();
 
-    // Strips take their default LED count: addFixture<StripWS2815<5>>(60).
+    // The wifi to join while none is stored (first boot, or after a factory
+    // reset); set_wifi overrides it. Call before init().
+    void setDefaultWifi(std::string ssid, std::string password)
+    {
+        m_settings.setDefaultWifi(std::move(ssid), std::move(password));
+    }
+
+    // Strips take their default LED count, then optionally a default name:
+    // addFixture<StripWS2815<5>>(60, "Bar").
     template<typename TFixture, typename... Args>
     void addFixture(Args... args)
     {

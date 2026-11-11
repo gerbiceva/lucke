@@ -12,6 +12,18 @@ namespace
 
 namespace Services
 {
+    void SettingsStore::setDefaultWifi(std::string ssid, std::string password)
+    {
+        std::scoped_lock lock(m_mutex);
+        if (m_loaded)
+        {
+            s_log.warn("default wifi set after load, ignored");
+            return;
+        }
+        m_engine.ssid = std::move(ssid);
+        m_engine.password = std::move(password);
+    }
+
     void SettingsStore::load()
     {
         std::scoped_lock lock(m_mutex);

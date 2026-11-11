@@ -1,6 +1,7 @@
 #pragma once
 #include <array>
 #include <cstddef>
+#include <cstdint>
 #include <string>
 #include <string_view>
 
@@ -60,6 +61,21 @@ namespace Presets
             w.putStr("\n] }");
             return w.pos;
         }
+    }
+
+    // Index into groupPresets(numLeds) of the first preset whose RGB data
+    // fits in maxBytes, so a long strip starts out in one universe. 0 if
+    // none fits.
+    constexpr uint8_t firstFittingPreset(int numLeds, int maxBytes)
+    {
+        uint8_t index = 0;
+        for (int d = 1; d <= numLeds; ++d)
+        {
+            if (numLeds % d != 0) continue;
+            if (numLeds / d * 3 <= maxBytes) return index;
+            ++index;
+        }
+        return 0;
     }
 
     // Preset JSON for a strip of numLeds LEDs.

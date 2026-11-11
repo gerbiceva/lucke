@@ -19,6 +19,10 @@ namespace Services
     class SettingsStore
     {
     public:
+        // The wifi to join while none is stored (first boot, or after a
+        // factory reset). Call before load().
+        void setDefaultWifi(std::string ssid, std::string password);
+
         // Opens NVS and loads the engine settings, writing defaults if none
         // are stored. Idempotent: later calls do nothing.
         void load();

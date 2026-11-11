@@ -53,14 +53,15 @@ namespace Handler
         }
 
         // A strip: built with its stored LED count, or defaultLeds until one
-        // is stored (the output's num_leds setting).
-        template<typename TFixture>
-            requires std::is_constructible_v<TFixture, uint16_t>
-        void addFixture(uint16_t defaultLeds)
+        // is stored (the output's num_leds setting). Any further arguments
+        // (e.g. the name) go to the constructor after the LED count.
+        template<typename TFixture, typename... Args>
+            requires std::is_constructible_v<TFixture, uint16_t, Args...>
+        void addFixture(uint16_t defaultLeds, Args&&... args)
         {
             const auto stored = loadStored();
             const uint16_t leds = storedLedCount(stored);
-            _addFixture(std::make_unique<TFixture>(leds ? leds : defaultLeds), stored);
+            _addFixture(std::make_unique<TFixture>(leds ? leds : defaultLeds, std::forward<Args>(args)...), stored);
         }
 
         [[nodiscard]] Fixture* get(uint8_t id);

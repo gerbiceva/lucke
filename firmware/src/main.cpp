@@ -1,10 +1,11 @@
 #include "Core/Engine.h"
-#include "Fixtures/Generics/Strip.h"
+#include "Fixtures/KasperDiffused.h"
 
 Engine engine;
 
 void setup() {
-  engine.addFixture<Fixtures::StripWS2815<5>>(60);
+  engine.setDefaultWifi("Ledique", "dasenebipovezau");
+  engine.addFixture<Fixtures::KasperDiffused<6>>(288, "Kasper");
   engine.init();
 }
 

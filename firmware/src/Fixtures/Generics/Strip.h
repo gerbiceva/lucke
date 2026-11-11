@@ -2,10 +2,12 @@
 #include <algorithm>
 #include <vector>
 #include <span>
+#include <string>
 #include "Core/Fixture.h"
 #include "Output/Strip1D.h"
 #include "Output/Drivers/Ws2815.h"
 #include "Output/Drivers/FastLed.h"
+#include "Utils/Dmx.h"
 #include "Utils/PresetMaker.h"
 
 namespace Fixtures
@@ -20,14 +22,17 @@ namespace Fixtures
 
     // The LED count is the strip output's num_leds setting: from the stored
     // record, or the default passed to addFixture (see FixtureManager::addFixture).
+    // The name is likewise only the default until one is stored.
     template <FixedString Type, typename TDriver, uint8_t Pin>
     struct Strip : public Fixture
     {
-        explicit Strip(uint16_t numLeds)
-            : Fixture("name", Type.value, Presets::groupPresets(numLeds)),
+        explicit Strip(uint16_t numLeds, std::string name = "name")
+            : Fixture(std::move(name), Type.value, Presets::groupPresets(numLeds)),
               m_animBuf(numLeds * 3, 0)
         {
             addOutput<Output::Strip1D<TDriver, Pin>>(numLeds);
+            // Default only: a stored record brings its own preset.
+            setPreset(Presets::firstFittingPreset(numLeds, Dmx::c_universeSize));
         }
 
         // Unchanged from StripWS2815 until the generic Effect replaces it.
